@@ -2,4 +2,4 @@
  Unreal Engine Final Assignment
 
  Current State:
-![test](https://github.com/areasplash/2024-01-GameEngineProgramming/assets/50064865/522a7702-2dbe-4dbd-b736-2d35f328a135)
+![Honeycam 2024-05-08 04-03-31](https://github.com/areasplash/2024-01-GameEngineProgramming/assets/50064865/ede8d0d1-773f-46d0-b7b0-25b80c50bf1f)
