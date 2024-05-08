@@ -1,0 +1,9 @@
+# Ignore everything
+/*
+
+# But not these files...
+!/.gitignore
+!/FinalProject.uproject
+!/Config/
+!/Content/
+!/Source/

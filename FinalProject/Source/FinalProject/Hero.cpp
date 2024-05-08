@@ -1,55 +1,84 @@
 #include "Hero.h"
-#include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Components/ArrowComponent.h"
 
 
 
 AHero::AHero() {
  	PrimaryActorTick.bCanEverTick = true;
 
-	sphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
-	sphereComponent->InitSphereRadius(24.0f);
-	//sphereComponent->SetCollisionProfileName(TEXT("Player"));
-	SetRootComponent(sphereComponent);
+	//capsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("SphereComponent"));
+	//capsuleComponent->SetCollisionProfileName(TEXT("Entity"));
+	//SetRootComponent(capsuleComponent);
 
 	meshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
+	meshComponent->SetWorldRotation(FRotator(0.0f, 90.0f, 41.409618f));
 	meshComponent->SetWorldScale3D(FVector(1.28f, 1.28f, 1.28f));
 	meshComponent->SetupAttachment(RootComponent);
 
-
+	GetCharacterMovement()->MaxWalkSpeed = speed;
+	GetCharacterMovement()->MaxAcceleration = speed * 100;
+	GetCharacterMovement()->JumpZVelocity = 800;
+	GetCharacterMovement()->GravityScale = 3.0f;
 }
 
 
 
 void AHero::BeginPlay() {
 	Super::BeginPlay();
-	
 }
 
 
+
+FRotator VectorToRotator(FVector vector) {
+	return FRotator(0.0f, 90.0f - FMath::RadiansToDegrees(FMath::Atan2(vector.X, vector.Y)), 0.0f);
+}
+FVector RotatorToVector(FRotator rotator) {
+	float rad = FMath::DegreesToRadians(rotator.Yaw);
+	return FVector(FMath::Cos(rad), FMath::Sin(rad), 0.0f);
+}
 
 void AHero::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
-	UpdateSprite(DeltaTime);
-
 	direction.Normalize();
-	if (direction.IsZero()) {
-		state = State::Idle;
+	switch (state) {
+		case State::Idle:
+			if (!direction.IsZero()) state = State::Move;
+			if (input[(uint8)Input::Jump]  && !GetCharacterMovement()->IsFalling()) state = State::Jump;
+			if (input[(uint8)Input::Dodge] && !GetCharacterMovement()->IsFalling()) state = State::Dodge;
+			break;
+
+		case State::Move:
+			if (!direction.IsZero()) GetArrowComponent()->SetWorldRotation(VectorToRotator(direction));
+			AddMovementInput(direction);
+			if (direction.IsZero()) state = State::Idle;
+			if (input[(uint8)Input::Jump]  && !GetCharacterMovement()->IsFalling()) state = State::Jump;
+			if (input[(uint8)Input::Dodge] && !GetCharacterMovement()->IsFalling()) state = State::Dodge;
+			break;
+
+		case State::Jump:
+			AddMovementInput(direction);
+			if (0.1f < delay && delay < 0.2f && !GetCharacterMovement()->IsFalling()) Super::Jump();
+			if (0.2f < delay && !GetCharacterMovement()->IsFalling()) {
+				state = direction.IsZero() ? State::Idle : State::Move;
+			}
+			break;
+
+		case State::Dodge:
+			if (delay == 0.0f) GetCharacterMovement()->MaxWalkSpeed = speed * 2.0f;
+			if (0.3f < delay) GetCharacterMovement()->MaxWalkSpeed = speed;
+			AddMovementInput(RotatorToVector(GetArrowComponent()->GetRelativeRotation()));
+			if (0.4f < delay && input[(uint8)Input::Jump] && !GetCharacterMovement()->IsFalling()) state = State::Jump;
+			if (0.6f < delay) state = direction.IsZero() ? State::Idle : State::Move;
+			break;
+
+		case State::Defeat:
+			break;
 	}
-	else {
-		state = State::Move;
-		if (direction.Y != 0 && xflip != (direction.Y < 0.0f)) {
-			xflip = direction.Y < 0.0f;
-			meshComponent->SetScalarParameterValueOnMaterials(TEXT("XFlip"), xflip ? 1.0f : 0.0f);
-			UE_LOG(LogTemp, Log, TEXT("%d"), xflip ? 1 : 0);
-		}
-		FVector location = GetActorLocation() + direction * speed * DeltaTime;
-		SetActorLocation(location, true);
-	}
+	UpdateSprite(DeltaTime);
 }
-
-
 
 void AHero::UpdateSprite(float DeltaTime) {
 	delay += DeltaTime;
@@ -69,14 +98,18 @@ void AHero::UpdateSprite(float DeltaTime) {
 		switch (state) {
 			case State::Idle:   i =  0 + static_cast<int32>(delay *  2) % 4; break;
 			case State::Move:   i =  4 + static_cast<int32>(delay * 10) % 6; break;
-			case State::Jump:   i = 10 + static_cast<int32>(delay * 10); if (i < 13) i = 13; break;
-			case State::Dodge:  i = 14 + static_cast<int32>(delay * 10); if (i < 19) i = 19; break;
-			case State::Defeat: i = 20 + static_cast<int32>(delay * 10); if (i < 23) i = 23; break;
+			case State::Jump:   i = 10 + static_cast<int32>(delay * 10); if (13 < i) i = 13; break;
+			case State::Dodge:  i = 14 + static_cast<int32>(delay * 10); if (19 < i) i = 19; break;
+			case State::Defeat: i = 20 + static_cast<int32>(delay * 10); if (23 < i) i = 23; break;
 		}
 		if (index == i) return;
 		index = i;
 	}
 	meshComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), index);
+	if (state == State::Move && direction.Y != 0 && xflip != (direction.Y < 0.0f)) {
+		xflip = direction.Y < 0.0f;
+		meshComponent->SetScalarParameterValueOnMaterials(TEXT("XFlip"), xflip ? 1.0f : 0.0f);
+	}
 }
 
 

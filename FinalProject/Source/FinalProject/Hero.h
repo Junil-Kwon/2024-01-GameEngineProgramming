@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Pawn.h"
+#include "GameFramework/Character.h"
 #include "Hero.generated.h"
 
 
@@ -20,8 +20,6 @@ enum class Input : uint8 {
 	Max			UMETA(Hidden),
 };
 
-
-
 UENUM(BlueprintType)
 enum class State : uint8 {
 	Idle		,
@@ -35,7 +33,7 @@ enum class State : uint8 {
 
 
 UCLASS()
-class FINALPROJECT_API AHero : public APawn {
+class FINALPROJECT_API AHero : public ACharacter {
 	GENERATED_BODY()
 
 public:
@@ -51,10 +49,9 @@ public:
 
 
 public:
-	UPROPERTY(EditAnywhere) class USphereComponent* sphereComponent;
 	UPROPERTY(EditAnywhere) class UStaticMeshComponent* meshComponent;
 
-	UPROPERTY(EditAnywhere) float speed = 250.0f;
+	UPROPERTY(EditAnywhere) float speed = 300.0f;
 
 
 
@@ -67,8 +64,7 @@ private:
 	void UpdateSprite(float DeltaTime);
 
 
-
-	bool input[(uint8)Input::Max] = { false };
+	bool input[(uint8)Input::Max] = { false, };
 	FVector direction = FVector::ZeroVector;
 
 	void Up    (bool pressed);
