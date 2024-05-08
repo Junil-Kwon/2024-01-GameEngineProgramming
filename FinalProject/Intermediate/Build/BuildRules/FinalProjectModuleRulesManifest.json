@@ -1,0 +1,8 @@
+{
+	"SourceFiles": [
+		"C:\\Users\\User\\Documents\\Unreal Projects\\2024-01-GameEngineProgramming\\FinalProject\\Source\\FinalProject\\FinalProject.Build.cs",
+		"C:\\Users\\User\\Documents\\Unreal Projects\\2024-01-GameEngineProgramming\\FinalProject\\Source\\FinalProject.Target.cs",
+		"C:\\Users\\User\\Documents\\Unreal Projects\\2024-01-GameEngineProgramming\\FinalProject\\Source\\FinalProjectEditor.Target.cs"
+	],
+	"EngineVersion": "4.27.2"
+}

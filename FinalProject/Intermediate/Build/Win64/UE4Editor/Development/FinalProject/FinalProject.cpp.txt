@@ -1,0 +1,2 @@
+C:\Users\User\Documents\Unreal Projects\2024-01-GameEngineProgramming\FinalProject\Intermediate\Build\Win64\UE4Editor\Development\FinalProject\Definitions.FinalProject.h
+C:\Users\User\Documents\Unreal Projects\2024-01-GameEngineProgramming\FinalProject\Source\FinalProject\FinalProject.h

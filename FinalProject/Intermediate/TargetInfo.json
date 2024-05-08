@@ -1,0 +1,14 @@
+{
+	"Targets": [
+		{
+			"Name": "FinalProject",
+			"Path": "C:\\Users\\User\\Documents\\Unreal Projects\\2024-01-GameEngineProgramming\\FinalProject\\Source\\FinalProject.Target.cs",
+			"Type": "Game"
+		},
+		{
+			"Name": "FinalProjectEditor",
+			"Path": "C:\\Users\\User\\Documents\\Unreal Projects\\2024-01-GameEngineProgramming\\FinalProject\\Source\\FinalProjectEditor.Target.cs",
+			"Type": "Editor"
+		}
+	]
+}

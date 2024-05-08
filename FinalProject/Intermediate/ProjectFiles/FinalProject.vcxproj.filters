@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <None Include="..\..\FinalProject.uproject" />
+    <Filter Include="Source">
+      <UniqueIdentifier>{26DF8C84-3E82-47DE-989B-63A70FD1366B}</UniqueIdentifier>
+    </Filter>
+    <None Include="..\..\Source\FinalProject.Target.cs">
+      <Filter>Source</Filter>
+    </None>
+    <None Include="..\..\Source\FinalProjectEditor.Target.cs">
+      <Filter>Source</Filter>
+    </None>
+    <Filter Include="Config">
+      <UniqueIdentifier>{4402C794-599D-4B9A-AE2C-641B7C69FB38}</UniqueIdentifier>
+    </Filter>
+    <None Include="..\..\Config\DefaultEditor.ini">
+      <Filter>Config</Filter>
+    </None>
+    <None Include="..\..\Config\DefaultEngine.ini">
+      <Filter>Config</Filter>
+    </None>
+    <None Include="..\..\Config\DefaultGame.ini">
+      <Filter>Config</Filter>
+    </None>
+    <None Include="..\..\Config\DefaultInput.ini">
+      <Filter>Config</Filter>
+    </None>
+    <Filter Include="Source\FinalProject">
+      <UniqueIdentifier>{670A8EAA-9675-402A-A59D-0A4238F9C7C3}</UniqueIdentifier>
+    </Filter>
+    <None Include="..\..\Source\FinalProject\FinalProject.Build.cs">
+      <Filter>Source\FinalProject</Filter>
+    </None>
+    <ClCompile Include="..\..\Source\FinalProject\FinalProject.cpp">
+      <Filter>Source\FinalProject</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\Source\FinalProject\FinalProject.h">
+      <Filter>Source\FinalProject</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\Source\FinalProject\FinalProjectGameModeBase.cpp">
+      <Filter>Source\FinalProject</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\Source\FinalProject\FinalProjectGameModeBase.h">
+      <Filter>Source\FinalProject</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\Source\FinalProject\Hero.cpp">
+      <Filter>Source\FinalProject</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\Source\FinalProject\Hero.h">
+      <Filter>Source\FinalProject</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

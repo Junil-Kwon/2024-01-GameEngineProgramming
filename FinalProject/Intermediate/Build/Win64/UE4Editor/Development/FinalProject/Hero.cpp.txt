@@ -1,0 +1,7 @@
+C:\Users\User\Documents\Unreal Projects\2024-01-GameEngineProgramming\FinalProject\Intermediate\Build\Win64\UE4Editor\Development\FinalProject\Definitions.FinalProject.h
+C:\Users\User\Documents\Unreal Projects\2024-01-GameEngineProgramming\FinalProject\Source\FinalProject\Hero.h
+C:\Users\User\Documents\Unreal Projects\2024-01-GameEngineProgramming\FinalProject\Intermediate\Build\Win64\UE4Editor\Inc\FinalProject\Hero.generated.h
+D:\Program Files (x86)\Epic Games\UE_4.27\Engine\Source\Runtime\Engine\Classes\Components/SphereComponent.h
+D:\Program Files (x86)\Epic Games\UE_4.27\Engine\Source\Runtime\Engine\Classes\Components/ShapeComponent.h
+D:\Program Files (x86)\Epic Games\UE_4.27\Engine\Intermediate\Build\Win64\UE4Editor\Inc\Engine\ShapeComponent.generated.h
+D:\Program Files (x86)\Epic Games\UE_4.27\Engine\Intermediate\Build\Win64\UE4Editor\Inc\Engine\SphereComponent.generated.h
