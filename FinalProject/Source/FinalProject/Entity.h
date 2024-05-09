@@ -72,6 +72,10 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+private:
+	const float MaxFallSpeed = 1024.0f;
+
+public:
 	bool HasTag(Tag value);
 	virtual void AddTag(Tag value);
 	virtual void RemoveTag(Tag value);

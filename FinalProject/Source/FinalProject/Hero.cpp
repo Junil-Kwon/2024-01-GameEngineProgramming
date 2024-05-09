@@ -8,11 +8,15 @@
 
 AHero::AHero() {
 	springArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
-	springArmComponent->SetRelativeLocation(FVector(-300.0f, 0.0f, 600.0f));
+	springArmComponent->SetRelativeLocation(FVector(-4000.0f, 0.0f, 4400.0f));
+	//springArmComponent->SetRelativeLocation(FVector(-300.0f, 0.0f, 600.0f));
 	springArmComponent->SetupAttachment(RootComponent);
 
 	cameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
 	cameraComponent->SetRelativeRotation(FRotator(-45.590382f, 0.0f, 0.0f));
+	cameraComponent->FieldOfView = 15.0f;
+	//cameraComponent->SetProjectionMode(ECameraProjectionMode::Orthographic);
+	//cameraComponent->SetOrthoWidth(1920.0f);
 	cameraComponent->SetupAttachment(springArmComponent);
 }
 
@@ -48,8 +52,8 @@ void AHero::Tick(float DeltaTime) {
 			break;
 
 		case Sprite::Dodge:
-			if (delay == 0.0f) GetCharacterMovement()->MaxWalkSpeed = speed * 2.0f;
-			if (0.3f < delay) GetCharacterMovement()->MaxWalkSpeed = speed;
+			if (delay == 0.0f) GetCharacterMovement()->MaxWalkSpeed = speed * 3.0f;
+			if (0.2f < delay) GetCharacterMovement()->MaxWalkSpeed = speed;
 			AddMovementInput(RotatorToVector(GetArrowComponent()->GetRelativeRotation()));
 			if (0.4f < delay && input[(uint8)Input::Jump] && !GetCharacterMovement()->IsFalling()) sprite = Sprite::Jump;
 			if (0.6f < delay) sprite = direction.IsZero() ? Sprite::Idle : Sprite::Move;
@@ -92,6 +96,8 @@ void AHero::UpdateSprite(float DeltaTime) {
 		meshComponent->SetScalarParameterValueOnMaterials(TEXT("XFlip"), xflip ? 1.0f : 0.0f);
 	}
 }
+
+
 
 void AHero::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);

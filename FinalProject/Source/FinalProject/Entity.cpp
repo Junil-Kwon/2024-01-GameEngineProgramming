@@ -55,19 +55,29 @@ AEntity::AEntity() {
 void AEntity::BeginPlay() {
 	Super::BeginPlay();
 	
-	GetCharacterMovement()->JumpZVelocity = 600.0f;
-	GetCharacterMovement()->GravityScale = HasTag(Tag::Floating) ? 0.0f : 2.0f;
+	GetCharacterMovement()->JumpZVelocity = 800.0f;
+	GetCharacterMovement()->GravityScale = HasTag(Tag::Floating) ? 0.0f : 3.0f;
 	GetCharacterMovement()->MaxWalkSpeed = speed;
 	GetCharacterMovement()->MaxAcceleration = speed * 100;
 }
 
 void AEntity::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
+
+	if (GetCharacterMovement()->IsFalling()) {
+		FVector velocity = GetCharacterMovement()->Velocity;
+		if (velocity.Z < -MaxFallSpeed) {
+			velocity.Z = -MaxFallSpeed;
+			GetCharacterMovement()->Velocity = velocity;
+		}
+	}
 }
 
 void AEntity::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
+
+
 
 bool AEntity::HasTag(Tag value = ToEnum<Tag>(~0)) {
 	return (ToInt(tag) & ToInt(value)) != 0;
@@ -78,6 +88,7 @@ void AEntity::AddTag(Tag value) {
 void AEntity::RemoveTag(Tag value) {
 	tag = ToEnum<Tag>(ToInt(tag) & ~ToInt(value));
 }
+
 bool AEntity::HasEffect(Effect value = ToEnum<Effect>(~0)) {
 	return (ToInt(effect) & ToInt(value)) != 0;
 }

@@ -23,6 +23,7 @@ public:
 public:
 	UPROPERTY(EditAnywhere, Category = "Creature") float healthMax = 0.0f;
 	UPROPERTY(EditAnywhere, Category = "Creature") float damage = 0.0f;
+	UPROPERTY() TSubclassOf<class AIndicator> indicator;
 
 	float GetHealth();
 	void  SetHealth(float value);
