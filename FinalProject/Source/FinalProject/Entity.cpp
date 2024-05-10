@@ -1,7 +1,10 @@
 #include "Entity.h"
+#include "Particle.h"
+#include "Indicator.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include <type_traits>
 
 
 
@@ -37,8 +40,10 @@ FVector RotatorToVector(FRotator rotator) {
 AEntity::AEntity() {
  	PrimaryActorTick.bCanEverTick = true;
 
-	GetCapsuleComponent()->InitCapsuleSize(36.0f, 60.0f);
-	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Entity"));
+	static ConstructorHelpers::FClassFinder<AParticle> ParticleClass(TEXT("/Game/Blueprints/BP_Particle_Dust.BP_Particle_Dust_C"));
+	if (ParticleClass.Succeeded()) particleClass = ParticleClass.Class;
+	static ConstructorHelpers::FClassFinder<AIndicator> IndicatorClass(TEXT("/Game/Blueprints/BP_Indicator.BP_Indicator_C"));
+	if (IndicatorClass.Succeeded()) indicatorClass = IndicatorClass.Class;
 
 	shadowComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShadowComponent"));
 	shadowComponent->SetRelativeScale3D(FVector(0.5f, 0.5f, 0.5f));
@@ -59,22 +64,45 @@ void AEntity::BeginPlay() {
 	GetCharacterMovement()->GravityScale = HasTag(Tag::Floating) ? 0.0f : 3.0f;
 	GetCharacterMovement()->MaxWalkSpeed = speed;
 	GetCharacterMovement()->MaxAcceleration = speed * 100;
+
+	hitboxRadius = GetCapsuleComponent()->GetUnscaledCapsuleRadius();
+	hitboxHeight = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() * 2.0f;
 }
 
 void AEntity::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
 	if (GetCharacterMovement()->IsFalling()) {
-		FVector velocity = GetCharacterMovement()->Velocity;
-		if (velocity.Z < -MaxFallSpeed) {
-			velocity.Z = -MaxFallSpeed;
-			GetCharacterMovement()->Velocity = velocity;
-		}
+		if (!isFalling) isFalling = true;
+		fallSpeed = -GetCharacterMovement()->Velocity.Z;
+		if (MaxFallSpeed < fallSpeed) GetCharacterMovement()->Velocity.Z = -MaxFallSpeed;
 	}
+	else if (isFalling) {
+		if (500.0f < fallSpeed) {
+			Spawn<AParticle>(GetFootLocation() + FVector(0.0f, -hitboxRadius *  0.75f, 0.0f));
+			Spawn<AParticle>(GetFootLocation() + FVector(0.0f, -hitboxRadius * -0.75f, 0.0f));
+		}
+		isFalling = false;
+		fallSpeed = 0.0f;
+	}
+
+	for (uint8 i = 0; i < ToInt(Effect::Max); i++) {
+	}
+	UpdateEffect();
+
+	spriteDelay += DeltaTime;
+	UpdateSprite();
 }
 
-void AEntity::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+
+template <typename T> T* AEntity::Spawn(FVector Location) {
+	if constexpr (std::is_base_of<AIndicator, T>::value) {
+		return GetWorld()->SpawnActor<T>(indicatorClass, Location, FRotator::ZeroRotator);
+	}
+	if constexpr (std::is_base_of<AParticle, T>::value) {
+		return GetWorld()->SpawnActor<T>(particleClass, Location, FRotator::ZeroRotator);
+	}
 }
 
 
@@ -99,4 +127,18 @@ bool AEntity::AddEffect(Effect value, float strength = 1.0f, float duration = 1.
 }
 void AEntity::RemoveEffect(Effect value) {
 	effect = ToEnum<Effect>(ToInt(effect) & ~ToInt(value));
+}
+
+void AEntity::UpdateEffect() {
+	for (uint8 i = 0; i < ToInt(Effect::Max); i++) {
+	}
+}
+
+void AEntity::UpdateSprite() {
+}
+
+
+
+FVector AEntity::GetFootLocation() {
+	return GetActorLocation() + FVector(-hitboxHeight * 0.5f, 0.0f, -hitboxHeight * 0.5f + 64.0f);
 }

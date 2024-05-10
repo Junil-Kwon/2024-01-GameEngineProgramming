@@ -42,24 +42,37 @@ AIndicator::AIndicator() {
 void AIndicator::BeginPlay() {
 	Super::BeginPlay();
 	
+	SetWidth(16);
+	SetRatio( 1);
 	mesh0Component->SetScalarParameterValueOnMaterials(TEXT("Index"), 0);
 	mesh1Component->SetScalarParameterValueOnMaterials(TEXT("Index"), 0);
 	mesh2Component->SetScalarParameterValueOnMaterials(TEXT("Index"), 4);
 	mesh3Component->SetScalarParameterValueOnMaterials(TEXT("Index"), 8);
-
-	mesh0Component->SetRelativeLocation(FVector(0.0f, size * -2.0f - 2.0f, 0.0f));
-	mesh1Component->SetRelativeLocation(FVector(0.0f, size *  2.0f + 2.0f, 0.0f));
-	mesh2Component->SetRelativeScale3D(FVector(size * 0.04f, 1.28f, 1.28f));
-	mesh3Component->SetRelativeScale3D(FVector(size * 0.04f, 1.28f, 1.28f));
-}
-
-FVector HexToColor(FString HexString) {
-	FColor color = FColor::FromHex(HexString);
-	UE_LOG(LogTemp, Log, TEXT("%f\t%f\t%f"), color.R / 255.0f, color.G / 255.0f, color.B / 255.0f);
-	return FVector(color.R / 255.0f, color.G / 255.0f, color.B / 255.0f);
+	SetGroup(Group::None);
 }
 
 void AIndicator::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 }
 
+void AIndicator::SetWidth(float value) {
+	width = value;
+	mesh0Component->SetRelativeLocation(FVector(0.0f, width * -2.0f - 2.0f, 0.0f));
+	mesh1Component->SetRelativeLocation(FVector(0.0f, width *  2.0f + 2.0f, 0.0f));
+	mesh2Component->SetRelativeScale3D(FVector(width * 0.04f, 1.28f, 1.28f));
+	mesh3Component->SetRelativeScale3D(FVector(width * 0.04f, 1.28f, 1.28f));
+}
+
+void AIndicator::SetRatio(float value) {
+	mesh3Component->SetRelativeLocation(FVector(-0.5f, width * (1 - value) * -2.0f, 0.5f));
+	mesh3Component->SetRelativeScale3D(FVector(width * value * 0.04f, 1.28f, 1.28f));
+}
+
+void AIndicator::SetGroup(Group value) {
+	FVector color = FVector::OneVector;
+	switch (value) {
+	case Group::Friendly: color = FVector(0.031896, 0.332452, 0.152926); break;
+	case Group::Enemy:    color = FVector(0.332452, 0.044270, 0.064128); break;
+	}
+	mesh3Component->SetVectorParameterValueOnMaterials(TEXT("Color"), color);
+}

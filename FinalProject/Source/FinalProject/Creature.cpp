@@ -1,48 +1,44 @@
 #include "Creature.h"
 #include "Indicator.h"
+#include "Components/CapsuleComponent.h"
 
 
 
 ACreature::ACreature() {
+	GetCapsuleComponent()->InitCapsuleSize(36.0f, 60.0f);
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Creature"));
+	
 	effectStrength.Init(0.0f, static_cast<int32>(Effect::Max));
 	effectDuration.Init(0.0f, static_cast<int32>(Effect::Max));
 
 	health = healthMax;
-
-	static ConstructorHelpers::FClassFinder<AIndicator> IndicatorClass(TEXT("/Game/Blueprints/BP_Indicator.BP_Indicator_C"));
-	if (IndicatorClass.Succeeded()) indicator = IndicatorClass.Class;
 }
 
 void ACreature::BeginPlay() {
 	Super::BeginPlay();
 
-	if (indicator != nullptr) {
-		AIndicator* Indicator = GetWorld()->SpawnActor<AIndicator>(indicator, FVector::ZeroVector, FRotator::ZeroRotator);
-		if (Indicator != nullptr) {
-			Indicator->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-			Indicator->SetActorRelativeLocation(FVector(0.0f, 0.0f, 128.0f));
-		}
-	}
+	indicator = GetWorld()->SpawnActor<AIndicator>(indicatorClass, FVector::ZeroVector, FRotator::ZeroRotator);
+	indicator->SetActorRelativeLocation(FVector(0.0f, 0.0f, 128.0f));
+	indicator->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+	indicator->SetWidth(indicatorWidth);
+	indicator->SetGroup(group);
 }
 
 void ACreature::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 }
 
-
-
-void ACreature::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
+bool ACreature::operator==(const ACreature& other) const {
+	return this == &other;
 }
 
 
 
 float ACreature::GetHealth() { return health; }
-void  ACreature::SetHealth(float value) { health = value; }
+void  ACreature::SetHealth(float value) { health = value; indicator->SetRatio(health / healthMax); }
 void  ACreature::AdjustHealth(float value) {
 	health = health + value < 0 ? 0 : (healthMax < health + value ? healthMax : health + value);
 	if (health == 0) Die();
 }
-
 void ACreature::Die() {
 }

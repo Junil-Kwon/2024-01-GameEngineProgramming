@@ -70,19 +70,21 @@ protected:
 
 public:	
 	virtual void Tick(float DeltaTime) override;
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 private:
 	const float MaxFallSpeed = 1024.0f;
+	bool  isFalling = false;
+	float fallSpeed = 0.0f;
 
+
+
+protected:
+	UPROPERTY(VisibleAnywhere) TSubclassOf<class AParticle> particleClass;
+	UPROPERTY(VisibleAnywhere) TSubclassOf<class AIndicator> indicatorClass;
 public:
-	bool HasTag(Tag value);
-	virtual void AddTag(Tag value);
-	virtual void RemoveTag(Tag value);
+	template <typename T> T* Spawn(FVector Location);
 
-	bool HasEffect(Effect value);
-	virtual bool AddEffect(Effect value, float strength, float duration);
-	virtual void RemoveEffect(Effect value);
+
 
 protected:
 	UPROPERTY(EditAnywhere) class UStaticMeshComponent* shadowComponent;
@@ -91,7 +93,33 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Entity") State  state = State::None;
 	UPROPERTY(EditAnywhere, Category = "Entity") Group  group = Group::None;
 	UPROPERTY(EditAnywhere, Category = "Entity") Tag    tag = Tag::None;
-	UPROPERTY(EditAnywhere, Category = "Entity") Effect effect = Effect::None;
+	UPROPERTY(EditAnywhere, Category = "Entity") Effect effect         = Effect::None;
 	UPROPERTY(EditAnywhere, Category = "Entity") Effect effectImmunity = Effect::None;
 	UPROPERTY(EditAnywhere, Category = "Entity") float  speed = 0.0f;
+
+public:
+	bool HasTag(Tag value);
+	virtual void AddTag(Tag value);
+	virtual void RemoveTag(Tag value);
+
+protected:
+	TArray<float> effectStrength;
+	TArray<float> effectDuration;
+public:
+	bool HasEffect(Effect value);
+	virtual bool AddEffect(Effect value, float strength, float duration);
+	virtual void RemoveEffect(Effect value);
+protected:
+	virtual void UpdateEffect();
+
+protected:
+	int32 spriteIndex = 0;
+	float spriteDelay = 0.0f;
+	bool  spriteXflip = false;
+	virtual void UpdateSprite();
+
+protected:
+	float hitboxRadius;
+	float hitboxHeight;
+	FVector GetFootLocation();
 };

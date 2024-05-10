@@ -18,23 +18,22 @@ protected:
 
 public:
 	virtual void Tick(float DeltaTime) override;
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	bool operator==(const ACreature& other) const;
 
-public:
+
+
+protected:
+	UPROPERTY(VisibleAnywhere) class AIndicator* indicator;
+	UPROPERTY(EditAnywhere, Category = "Creature") float indicatorWidth = 24.0f;
+
 	UPROPERTY(EditAnywhere, Category = "Creature") float healthMax = 0.0f;
-	UPROPERTY(EditAnywhere, Category = "Creature") float damage = 0.0f;
-	UPROPERTY() TSubclassOf<class AIndicator> indicator;
+	UPROPERTY(EditAnywhere, Category = "Creature") float damage    = 0.0f;
 
+protected:
+	float health;
+public:
 	float GetHealth();
 	void  SetHealth(float value);
 	void  AdjustHealth(float value);
-
-protected:
 	virtual void Die();
-
-private:
-	TArray<float> effectStrength;
-	TArray<float> effectDuration;
-
-	float health;
 };
