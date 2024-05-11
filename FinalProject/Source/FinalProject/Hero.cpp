@@ -9,11 +9,11 @@
 
 AHero::AHero() {
 	springArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
-	springArmComponent->SetRelativeLocation(FVector(-4000.0f, 0.0f, 4400.0f));
+	springArmComponent->SetWorldLocation(FVector(-4000.0f, 0.0f, 4400.0f));
 	springArmComponent->SetupAttachment(RootComponent);
 
 	cameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
-	cameraComponent->SetRelativeRotation(FRotator(-45.590382f, 0.0f, 0.0f));
+	cameraComponent->SetWorldRotation(FRotator(-45.590382f, 0.0f, 0.0f));
 	cameraComponent->PostProcessSettings.BloomIntensity = 0.0f;
 	cameraComponent->FieldOfView = 15.0f;
 	cameraComponent->SetupAttachment(springArmComponent);

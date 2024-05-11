@@ -72,6 +72,8 @@ public:
 protected:
 	virtual void Die() override;
 
+
+
 	// Camera
 protected:
 	UPROPERTY(VisibleAnywhere) class USpringArmComponent* springArmComponent;

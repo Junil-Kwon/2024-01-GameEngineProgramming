@@ -12,29 +12,29 @@ AIndicator::AIndicator() {
 	SetRootComponent(sphereComponent);
 
 	sprite0Component = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh0Component"));
-	sprite0Component->SetRelativeLocation(FVector(0.0f, -64.0f - 2.0f, 0.0f));
-	sprite0Component->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
-	sprite0Component->SetRelativeScale3D(FVector(0.64f, 1.28f, 1.28f));
+	sprite0Component->SetWorldLocation(FVector(0.0f, -64.0f - 2.0f, 0.0f));
+	sprite0Component->SetWorldRotation(FRotator(0.0f, 90.0f, 41.409618f));
+	sprite0Component->SetWorldScale3D(FVector(0.64f, 1.28f, 1.28f));
 	sprite0Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	sprite0Component->SetupAttachment(sphereComponent);
 
 	sprite1Component = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh1Component"));
-	sprite1Component->SetRelativeLocation(FVector(0.0f,  64.0f + 2.0f, 0.0f));
-	sprite1Component->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
-	sprite1Component->SetRelativeScale3D(FVector(0.64f, 1.28f, 1.28f));
+	sprite1Component->SetWorldLocation(FVector(0.0f,  64.0f + 2.0f, 0.0f));
+	sprite1Component->SetWorldRotation(FRotator(0.0f, 90.0f, 41.409618f));
+	sprite1Component->SetWorldScale3D(FVector(0.64f, 1.28f, 1.28f));
 	sprite1Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	sprite1Component->SetupAttachment(sphereComponent);
 
 	sprite2Component = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh2Component"));
-	sprite2Component->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
-	sprite2Component->SetRelativeScale3D(FVector(1.28f, 1.28f, 1.28f));
+	sprite2Component->SetWorldRotation(FRotator(0.0f, 90.0f, 41.409618f));
+	sprite2Component->SetWorldScale3D(FVector(1.28f, 1.28f, 1.28f));
 	sprite2Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	sprite2Component->SetupAttachment(sphereComponent);
 
 	sprite3Component = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh3Component"));
-	sprite3Component->SetRelativeLocation(FVector(-0.5f, 0.0f, 0.5f));
-	sprite3Component->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
-	sprite3Component->SetRelativeScale3D(FVector(1.28f, 1.28f, 1.28f));
+	sprite3Component->SetWorldLocation(FVector(-0.5f, 0.0f, 0.5f));
+	sprite3Component->SetWorldRotation(FRotator(0.0f, 90.0f, 41.409618f));
+	sprite3Component->SetWorldScale3D(FVector(1.28f, 1.28f, 1.28f));
 	sprite3Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	sprite3Component->SetupAttachment(sphereComponent);
 }

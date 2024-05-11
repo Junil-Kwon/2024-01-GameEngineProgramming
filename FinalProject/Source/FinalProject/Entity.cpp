@@ -23,16 +23,12 @@ FVector  RotatorToVector(FRotator value) {
 
 AEntity::AEntity() {
  	PrimaryActorTick.bCanEverTick = true;
+	GetClass(Identifier::None);
 
-	static ConstructorHelpers::FClassFinder <AIndicator> Indicator(TEXT("/Game/Blueprints/BP_Indicator.BP_Indicator_C"));
-	prefab.Add(TTuple<Identifier, UClass*>(Identifier::Indicator, Indicator.Class));
-	static ConstructorHelpers::FClassFinder <AParticle> Dust(TEXT("/Game/Blueprints/BP_Particle_Dust.BP_Particle_Dust_C"));
-	prefab.Add(TTuple<Identifier, UClass*>(Identifier::Dust, Dust.Class));
-
-
-
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> Sprite(TEXT("/Engine/BasicShapes/Plane.Plane"));
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> Shadow(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+	const TCHAR* Plane  = TEXT("/Engine/BasicShapes/Plane.Plane"  );
+	const TCHAR* Sphere = TEXT("/Engine/BasicShapes/Sphere.Sphere");
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> Sprite(Plane );
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> Shadow(Sphere);
 	sprite = Sprite.Object;
 	shadow = Shadow.Object;
 
@@ -40,17 +36,15 @@ AEntity::AEntity() {
 
 	spriteComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	spriteComponent->SetStaticMesh(sprite);
-	spriteComponent->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
-	spriteComponent->SetRelativeScale3D(FVector(1.28f, 1.28f, 1.28f));
+	spriteComponent->SetWorldRotation(FRotator(0.0f, 90.0f, 41.409618f));
+	spriteComponent->SetWorldScale3D(FVector(1.28f, 1.28f, 1.28f));
 	spriteComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	spriteComponent->SetupAttachment(RootComponent);
 
 	shadowComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShadowComponent"));
 	shadowComponent->SetStaticMesh(shadow);
-	shadowComponent->SetRelativeScale3D(FVector(0.5f, 0.5f, 0.5f));
 	shadowComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	shadowComponent->bCastHiddenShadow = true;
-	shadowComponent->bHiddenInGame = true;
+	shadowComponent->SetVisibility(false);
 	shadowComponent->SetupAttachment(RootComponent);
 
 	GetCharacterMovement()->JumpZVelocity = 800.0f;
@@ -64,13 +58,19 @@ AEntity::AEntity() {
 void AEntity::BeginPlay() {
 	Super::BeginPlay();
 	
-	spriteScale = spriteComponent->GetRelativeScale3D().X / 1.28f;
-
 	hitboxRadius = GetCapsuleComponent()->GetUnscaledCapsuleRadius();
 	hitboxHeight = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() * 2.0f;
 	ECollisionEnabled::Type type = ECollisionEnabled::QueryAndPhysics;
 	if (!hitboxRadius || !hitboxHeight) ECollisionEnabled::QueryOnly;
 	GetCapsuleComponent()->SetCollisionEnabled(type);
+
+	spriteScale = spriteComponent->GetRelativeScale3D().X / 1.28f;
+
+	FVector scale = FVector(hitboxRadius * 0.02f, hitboxRadius * 0.02f, hitboxHeight * 0.01f);
+	shadowComponent->SetWorldScale3D(scale);
+	shadowComponent->SetVisibility(true);
+	shadowComponent->bCastHiddenShadow = true;
+	shadowComponent->bHiddenInGame = true;
 
 	State stateTemp = state;
 	state = State::Healthy;
@@ -136,11 +136,27 @@ void AEntity::Tick(float DeltaTime) {
 
 
 
-AActor* AEntity::Spawn(Identifier value, FVector location = FVector::ZeroVector) {
-	for (int32 i = 0; i < prefab.Num(); i++) if (prefab[i].Key == value) {
-		return GetWorld()->SpawnActor<AActor>(prefab[i].Value, location, FRotator::ZeroRotator);
+UClass* AEntity::GetClass(Identifier value) {
+	static TArray<TTuple<Identifier, UClass*>> prefab;
+	static bool initialized = false;
+	if (!initialized) {
+		initialized = true;
+
+		const TCHAR* BP_Indicator = TEXT("/Game/Blueprints/BP_Indicator.BP_Indicator_C");
+		static ConstructorHelpers::FClassFinder <AIndicator> Indicator(BP_Indicator);
+		prefab.Add(TTuple<Identifier, UClass*>(Identifier::Indicator, Indicator.Class));
+
+		const TCHAR* BP_Particle_Dust = TEXT("/Game/Blueprints/BP_Particle_Dust.BP_Particle_Dust_C");
+		static ConstructorHelpers::FClassFinder <AParticle> Dust(BP_Particle_Dust);
+		prefab.Add(TTuple<Identifier, UClass*>(Identifier::Dust, Dust.Class));
+
+		return nullptr;
 	}
+	for (int32 i = 0; i < prefab.Num(); i++) if (prefab[i].Key == value) return prefab[i].Value;
 	return nullptr;
+}
+AActor* AEntity::Spawn(Identifier value, FVector location = FVector::ZeroVector) {
+	return GetWorld()->SpawnActor<AActor>(GetClass(value), location, FRotator::ZeroRotator);
 }
 
 

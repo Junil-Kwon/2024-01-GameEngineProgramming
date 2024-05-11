@@ -14,8 +14,8 @@ AParticle::AParticle() {
 	SetRootComponent(hitboxComponent);
 
 	spriteComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpriteComponent"));
-	spriteComponent->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
-	spriteComponent->SetRelativeScale3D(FVector(1.28f, 1.28f, 1.28f));
+	spriteComponent->SetWorldRotation(FRotator(0.0f, 90.0f, 41.409618f));
+	spriteComponent->SetWorldScale3D(FVector(1.28f, 1.28f, 1.28f));
 	spriteComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	spriteComponent->SetupAttachment(hitboxComponent);
 }
@@ -25,13 +25,13 @@ AParticle::AParticle() {
 void AParticle::BeginPlay() {
 	Super::BeginPlay();
 
-	spriteScale = spriteComponent->GetRelativeScale3D().X / 1.28f;
-
 	hitboxRadius = hitboxComponent->GetUnscaledCapsuleRadius();
 	hitboxHeight = hitboxComponent->GetUnscaledCapsuleHalfHeight() * 2.0f;
 	ECollisionEnabled::Type type = ECollisionEnabled::QueryAndPhysics;
 	if (!hitboxRadius || !hitboxHeight) ECollisionEnabled::QueryOnly;
 	hitboxComponent->SetCollisionEnabled(type);
+
+	spriteScale = spriteComponent->GetRelativeScale3D().X / 1.28f;
 }
 
 
@@ -106,10 +106,9 @@ void AParticle::UpdateSprite(float DeltaTime) {
 
 	int32 i = 0;
 	switch (identifier) {
-		case Identifier::Dust: i = 1 + static_cast<int32>(spriteDelay * 10); if (5 < i) i = 5; break;
+	case Identifier::Dust: i = 1 + static_cast<int32>(spriteDelay * 10); if (5 < i) i = 5; break;
 	}
 	if (spriteIndex == i) return;
 	spriteIndex = i;
 	spriteComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), spriteIndex);
-	//spriteComponent->SetScalarParameterValueOnMaterials(TEXT("XFlip"), spriteXflip ? 1.0f : 0.0f);
 }

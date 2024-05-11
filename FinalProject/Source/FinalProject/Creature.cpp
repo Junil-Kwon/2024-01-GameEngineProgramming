@@ -8,7 +8,7 @@
 
 ACreature::ACreature() {
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Creature"));
-	GetCapsuleComponent()->InitCapsuleSize(36.0f, 60.0f);
+	GetCapsuleComponent()->InitCapsuleSize(24.0f, 50.0f);
 
 	sensorComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SensorComponent"));
 	sensorComponent->SetCollisionProfileName(TEXT("Sensor"));

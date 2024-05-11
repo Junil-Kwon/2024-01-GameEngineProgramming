@@ -9,9 +9,18 @@
 UENUM(BlueprintType)
 enum class Identifier : uint8 {
 	None			= 0,
-	Indicator		,
+
+	// Creatures
 	Hero			,
+
+	// Objects
+
+	// Indicator
+	Indicator		,
+
+	// Particles
 	Dust			,
+
 	Max				UMETA(Hidden),
 };
 
@@ -86,7 +95,7 @@ public:
 	// Identifier
 private:
 	UPROPERTY(EditAnywhere) Identifier identifier = Identifier::None;
-	TArray<TTuple<Identifier, UClass*>> prefab;
+	UClass* GetClass(Identifier value);
 public:
 	AActor* Spawn(Identifier value, FVector location);
 
@@ -122,7 +131,7 @@ protected:
 	// Shadow
 private:
 	UPROPERTY() class UStaticMesh* shadow;
-	UPROPERTY(EditAnywhere) class UStaticMeshComponent* shadowComponent;
+	UPROPERTY() class UStaticMeshComponent* shadowComponent;
 
 
 
