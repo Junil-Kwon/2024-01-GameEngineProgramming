@@ -13,7 +13,6 @@ class FINALPROJECT_API AIndicator : public AActor {
 	
 public:
 	AIndicator();
-
 protected:
 	virtual void BeginPlay() override;
 
@@ -22,15 +21,19 @@ public:
 
 
 
-protected:
-	UPROPERTY(EditAnywhere) class UBoxComponent* boxComponent;
-	UPROPERTY(EditAnywhere) class UStaticMeshComponent* mesh0Component;
-	UPROPERTY(EditAnywhere) class UStaticMeshComponent* mesh1Component;
-	UPROPERTY(EditAnywhere) class UStaticMeshComponent* mesh2Component;
-	UPROPERTY(EditAnywhere) class UStaticMeshComponent* mesh3Component;
+	// Identifier
+private:
+	UPROPERTY(VisibleAnywhere) Identifier identifier = Identifier::Indicator;
 
-protected:
+	// Sprite
+private:
 	float width = 24.0f;
+protected:
+	UPROPERTY(EditAnywhere) class USphereComponent* sphereComponent;
+	UPROPERTY(EditAnywhere) class UStaticMeshComponent* sprite0Component;
+	UPROPERTY(EditAnywhere) class UStaticMeshComponent* sprite1Component;
+	UPROPERTY(EditAnywhere) class UStaticMeshComponent* sprite2Component;
+	UPROPERTY(EditAnywhere) class UStaticMeshComponent* sprite3Component;
 public:
 	void SetWidth(float value);
 	void SetRatio(float value);

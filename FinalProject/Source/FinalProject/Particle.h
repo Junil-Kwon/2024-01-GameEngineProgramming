@@ -1,17 +1,9 @@
 #pragma once
 
+#include "Entity.h"
 #include "CoreMinimal.h"
 #include "Entity.h"
 #include "Particle.generated.h"
-
-
-
-UENUM(BlueprintType)
-enum class Identifier : uint8 {
-	None			= 0,
-	Dust			,
-	Max				UMETA(Hidden),
-};
 
 
 
@@ -21,7 +13,6 @@ class FINALPROJECT_API AParticle : public AActor {
 	
 public:
 	AParticle();
-
 protected:
 	virtual	void BeginPlay() override;
 
@@ -30,14 +21,36 @@ public:
 
 
 
-protected:
-	UPROPERTY(EditAnywhere) class UBoxComponent* boxComponent;
-	UPROPERTY(EditAnywhere) class UStaticMeshComponent* meshComponent;
-
-protected:
+	// Identifier
+private:
 	UPROPERTY(EditAnywhere) Identifier identifier = Identifier::None;
+
+	// Hitbox
+private:
+	UPROPERTY(EditAnywhere) class UCapsuleComponent* hitboxComponent;
+	float hitboxRadius = 0.0f;
+	float hitboxHeight = 0.0f;
+public:
+	float GetHitboxRadius();
+	float GetHitboxHeight();
+	bool  SetHitboxRadius(float radius);
+	bool  SetHitboxHeight(float height);
+	bool  SetHitbox(float radius, float height);
+	FVector GetFootLocation();
+
+	// Sprite
+private:
+	UPROPERTY(EditAnywhere) class UStaticMeshComponent* spriteComponent;
 	int32 spriteIndex = 0;
-	float spriteDelay = 0.0f;
+	float spriteScale = 1.0f;
 	bool  spriteXflip = false;
-	void UpdateSprite(float DeltaTime);
+protected:
+	float spriteDelay = 0.0f;
+	int32 GetSpriteIndex();
+	float GetSpriteScale();
+	bool  GetSpriteXFlip();
+	bool  SetSpriteIndex(int32 value);
+	bool  SetSpriteScale(float value);
+	bool  SetSpriteXFlip(bool  value);
+	virtual void  UpdateSprite(float DeltaTime);
 };

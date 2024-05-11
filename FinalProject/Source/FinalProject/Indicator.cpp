@@ -1,5 +1,5 @@
 #include "Indicator.h"
-#include "Components/BoxComponent.h"
+#include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 
 
@@ -7,65 +7,71 @@
 AIndicator::AIndicator() {
  	PrimaryActorTick.bCanEverTick = true;
 
-	boxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxComponent"));
-	boxComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	SetRootComponent(boxComponent);
+	sphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
+	sphereComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SetRootComponent(sphereComponent);
 
-	mesh0Component = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh0Component"));
-	mesh0Component->SetRelativeLocation(FVector(0.0f, -64.0f - 2.0f, 0.0f));
-	mesh0Component->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
-	mesh0Component->SetRelativeScale3D(FVector(0.64f, 1.28f, 1.28f));
-	mesh0Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	mesh0Component->SetupAttachment(boxComponent);
+	sprite0Component = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh0Component"));
+	sprite0Component->SetRelativeLocation(FVector(0.0f, -64.0f - 2.0f, 0.0f));
+	sprite0Component->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
+	sprite0Component->SetRelativeScale3D(FVector(0.64f, 1.28f, 1.28f));
+	sprite0Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	sprite0Component->SetupAttachment(sphereComponent);
 
-	mesh1Component = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh1Component"));
-	mesh1Component->SetRelativeLocation(FVector(0.0f,  64.0f + 2.0f, 0.0f));
-	mesh1Component->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
-	mesh1Component->SetRelativeScale3D(FVector(0.64f, 1.28f, 1.28f));
-	mesh1Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	mesh1Component->SetupAttachment(boxComponent);
+	sprite1Component = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh1Component"));
+	sprite1Component->SetRelativeLocation(FVector(0.0f,  64.0f + 2.0f, 0.0f));
+	sprite1Component->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
+	sprite1Component->SetRelativeScale3D(FVector(0.64f, 1.28f, 1.28f));
+	sprite1Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	sprite1Component->SetupAttachment(sphereComponent);
 
-	mesh2Component = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh2Component"));
-	mesh2Component->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
-	mesh2Component->SetRelativeScale3D(FVector(1.28f, 1.28f, 1.28f));
-	mesh2Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	mesh2Component->SetupAttachment(boxComponent);
+	sprite2Component = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh2Component"));
+	sprite2Component->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
+	sprite2Component->SetRelativeScale3D(FVector(1.28f, 1.28f, 1.28f));
+	sprite2Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	sprite2Component->SetupAttachment(sphereComponent);
 
-	mesh3Component = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh3Component"));
-	mesh3Component->SetRelativeLocation(FVector(-0.5f, 0.0f, 0.5f));
-	mesh3Component->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
-	mesh3Component->SetRelativeScale3D(FVector(1.28f, 1.28f, 1.28f));
-	mesh3Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	mesh3Component->SetupAttachment(boxComponent);
+	sprite3Component = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh3Component"));
+	sprite3Component->SetRelativeLocation(FVector(-0.5f, 0.0f, 0.5f));
+	sprite3Component->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
+	sprite3Component->SetRelativeScale3D(FVector(1.28f, 1.28f, 1.28f));
+	sprite3Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	sprite3Component->SetupAttachment(sphereComponent);
 }
+
+
 
 void AIndicator::BeginPlay() {
 	Super::BeginPlay();
 	
 	SetWidth(16);
 	SetRatio( 1);
-	mesh0Component->SetScalarParameterValueOnMaterials(TEXT("Index"), 0);
-	mesh1Component->SetScalarParameterValueOnMaterials(TEXT("Index"), 0);
-	mesh2Component->SetScalarParameterValueOnMaterials(TEXT("Index"), 4);
-	mesh3Component->SetScalarParameterValueOnMaterials(TEXT("Index"), 8);
+	sprite0Component->SetScalarParameterValueOnMaterials(TEXT("Index"), 0);
+	sprite1Component->SetScalarParameterValueOnMaterials(TEXT("Index"), 0);
+	sprite2Component->SetScalarParameterValueOnMaterials(TEXT("Index"), 4);
+	sprite3Component->SetScalarParameterValueOnMaterials(TEXT("Index"), 8);
 	SetGroup(Group::None);
 }
+
+
 
 void AIndicator::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 }
 
+
+
 void AIndicator::SetWidth(float value) {
 	width = value;
-	mesh0Component->SetRelativeLocation(FVector(0.0f, width * -2.0f - 2.0f, 0.0f));
-	mesh1Component->SetRelativeLocation(FVector(0.0f, width *  2.0f + 2.0f, 0.0f));
-	mesh2Component->SetRelativeScale3D(FVector(width * 0.04f, 1.28f, 1.28f));
-	mesh3Component->SetRelativeScale3D(FVector(width * 0.04f, 1.28f, 1.28f));
+	sprite0Component->SetRelativeLocation(FVector(0.0f, width * -2.0f - 2.0f, 0.0f));
+	sprite1Component->SetRelativeLocation(FVector(0.0f, width *  2.0f + 2.0f, 0.0f));
+	sprite2Component->SetRelativeScale3D(FVector(width * 0.04f, 1.28f, 1.28f));
+	sprite3Component->SetRelativeScale3D(FVector(width * 0.04f, 1.28f, 1.28f));
 }
 
 void AIndicator::SetRatio(float value) {
-	mesh3Component->SetRelativeLocation(FVector(-0.5f, width * (1 - value) * -2.0f, 0.5f));
-	mesh3Component->SetRelativeScale3D(FVector(width * value * 0.04f, 1.28f, 1.28f));
+	sprite3Component->SetRelativeLocation(FVector(-0.5f, width * (1 - value) * -2.0f, 0.5f));
+	sprite3Component->SetRelativeScale3D(FVector(width * value * 0.04f, 1.28f, 1.28f));
 }
 
 void AIndicator::SetGroup(Group value) {
@@ -74,5 +80,5 @@ void AIndicator::SetGroup(Group value) {
 	case Group::Friendly: color = FVector(0.031896, 0.332452, 0.152926); break;
 	case Group::Enemy:    color = FVector(0.332452, 0.044270, 0.064128); break;
 	}
-	mesh3Component->SetVectorParameterValueOnMaterials(TEXT("Color"), color);
+	sprite3Component->SetVectorParameterValueOnMaterials(TEXT("Color"), color);
 }

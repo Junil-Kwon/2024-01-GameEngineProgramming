@@ -1,7 +1,6 @@
 #include "Hero.h"
 #include "Particle.h"
 #include "Components/ArrowComponent.h"
-#include "Components/SphereComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -9,11 +8,6 @@
 
 
 AHero::AHero() {
-	sensorComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SensorComponent"));
-	sensorComponent->InitSphereRadius(200.0f);
-	sensorComponent->SetCollisionProfileName(TEXT("Sensor"));
-	sensorComponent->SetupAttachment(RootComponent);
-
 	springArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
 	springArmComponent->SetRelativeLocation(FVector(-4000.0f, 0.0f, 4400.0f));
 	springArmComponent->SetupAttachment(RootComponent);
@@ -25,19 +19,148 @@ AHero::AHero() {
 	cameraComponent->SetupAttachment(springArmComponent);
 }
 
+
+
 void AHero::BeginPlay() {
 	Super::BeginPlay();
-
-	sensorComponent->OnComponentBeginOverlap.AddDynamic(this, &AHero::OnBeginSensed);
-	sensorComponent->OnComponentEndOverlap  .AddDynamic(this, &AHero::OnEndSensed);
 }
+
+
 
 void AHero::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 	UpdateInput(DeltaTime);
-
-	//UE_LOG(LogTemp, Log, TEXT("%d"), sensed.Num());
 }
+
+
+
+void AHero::OnBeginSensed(
+	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* PtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+	Super::OnBeginSensed(OverlappedComponent, OtherActor, PtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+
+	ACreature* creature = Cast<ACreature>(OtherActor);
+	if (creature == nullptr) return;
+	if (!sensed.Contains(creature) && creature->HasTag(Tag::Interactability)) {
+		sensed.Add(creature);
+		if (selected == nullptr) Select(creature);
+	}
+}
+void AHero::OnEndSensed(
+	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+	Super::OnEndSensed(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
+
+	ACreature* creature = Cast<ACreature>(OtherActor);
+	if (creature == nullptr) return;
+	if (sensed.Contains(creature)) {
+		sensed.Remove(creature);
+		if (selected == creature) Select(nullptr);
+	}
+}
+
+void AHero::Select(ACreature* creature) {
+	if (selected != nullptr) {
+		//selected->indicator->
+		selected = nullptr;
+	}
+	if (creature != nullptr) {
+		selected = creature;
+		//selected->indicator->
+	}
+}
+void AHero::UpdateSensor(float DeltaTime) {
+	Super::UpdateSensor(DeltaTime);
+	if (sensed.Num() == 0) return;
+
+	float distance = GetSensorRange();
+	for (int32 i = sensed.Num() - 1; -1 < i; i--) {
+		if (sensed[i] == nullptr) {
+			sensed.RemoveAt(i);
+			continue;
+		}
+		float s = FVector::Dist(GetActorLocation(), sensed[i]->GetActorLocation());
+		if (s < distance) {
+			if (selected != sensed[i]) Select(sensed[i]);
+			distance = s;
+		}
+	}
+	if (!selected->HasTag(Tag::Interactability)) {
+		sensed.Remove(selected);
+		Select(nullptr);
+	}
+}
+
+
+
+void AHero::UpdateSprite(float DeltaTime) {
+	Super::UpdateSprite(DeltaTime);
+
+	if (sprite != spritePrev) {
+		spritePrev = sprite;
+		spriteDelay = 0.0f;
+		switch (sprite) {
+		case Sprite::Idle:   SetSpriteIndex( 0); break;
+		case Sprite::Move:   SetSpriteIndex( 4); break;
+		case Sprite::Jump0:  SetSpriteIndex(10); break;
+		case Sprite::Jump1:  SetSpriteIndex(11); break;
+		case Sprite::Jump2:  SetSpriteIndex(13); break;
+		case Sprite::Dodge0: SetSpriteIndex(14); break;
+		case Sprite::Dodge1: SetSpriteIndex(16); break;
+		case Sprite::Defeat: SetSpriteIndex(20); break;
+		}
+	}
+	else {
+		int32 i = 0;
+		switch (sprite) {
+			case Sprite::Idle:   i =  0 + static_cast<int32>(spriteDelay *  2) % 4; break;
+			case Sprite::Move:   i =  4 + static_cast<int32>(spriteDelay * 10) % 6; break;
+			case Sprite::Jump0:  i = 10 + static_cast<int32>(spriteDelay * 10); if (10 < i) i = 10; break;
+			case Sprite::Jump1:  i = 11 + static_cast<int32>(spriteDelay * 10); if (13 < i) i = 13; break;
+			case Sprite::Jump2:  i = 13 + static_cast<int32>(spriteDelay * 10); if (13 < i) i = 13; break;
+			case Sprite::Dodge0: i = 14 + static_cast<int32>(spriteDelay * 10); if (15 < i) i = 15; break;
+			case Sprite::Dodge1: i = 16 + static_cast<int32>(spriteDelay * 10); if (19 < i) i = 19; break;
+			case Sprite::Defeat: i = 20 + static_cast<int32>(spriteDelay * 10); if (23 < i) i = 23; break;
+		}
+		SetSpriteIndex(i);
+	}
+
+	float y = 0.0f;
+	switch (sprite) {
+		case Sprite::Move:   y = direction.Y; break;
+		case Sprite::Dodge0: y = RotatorToVector(GetArrowComponent()->GetRelativeRotation()).Y; break;
+	}
+	if (y != 0 && GetSpriteXFlip() != (y < 0.0f)) SetSpriteXFlip(!GetSpriteXFlip());
+}
+
+
+
+void AHero::Die() {
+}
+
+
+
+void AHero::Up    (bool pressed) {
+	input[(uint8)Input::Up    ] = pressed;
+	direction.X = pressed ?  1.0f : input[(uint8)Input::Down ] ? -1.0f : 0.0f;
+}
+void AHero::Down  (bool pressed) {
+	input[(uint8)Input::Down  ] = pressed;
+	direction.X = pressed ? -1.0f : input[(uint8)Input::Up   ] ?  1.0f : 0.0f;
+}
+void AHero::Left  (bool pressed) {
+	input[(uint8)Input::Left  ] = pressed;
+	direction.Y = pressed ? -1.0f : input[(uint8)Input::Right] ?  1.0f : 0.0f;
+}
+void AHero::Right (bool pressed) {
+	input[(uint8)Input::Right ] = pressed;
+	direction.Y = pressed ?  1.0f : input[(uint8)Input::Left ] ? -1.0f : 0.0f;
+}
+void AHero::Jump (bool pressed) { input[(uint8)Input::Jump ] = pressed; }
+void AHero::Dodge(bool pressed) { input[(uint8)Input::Dodge] = pressed; }
+void AHero::Act  (bool pressed) { input[(uint8)Input::Act  ] = pressed; }
+void AHero::Swap (bool pressed) { input[(uint8)Input::Swap ] = pressed; }
+void AHero::Menu (bool pressed) { input[(uint8)Input::Menu ] = pressed; }
 
 void AHero::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -63,33 +186,10 @@ void AHero::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Menu",  IE_Pressed,  this, &AHero::Menu, true );
 	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Menu",  IE_Released, this, &AHero::Menu, false);
 }
-
-void AHero::Up    (bool pressed) {
-	input[(uint8)Input::Up    ] = pressed;
-	direction.X = pressed ?  1.0f : input[(uint8)Input::Down ] ? -1.0f : 0.0f;
-}
-void AHero::Down  (bool pressed) {
-	input[(uint8)Input::Down  ] = pressed;
-	direction.X = pressed ? -1.0f : input[(uint8)Input::Up   ] ?  1.0f : 0.0f;
-}
-void AHero::Left  (bool pressed) {
-	input[(uint8)Input::Left  ] = pressed;
-	direction.Y = pressed ? -1.0f : input[(uint8)Input::Right] ?  1.0f : 0.0f;
-}
-void AHero::Right (bool pressed) {
-	input[(uint8)Input::Right ] = pressed;
-	direction.Y = pressed ?  1.0f : input[(uint8)Input::Left ] ? -1.0f : 0.0f;
-}
-void AHero::Jump (bool pressed) { input[(uint8)Input::Jump ] = pressed; }
-void AHero::Dodge(bool pressed) { input[(uint8)Input::Dodge] = pressed; }
-void AHero::Act  (bool pressed) { input[(uint8)Input::Act  ] = pressed; }
-void AHero::Swap (bool pressed) { input[(uint8)Input::Swap ] = pressed; }
-void AHero::Menu (bool pressed) { input[(uint8)Input::Menu ] = pressed; }
-
 void AHero::UpdateInput(float DeltaTime) {
 	FVector result = direction;
 	bool condition = false;
-
+	
 	result.Normalize();
 	switch (sprite) {
 		case Sprite::Idle:
@@ -124,7 +224,7 @@ void AHero::UpdateInput(float DeltaTime) {
 		case Sprite::Dodge0:
 			condition = (int32)(spriteDelay * 20) != (int32)((spriteDelay - DeltaTime) * 20);
 			condition &= !GetCharacterMovement()->IsFalling();
-			if (condition) Spawn<AParticle>(GetFootLocation());
+			if (condition) Spawn(Identifier::Dust, GetFootLocation());
 			result = RotatorToVector(GetArrowComponent()->GetRelativeRotation());
 			if (0.0f == spriteDelay) GetCharacterMovement()->MaxWalkSpeed = speed * 3.0f;
 			if (0.2f <= spriteDelay) sprite = Sprite::Dodge1;
@@ -132,7 +232,7 @@ void AHero::UpdateInput(float DeltaTime) {
 		case Sprite::Dodge1:
 			condition = (int32)((spriteDelay + 0.9f) * 5) != (int32)((spriteDelay + 0.9f - DeltaTime) * 5);
 			condition &= !GetCharacterMovement()->IsFalling();
-			if (condition) Spawn<AParticle>(GetFootLocation());
+			if (condition) Spawn(Identifier::Dust, GetFootLocation());
 			result = RotatorToVector(GetArrowComponent()->GetRelativeRotation());
 			if (0.0f == spriteDelay) GetCharacterMovement()->MaxWalkSpeed = speed;
 			if (0.3f <= spriteDelay && input[(uint8)Input::Jump] && !GetCharacterMovement()->IsFalling()) sprite = Sprite::Jump0;
@@ -143,80 +243,4 @@ void AHero::UpdateInput(float DeltaTime) {
 			break;
 	}
 	AddMovementInput(result);
-}
-
-
-
-void AHero::OnBeginSensed(
-	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* PtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
-	ACreature* creature = Cast<ACreature>(OtherActor);
-	if (creature == nullptr) return;
-	if (!sensed.Contains(creature) && creature->HasTag(Tag::Interactability)) {
-		UE_LOG(LogTemp, Log, TEXT("begin"));
-		sensed.Add(creature);
-	}
-}
-void AHero::OnEndSensed(
-	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
-	ACreature* creature = Cast<ACreature>(OtherActor);
-	if (creature == nullptr) return;
-	if (sensed.Contains(creature)) {
-		UE_LOG(LogTemp, Log, TEXT("end"));
-		sensed.Remove(creature);
-	}
-}
-
-
-
-void AHero::UpdateSprite() {
-	Super::UpdateSprite();
-
-	if (sprite != spritePrev) {
-		spritePrev = sprite;
-		spriteDelay = 0.0f;
-		switch (sprite) {
-			case Sprite::Idle:   spriteIndex =  0; break;
-			case Sprite::Move:   spriteIndex =  4; break;
-			case Sprite::Jump0:  spriteIndex = 10; break;
-			case Sprite::Jump1:  spriteIndex = 11; break;
-			case Sprite::Jump2:  spriteIndex = 13; break;
-			case Sprite::Dodge0: spriteIndex = 14; break;
-			case Sprite::Dodge1: spriteIndex = 16; break;
-			case Sprite::Defeat: spriteIndex = 20; break;
-		}
-	}
-	else {
-		int32 i = 0;
-		switch (sprite) {
-			case Sprite::Idle:   i =  0 + static_cast<int32>(spriteDelay *  2) % 4; break;
-			case Sprite::Move:   i =  4 + static_cast<int32>(spriteDelay * 10) % 6; break;
-			case Sprite::Jump0:  i = 10 + static_cast<int32>(spriteDelay * 10); if (10 < i) i = 10; break;
-			case Sprite::Jump1:  i = 11 + static_cast<int32>(spriteDelay * 10); if (13 < i) i = 13; break;
-			case Sprite::Jump2:  i = 13 + static_cast<int32>(spriteDelay * 10); if (13 < i) i = 13; break;
-			case Sprite::Dodge0: i = 14 + static_cast<int32>(spriteDelay * 10); if (15 < i) i = 15; break;
-			case Sprite::Dodge1: i = 16 + static_cast<int32>(spriteDelay * 10); if (19 < i) i = 19; break;
-			case Sprite::Defeat: i = 20 + static_cast<int32>(spriteDelay * 10); if (23 < i) i = 23; break;
-		}
-		if (spriteIndex == i) return;
-		spriteIndex = i;
-	}
-	meshComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), spriteIndex);
-
-	float y = 0.0f;
-	switch (sprite) {
-		case Sprite::Move:   y = direction.Y; break;
-		case Sprite::Dodge0: y = RotatorToVector(GetArrowComponent()->GetRelativeRotation()).Y; break;
-	}
-	if (y != 0 && spriteXflip != (y < 0.0f)) {
-		spriteXflip = y < 0.0f;
-		meshComponent->SetScalarParameterValueOnMaterials(TEXT("XFlip"), spriteXflip ? 1.0f : 0.0f);
-	}
-}
-
-
-
-void AHero::Die() {
-
 }
