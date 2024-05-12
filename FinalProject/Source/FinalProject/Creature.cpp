@@ -8,11 +8,11 @@
 
 ACreature::ACreature() {
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Creature"));
-	GetCapsuleComponent()->InitCapsuleSize(24.0f, 50.0f);
+	GetCapsuleComponent()->InitCapsuleSize(36.0f, 50.0f);
 
 	sensorComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SensorComponent"));
+	sensorComponent->InitSphereRadius(0.0f);
 	sensorComponent->SetCollisionProfileName(TEXT("Sensor"));
-	sensorComponent->InitSphereRadius(200.0f);
 	sensorComponent->SetupAttachment(RootComponent);
 }
 
@@ -23,13 +23,15 @@ void ACreature::BeginPlay() {
 
 	sensorComponent->OnComponentBeginOverlap.AddDynamic(this, &ACreature::OnBeginSensed);
 	sensorComponent->OnComponentEndOverlap  .AddDynamic(this, &ACreature::OnEndSensed);
-	sensorRange = sensorComponent->GetScaledSphereRadius();
+	float sensorRangeTemp = sensorRange;
+	sensorRange = 0.0f;
+	SetSensorRange(sensorRangeTemp);
 
 	indicator = static_cast<AIndicator*>(Spawn(Identifier::Indicator, FVector::ZeroVector));
 	indicator->SetWidth(indicatorWidth);
 	indicator->SetGroup(GetGroup());
-	indicator->SetActorRelativeLocation(FVector(0.0f, 0.0f, GetHitboxHeight() * 0.5f + 80.0f));
 	indicator->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+	indicator->SetActorRelativeLocation(FVector(0.0f, 0.0f, GetHitboxHeight() * 0.5f + 80.0f));
 
 	health = healthMax;
 }
@@ -72,7 +74,7 @@ AIndicator* ACreature::GetIndicator() { return indicator; }
 
 
 float ACreature::GetHealth() { return health; }
-void  ACreature::SetHealth(float value) { health = value; indicator->SetRatio(health / healthMax); }
+void  ACreature::SetHealth(float value) { health = value; indicator->SetHealthRatio(health / healthMax); }
 void  ACreature::AdjustHealth(float value) {
 	health = health + value < 0 ? 0 : (healthMax < health + value ? healthMax : health + value);
 	if (health == 0) Die();

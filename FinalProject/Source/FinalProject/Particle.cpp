@@ -7,15 +7,20 @@
 AParticle::AParticle() {
 	PrimaryActorTick.bCanEverTick = true;
 
+	const TCHAR* Plane = TEXT("/Engine/BasicShapes/Plane.Plane");
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> Sprite(Plane);
+	sprite = Sprite.Object;
+
 	hitboxComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("HitboxComponent"));
-	hitboxComponent->SetCollisionProfileName(TEXT("Projectile"));
 	hitboxComponent->InitCapsuleSize(0.0f, 0.0f);
 	hitboxComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	hitboxComponent->SetCollisionProfileName(TEXT("Projectile"));
 	SetRootComponent(hitboxComponent);
 
 	spriteComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SpriteComponent"));
 	spriteComponent->SetWorldRotation(FRotator(0.0f, 90.0f, 41.409618f));
 	spriteComponent->SetWorldScale3D(FVector(1.28f, 1.28f, 1.28f));
+	spriteComponent->SetStaticMesh(sprite);
 	spriteComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	spriteComponent->SetupAttachment(hitboxComponent);
 }
@@ -27,9 +32,7 @@ void AParticle::BeginPlay() {
 
 	hitboxRadius = hitboxComponent->GetUnscaledCapsuleRadius();
 	hitboxHeight = hitboxComponent->GetUnscaledCapsuleHalfHeight() * 2.0f;
-	ECollisionEnabled::Type type = ECollisionEnabled::QueryAndPhysics;
-	if (!hitboxRadius || !hitboxHeight) ECollisionEnabled::QueryOnly;
-	hitboxComponent->SetCollisionEnabled(type);
+	OnHitboxChanged();
 
 	spriteScale = spriteComponent->GetRelativeScale3D().X / 1.28f;
 }
@@ -43,34 +46,31 @@ void AParticle::Tick(float DeltaTime) {
 
 
 
+void  AParticle::OnHitboxChanged() {
+	hitboxComponent->SetCapsuleSize(hitboxRadius, hitboxHeight * 0.5f);
+	ECollisionEnabled::Type type = ECollisionEnabled::QueryAndPhysics;
+	if (!hitboxRadius || !hitboxHeight) ECollisionEnabled::QueryOnly;
+	hitboxComponent->SetCollisionEnabled(type);
+}
 float AParticle::GetHitboxRadius() { return hitboxRadius; }
 float AParticle::GetHitboxHeight() { return hitboxHeight; }
 bool  AParticle::SetHitboxRadius(float value) {
 	if (hitboxRadius == value) return false;
 	hitboxRadius = value;
-	hitboxComponent->SetCapsuleSize(value, hitboxHeight);
-	ECollisionEnabled::Type type = ECollisionEnabled::QueryAndPhysics;
-	if (!hitboxRadius || !hitboxHeight) ECollisionEnabled::QueryOnly;
-	hitboxComponent->SetCollisionEnabled(type);
+	OnHitboxChanged();
 	return true;
 }
 bool  AParticle::SetHitboxHeight(float value) {
 	if (hitboxHeight == value) return false;
 	hitboxHeight = value;
-	hitboxComponent->SetCapsuleSize(hitboxRadius, value);
-	ECollisionEnabled::Type type = ECollisionEnabled::QueryAndPhysics;
-	if (!hitboxRadius || !hitboxHeight) ECollisionEnabled::QueryOnly;
-	hitboxComponent->SetCollisionEnabled(type);
+	OnHitboxChanged();
 	return true;
 }
 bool  AParticle::SetHitbox(float radius, float height) {
 	if (hitboxRadius == radius && hitboxHeight == height) return false;
 	hitboxRadius = radius;
 	hitboxHeight = height;
-	hitboxComponent->SetCapsuleSize(radius, height);
-	ECollisionEnabled::Type type = ECollisionEnabled::QueryAndPhysics;
-	if (!hitboxRadius || !hitboxHeight) ECollisionEnabled::QueryOnly;
-	hitboxComponent->SetCollisionEnabled(type);
+	OnHitboxChanged();
 	return true;
 }
 FVector AParticle::GetFootLocation() {

@@ -26,8 +26,8 @@ public:
 
 	// Sensor
 private:
-	UPROPERTY(EditAnywhere) class USphereComponent* sensorComponent;
-	float sensorRange;
+	UPROPERTY() class USphereComponent* sensorComponent;
+	UPROPERTY(EditAnywhere) float sensorRange = 200.0f;
 protected:
 	TArray<ACreature*> sensed;
 	ACreature* selected;
@@ -56,7 +56,7 @@ public:
 
 	
 	// Stats
-	UPROPERTY(EditAnywhere) float healthMax = 0.0f;
+	UPROPERTY(EditAnywhere) float healthMax = 1.0f;
 	UPROPERTY(EditAnywhere) float damage = 0.0f;
 
 protected:

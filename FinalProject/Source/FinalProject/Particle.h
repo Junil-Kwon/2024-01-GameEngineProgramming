@@ -30,6 +30,7 @@ private:
 	UPROPERTY(EditAnywhere) class UCapsuleComponent* hitboxComponent;
 	float hitboxRadius = 0.0f;
 	float hitboxHeight = 0.0f;
+	void  OnHitboxChanged();
 public:
 	float GetHitboxRadius();
 	float GetHitboxHeight();
@@ -40,6 +41,7 @@ public:
 
 	// Sprite
 private:
+	UPROPERTY() class UStaticMesh* sprite;
 	UPROPERTY(EditAnywhere) class UStaticMeshComponent* spriteComponent;
 	int32 spriteIndex = 0;
 	float spriteScale = 1.0f;

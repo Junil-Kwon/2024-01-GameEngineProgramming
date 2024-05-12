@@ -35,9 +35,9 @@ AEntity::AEntity() {
 	GetCapsuleComponent()->InitCapsuleSize(50.0f, 50.0f);
 
 	spriteComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
-	spriteComponent->SetStaticMesh(sprite);
 	spriteComponent->SetWorldRotation(FRotator(0.0f, 90.0f, 41.409618f));
 	spriteComponent->SetWorldScale3D(FVector(1.28f, 1.28f, 1.28f));
+	spriteComponent->SetStaticMesh(sprite);
 	spriteComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	spriteComponent->SetupAttachment(RootComponent);
 
@@ -60,14 +60,10 @@ void AEntity::BeginPlay() {
 	
 	hitboxRadius = GetCapsuleComponent()->GetUnscaledCapsuleRadius();
 	hitboxHeight = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() * 2.0f;
-	ECollisionEnabled::Type type = ECollisionEnabled::QueryAndPhysics;
-	if (!hitboxRadius || !hitboxHeight) ECollisionEnabled::QueryOnly;
-	GetCapsuleComponent()->SetCollisionEnabled(type);
+	OnHitboxChanged();
 
 	spriteScale = spriteComponent->GetRelativeScale3D().X / 1.28f;
 
-	FVector scale = FVector(hitboxRadius * 0.02f, hitboxRadius * 0.02f, hitboxHeight * 0.01f);
-	shadowComponent->SetWorldScale3D(scale);
 	shadowComponent->SetVisibility(true);
 	shadowComponent->bCastHiddenShadow = true;
 	shadowComponent->bHiddenInGame = true;
@@ -161,38 +157,37 @@ AActor* AEntity::Spawn(Identifier value, FVector location = FVector::ZeroVector)
 
 
 
+void  AEntity::OnHitboxChanged() {
+	GetCapsuleComponent()->SetCapsuleSize(hitboxRadius, hitboxHeight * 0.5f);
+	ECollisionEnabled::Type type = ECollisionEnabled::QueryAndPhysics;
+	if (!hitboxRadius || !hitboxHeight) ECollisionEnabled::QueryOnly;
+	GetCapsuleComponent()->SetCollisionEnabled(type);
+	FVector scale = FVector(hitboxRadius * 2, hitboxRadius * 2, hitboxHeight) * 0.01f;
+	shadowComponent->SetWorldScale3D(scale - FVector::OneVector * 0.2f);
+}
 float AEntity::GetHitboxRadius() { return hitboxRadius; }
 float AEntity::GetHitboxHeight() { return hitboxHeight; }
 bool  AEntity::SetHitboxRadius(float value) {
 	if (hitboxRadius == value) return false;
 	hitboxRadius = value;
-	GetCapsuleComponent()->SetCapsuleSize(value, hitboxHeight);
-	ECollisionEnabled::Type type = ECollisionEnabled::QueryAndPhysics;
-	if (!hitboxRadius || !hitboxHeight) ECollisionEnabled::QueryOnly;
-	GetCapsuleComponent()->SetCollisionEnabled(type);
+	OnHitboxChanged();
 	return true;
 }
 bool  AEntity::SetHitboxHeight(float value) {
 	if (hitboxHeight == value) return false;
 	hitboxHeight = value;
-	GetCapsuleComponent()->SetCapsuleSize(hitboxRadius, value);
-	ECollisionEnabled::Type type = ECollisionEnabled::QueryAndPhysics;
-	if (!hitboxRadius || !hitboxHeight) ECollisionEnabled::QueryOnly;
-	GetCapsuleComponent()->SetCollisionEnabled(type);
+	OnHitboxChanged();
 	return true;
 }
 bool  AEntity::SetHitbox(float radius, float height) {
 	if (hitboxRadius == radius && hitboxHeight == height) return false;
 	hitboxRadius = radius;
 	hitboxHeight = height;
-	GetCapsuleComponent()->SetCapsuleSize(radius, height);
-	ECollisionEnabled::Type type = ECollisionEnabled::QueryAndPhysics;
-	if (!hitboxRadius || !hitboxHeight) ECollisionEnabled::QueryOnly;
-	GetCapsuleComponent()->SetCollisionEnabled(type);
+	OnHitboxChanged();
 	return true;
 }
 FVector AEntity::GetFootLocation() {
-	return GetActorLocation() + FVector(-hitboxHeight * 0.5f, 0.0f, -hitboxHeight * 0.5f + 64.0f);
+	return GetActorLocation() + FVector(-hitboxHeight * 0.5f, 0.0f, -hitboxHeight * 0.5f + 48.0f);
 }
 
 

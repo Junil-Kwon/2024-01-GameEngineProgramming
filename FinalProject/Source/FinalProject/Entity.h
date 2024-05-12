@@ -103,6 +103,7 @@ public:
 private:
 	float hitboxRadius = 0.0f;
 	float hitboxHeight = 0.0f;
+	void  OnHitboxChanged();
 public:
 	float GetHitboxRadius();
 	float GetHitboxHeight();
