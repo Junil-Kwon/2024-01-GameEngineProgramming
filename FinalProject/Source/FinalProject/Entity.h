@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
+#include "GameFramework/Actor.h"
 #include "Entity.generated.h"
 
 
@@ -9,18 +9,20 @@
 UENUM(BlueprintType)
 enum class Identifier : uint8 {
 	None			= 0,
-
-	// Creatures
 	Hero			,
-
-	// Objects
-
-	// Indicator
 	Indicator		,
-
-	// Particles
 	Dust			,
+	Max				UMETA(Hidden),
+};
 
+UENUM(BlueprintType)
+enum class Sprite : uint8 {
+	None			= 0,
+	Idle			,
+	Move			,
+	Jump			,
+	Dodge			,
+	Defeat			,
 	Max				UMETA(Hidden),
 };
 
@@ -67,6 +69,8 @@ enum class Effect : uint8 {
 };
 ENUM_CLASS_FLAGS(Effect);
 
+
+
 template <typename T> uint8 ToInt (T     value);
 template <typename T> T     ToEnum(uint8 value);
 FRotator VectorToRotator(FVector  value);
@@ -74,64 +78,77 @@ FVector  RotatorToVector(FRotator value);
 
 
 
-UCLASS()
-class FINALPROJECT_API AEntity : public ACharacter {
+UCLASS(HideCategories = ("Actor Tick", Replication, Rendering, Collision, Actor, Input, LOD, Cooking))
+class FINALPROJECT_API AEntity : public AActor {
 	GENERATED_BODY()
+
+public:
+	bool operator==(const AEntity& other) const;
+	UStaticMesh* GetPlaneMesh ();
+	UStaticMesh* GetSphereMesh();
+	UMaterialInstance* GetMaterialInstance();
+	AEntity* Spawn(Identifier value, FVector location = FVector::ZeroVector);
+
+
 
 public:
 	AEntity();
 protected:
 	virtual void BeginPlay() override;
 
+	// Physics
+	#define ParticleThreshold 500.0f
 private:
-	const float MaxFallSpeed = 1024.0f;
-	bool  isFalling = false;
+	float yPrev = 0.0f;
 	float fallSpeed = 0.0f;
-public:	
+	bool  isFalling = false;
+public:
 	virtual void Tick(float DeltaTime) override;
+	virtual bool IsFalling();
 
 
 
 	// Identifier
 private:
-	UPROPERTY(EditAnywhere) Identifier identifier = Identifier::None;
-	UClass* GetClass(Identifier value);
-public:
-	AActor* Spawn(Identifier value, FVector location);
+	UPROPERTY(EditAnywhere) Identifier identifier;
 
 	// Hitbox
+	#define DefaultHitboxRadius 0.5f
+	#define DefaultHitboxHeight 1.0f
 private:
-	float hitboxRadius = 0.0f;
-	float hitboxHeight = 0.0f;
-	void  OnHitboxChanged();
+	UPROPERTY() class UCapsuleComponent* hitboxComponent;
+	UPROPERTY(EditAnywhere, Category = "Hitbox") float hitboxRadius = DefaultHitboxRadius;
+	UPROPERTY(EditAnywhere, Category = "Hitbox") float hitboxHeight = DefaultHitboxHeight;
+	UPROPERTY(EditAnywhere, Category = "Hitbox") float mass = 1.0f;
+protected:
+	virtual void OnHitboxChanged();
 public:
 	float GetHitboxRadius();
 	float GetHitboxHeight();
-	bool  SetHitboxRadius(float value);
-	bool  SetHitboxHeight(float value);
-	bool  SetHitbox(float radius, float height);
+	void  SetHitboxRadius(float value);
+	void  SetHitboxHeight(float value);
+	void  SetHitbox(float radius, float height);
+	void  SetCollisionProfileName(FName value);
 	FVector GetFootLocation();
 
 	// Sprite
 private:
-	UPROPERTY() class UStaticMesh* sprite;
-	UPROPERTY(EditAnywhere) class UStaticMeshComponent* spriteComponent;
+	UPROPERTY() class UStaticMeshComponent* spriteComponent;
+	UPROPERTY(EditAnywhere, Category = "Sprite") class UMaterialInstance* materialInstance;
+	int32 spriteCount = 0;
 	int32 spriteIndex = 0;
-	float spriteScale = 1.0f;
-	bool  spriteXflip = false;
+	bool  spriteXFlip = false;
 protected:
 	float spriteDelay = 0.0f;
+	int32 GetSpriteCount();
 	int32 GetSpriteIndex();
-	float GetSpriteScale();
 	bool  GetSpriteXFlip();
-	bool  SetSpriteIndex(int32 value);
-	bool  SetSpriteScale(float value);
-	bool  SetSpriteXFlip(bool  value);
+	void  SetSpriteIndex(int32 value);
+	void  SetSpriteXFlip(bool  value);
 	virtual void UpdateSprite(float DeltaTime);
 
 	// Shadow
 private:
-	UPROPERTY() class UStaticMesh* shadow;
 	UPROPERTY() class UStaticMeshComponent* shadowComponent;
 
 
@@ -141,26 +158,27 @@ private:
 	UPROPERTY(EditAnywhere) State state = State::Healthy;
 public:
 	State GetState();
-	virtual bool SetState(State value);
+	virtual void SetState(State value);
 
 	// Group
 private:
 	UPROPERTY(EditAnywhere) Group group = Group::None;
 public:
 	Group GetGroup();
-	virtual bool SetGroup(Group value);
+	virtual void SetGroup(Group value);
 
 	// Tag
 private:
 	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = Tag)) uint8 tag;
 public:
 	bool HasTag(Tag value);
-	virtual bool AddTag   (Tag value);
+	virtual bool AddTag(Tag value);
 	virtual bool RemoveTag(Tag value);
 
 	// Effect
+	#define EffectMaxDuration 9999.0f
 private:
-	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = Effect)) uint8 effect = 0;
+	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = Effect)) uint8 effect         = 0;
 	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = Effect)) uint8 effectImmunity = 0;
 	TArray<float> effectStrength;
 	TArray<float> effectDuration;
@@ -169,16 +187,17 @@ protected:
 	float GetEffectStrength(uint8 value);
 	float GetEffectDuration(uint8 value);
 	void  SetEffectStrength(uint8 value, float strength);
-	void  SetEffectDuration(uint8 value, float duration);
+	void  SetEffectDuration(uint8 value, float duration = EffectMaxDuration);
 	virtual void UpdateEffect(float DeltaTime);
 public:
 	bool HasEffect(Effect value);
-	virtual bool AddEffect   (Effect value, float strength, float duration);
+	virtual bool AddEffect(Effect value, float strength, float duration = EffectMaxDuration);
 	virtual bool RemoveEffect(Effect value);
 
 	// Movement
+	#define DefaultSpeed 400.0f
 protected:
-	UPROPERTY(EditAnywhere) float speed = 400.0f;
+	UPROPERTY(EditAnywhere) float speed = DefaultSpeed;
 	FVector direction = FVector::ZeroVector;
 	//float GetSpeed();
 };

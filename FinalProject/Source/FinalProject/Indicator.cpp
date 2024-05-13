@@ -1,47 +1,35 @@
 #include "Indicator.h"
-#include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/TextRenderComponent.h"
 
 
 
 AIndicator::AIndicator() {
- 	PrimaryActorTick.bCanEverTick = true;
-
-	sphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
-	sphereComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	SetRootComponent(sphereComponent);
-
-	const TCHAR* Plane = TEXT("/Engine/BasicShapes/Plane.Plane");
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> Sprite(Plane);
-	sprite = Sprite.Object;
-
-	lBorderComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LBorderComponent"));
-	rBorderComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RBorderComponent"));
-	lHealthComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LHealthComponent"));
-	rHealthComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RHealthComponent"));
-	lShieldComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LShieldComponent"));
-	rShieldComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RShieldComponent"));
-	iShieldComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("iShieldComponent"));
-	iLeaderComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("iLeaderComponent"));
-	SetSpriteDefault(lBorderComponent);
-	SetSpriteDefault(rBorderComponent);
-	SetSpriteDefault(lHealthComponent);
-	SetSpriteDefault(rHealthComponent);
-	SetSpriteDefault(lShieldComponent);
-	SetSpriteDefault(rShieldComponent);
-	SetSpriteDefault(iShieldComponent);
-	SetSpriteDefault(iLeaderComponent);
+	lBorderComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LBorder"));
+	rBorderComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RBorder"));
+	lHealthComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LHealth"));
+	rHealthComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RHealth"));
+	lShieldComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LShield"));
+	rShieldComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RShield"));
+	iShieldComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("IShield"));
+	iLeaderComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ILeader"));
+	SetupComponent(lBorderComponent);
+	SetupComponent(rBorderComponent);
+	SetupComponent(lHealthComponent);
+	SetupComponent(rHealthComponent);
+	SetupComponent(lShieldComponent);
+	SetupComponent(rShieldComponent);
+	SetupComponent(iShieldComponent);
+	SetupComponent(iLeaderComponent);
 	lBorderComponent->SetWorldScale3D(FVector(0.04f, 1.28f, 1.28f));
 	rBorderComponent->SetWorldScale3D(FVector(0.04f, 1.28f, 1.28f));
-
-	SetWidth(16.0f);
+	
 }
-void AIndicator::SetSpriteDefault(UStaticMeshComponent* component) {
+void AIndicator::SetupComponent(UStaticMeshComponent* component) {
 	component->SetWorldRotation(FRotator(0.0f, 90.0f, 41.409618f));
 	component->SetWorldScale3D(FVector(1.28f, 1.28f, 1.28f));
-	component->SetStaticMesh(sprite);
+	component->SetStaticMesh(GetPlaneMesh());
 	component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	component->SetupAttachment(sphereComponent);
 }
 
 
@@ -49,13 +37,14 @@ void AIndicator::SetSpriteDefault(UStaticMeshComponent* component) {
 void AIndicator::BeginPlay() {
 	Super::BeginPlay();
 
+	AddTag(Tag::Floating);
+	AddTag(Tag::Piercing);
 	SetShield(false);
 	SetLeader(false);
 	SetGroup(Group::None);
 	lShieldComponent->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.1f, 0.1f, 0.1f));
 	iShieldComponent->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.1f, 0.1f, 0.1f));
 }
-
 
 
 void AIndicator::Tick(float DeltaTime) {
@@ -82,16 +71,15 @@ void AIndicator::SetGroup(Group value) {
 	lHealthComponent->SetVectorParameterValueOnMaterials(TEXT("Color"), color);
 }
 
-void AIndicator::SetShield(bool enable, float value) {
+void AIndicator::SetShield(bool enable) {
 	if (shield == enable) return;
 	shield = enable;
-	shieldRatio = FMath::Clamp(value, 0.0f, 1.0f);
-	lBorderComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ? 2 : 1);
-	rBorderComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ? 2 : 1);
-	lHealthComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ? 6 : 5);
+	lBorderComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  2 : 1);
+	rBorderComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  2 : 1);
+	lHealthComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  6 : 5);
 	rHealthComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ? 10 : 9);
-	lShieldComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ? 5 : 0);
-	rShieldComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ? 9 : 0);
+	lShieldComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  5 : 0);
+	rShieldComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  9 : 0);
 	iShieldComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ? 13 : 0);
 	SetWidth(width);
 }

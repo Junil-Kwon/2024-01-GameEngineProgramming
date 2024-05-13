@@ -1,18 +1,18 @@
 #include "Creature.h"
+#include "Ghost.h"
 #include "Indicator.h"
-#include "Particle.h"
-#include "Components/CapsuleComponent.h"
 #include "Components/SphereComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 
 
 ACreature::ACreature() {
-	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Creature"));
-	GetCapsuleComponent()->InitCapsuleSize(36.0f, 50.0f);
+	SetHitbox(0.36f, 1.00f);
+	SetCollisionProfileName("Creature");
 
-	sensorComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SensorComponent"));
+	sensorComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Sensor"));
 	sensorComponent->InitSphereRadius(0.0f);
-	sensorComponent->SetCollisionProfileName(TEXT("Sensor"));
+	sensorComponent->SetCollisionProfileName("Sensor");
 	sensorComponent->SetupAttachment(RootComponent);
 }
 
@@ -21,24 +21,21 @@ ACreature::ACreature() {
 void ACreature::BeginPlay() {
 	Super::BeginPlay();
 
+	SetSensorRange(sensorRange);
 	sensorComponent->OnComponentBeginOverlap.AddDynamic(this, &ACreature::OnBeginSensed);
-	sensorComponent->OnComponentEndOverlap  .AddDynamic(this, &ACreature::OnEndSensed);
-	float sensorRangeTemp = sensorRange;
-	sensorRange = 0.0f;
-	SetSensorRange(sensorRangeTemp);
-
-	indicator = static_cast<AIndicator*>(Spawn(Identifier::Indicator, FVector::ZeroVector));
+	sensorComponent->OnComponentEndOverlap  .AddDynamic(this, &ACreature::OnEndSensed  );
+	
+	indicator = static_cast<AIndicator*>(Spawn(Identifier::Indicator));
 	indicator->SetWidth(indicatorWidth);
 	indicator->SetGroup(GetGroup());
 	indicator->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 	indicator->SetActorRelativeLocation(FVector(0.0f, 0.0f, GetHitboxHeight() * 0.5f + 80.0f));
 
 	health = healthMax;
+	shield = shieldMax;
 }
 
 
-
-bool ACreature::operator==(const ACreature& other) const { return this == &other; }
 
 void ACreature::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
@@ -47,14 +44,27 @@ void ACreature::Tick(float DeltaTime) {
 
 
 
+bool* ACreature::GetInput() {
+	static AGhost* ghost = nullptr;
+	if (ghost == nullptr) ghost = static_cast<AGhost*>(UGameplayStatics::GetPlayerPawn(this, 0));
+	return ghost->GetInput();
+}
+FVector ACreature::GetInputDirection() {
+	static AGhost* ghost = nullptr;
+	if (ghost == nullptr) ghost = static_cast<AGhost*>(UGameplayStatics::GetPlayerPawn(this, 0));
+	return ghost->GetInputDirection();
+}
+
+
+
 float ACreature::GetSensorRange() {
 	return sensorRange;
 }
-void  ACreature::SetSensorRange(float value) {
-	sensorRange = value;
-	sensorComponent->SetSphereRadius(sensorRange);
+void  ACreature::SetSensorRange(float range) {
+	sensorRange = range;
+	sensorComponent->SetSphereRadius(range);
 }
-void ACreature::Select(ACreature* creature) {
+void ACreature::Select(AEntity* entity) {
 }
 void ACreature::UpdateSensor(float DeltaTime) {
 }
@@ -69,17 +79,15 @@ void ACreature::OnEndSensed(
 
 
 
-AIndicator* ACreature::GetIndicator() { return indicator; }
-
-
-
-float ACreature::GetHealth() { return health; }
-void  ACreature::SetHealth(float value) { health = value; indicator->SetHealthRatio(health / healthMax); }
-void  ACreature::AdjustHealth(float value) {
-	health = health + value < 0 ? 0 : (healthMax < health + value ? healthMax : health + value);
-	if (health == 0) Die();
+AIndicator* ACreature::GetIndicator() {
+	return indicator;
 }
-void ACreature::Die() {
-	indicator->Destroy();
-	Destroy();
+
+
+
+float ACreature::GetHealth() { return health + shield + GetEffectStrength(GetIndex(Effect::HealthBoost)); }
+void  ACreature::AdjustHealth(float value) {
+	// shield - health - boost
+}
+void  ACreature::OnDie() {
 }
