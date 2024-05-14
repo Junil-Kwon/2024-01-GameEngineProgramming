@@ -8,28 +8,20 @@
 
 UENUM(BlueprintType)
 enum class Identifier : uint8 {
-	None			= 0,
-	Hero			,
+	Default			= 0,
+	Object			,
 	Indicator		,
 	Dust			,
 	Max				UMETA(Hidden),
 };
 
 UENUM(BlueprintType)
-enum class Sprite : uint8 {
-	None			= 0,
-	Idle			,
+enum class Action : uint8 {
+	Idle			= 0,
 	Move			,
 	Jump			,
 	Dodge			,
 	Defeat			,
-	Max				UMETA(Hidden),
-};
-
-UENUM(BlueprintType)
-enum class State : uint8 {
-	Healthy			= 0,
-	Dead			,
 	Max				UMETA(Hidden),
 };
 
@@ -71,8 +63,6 @@ ENUM_CLASS_FLAGS(Effect);
 
 
 
-template <typename T> uint8 ToInt (T     value);
-template <typename T> T     ToEnum(uint8 value);
 FRotator VectorToRotator(FVector  value);
 FVector  RotatorToVector(FRotator value);
 
@@ -87,7 +77,8 @@ public:
 	UStaticMesh* GetPlaneMesh ();
 	UStaticMesh* GetSphereMesh();
 	UMaterialInstance* GetMaterialInstance();
-	AEntity* Spawn(Identifier value, FVector location = FVector::ZeroVector);
+	UTexture* GetTexture(Identifier value);
+	UClass* GetBlueprint(Identifier value);
 
 
 
@@ -99,7 +90,7 @@ protected:
 	// Physics
 	#define ParticleThreshold 500.0f
 private:
-	float yPrev = 0.0f;
+	float zPrev = 0.0f;
 	float fallSpeed = 0.0f;
 	bool  isFalling = false;
 public:
@@ -110,7 +101,10 @@ public:
 
 	// Identifier
 private:
-	UPROPERTY(EditAnywhere) Identifier identifier;
+	Identifier identifier = Identifier::Default;
+public:
+	Identifier GetIdentifier();
+	AEntity* Spawn(Identifier value, FVector location = FVector::ZeroVector);
 
 	// Hitbox
 	#define DefaultHitboxRadius 0.5f
@@ -134,18 +128,20 @@ public:
 	// Sprite
 private:
 	UPROPERTY() class UStaticMeshComponent* spriteComponent;
-	UPROPERTY(EditAnywhere, Category = "Sprite") class UMaterialInstance* materialInstance;
-	int32 spriteCount = 0;
+	UPROPERTY() class UMaterialInstanceDynamic* material;
+	UPROPERTY(EditAnywhere, Category = "Sprite") Identifier sprite = Identifier::Default;
 	int32 spriteIndex = 0;
 	bool  spriteXFlip = false;
 protected:
 	float spriteDelay = 0.0f;
-	int32 GetSpriteCount();
 	int32 GetSpriteIndex();
 	bool  GetSpriteXFlip();
 	void  SetSpriteIndex(int32 value);
 	void  SetSpriteXFlip(bool  value);
 	virtual void UpdateSprite(float DeltaTime);
+public:
+	Identifier GetSprite();
+	void SetSprite(Identifier value);
 
 	// Shadow
 private:
@@ -153,12 +149,14 @@ private:
 
 
 
-	// State
+	// Action
 private:
-	UPROPERTY(EditAnywhere) State state = State::Healthy;
-public:
-	State GetState();
-	virtual void SetState(State value);
+	Action action = Action::Idle;
+protected:
+	float actionDelay = 0.0f;
+	Action GetAction();
+	virtual void SetAction(Action value);
+	virtual void UpdateAction(float DeltaTime);
 
 	// Group
 private:

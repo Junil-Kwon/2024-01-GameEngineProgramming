@@ -25,12 +25,12 @@ void ACreature::BeginPlay() {
 	sensorComponent->OnComponentBeginOverlap.AddDynamic(this, &ACreature::OnBeginSensed);
 	sensorComponent->OnComponentEndOverlap  .AddDynamic(this, &ACreature::OnEndSensed  );
 	
-	indicator = static_cast<AIndicator*>(Spawn(Identifier::Indicator));
-	indicator->SetWidth(indicatorWidth);
-	indicator->SetGroup(GetGroup());
-	indicator->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-	indicator->SetActorRelativeLocation(FVector(0.0f, 0.0f, GetHitboxHeight() * 0.5f + 80.0f));
-
+	//indicator = static_cast<AIndicator*>(Spawn(Identifier::Indicator));
+	//indicator->SetWidth(indicatorWidth);
+	//indicator->SetGroup(GetGroup());
+	//indicator->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+	//indicator->SetActorRelativeLocation(FVector(0.0f, 0.0f, GetHitboxHeight() * 0.5f + 80.0f));
+	
 	health = healthMax;
 	shield = shieldMax;
 }

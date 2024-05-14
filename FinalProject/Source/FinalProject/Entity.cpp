@@ -2,11 +2,11 @@
 
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Materials/MaterialInstance.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 
 
-template <typename T> T     ToEnum(uint8 value) { return static_cast<T    >(value); }
-template <typename T> uint8 ToInt (T     value) { return static_cast<uint8>(value); }
 FRotator VectorToRotator(FVector  value) {
 	float degree = 90.0f - FMath::RadiansToDegrees(FMath::Atan2(value.X, value.Y));
 	return FRotator(0.0f, degree, 0.0f);
@@ -21,42 +21,57 @@ FVector  RotatorToVector(FRotator value) {
 bool AEntity::operator==(const AEntity& other) const { return this == &other; }
 
 UStaticMesh* AEntity::GetPlaneMesh() {
-	static FString Path = TEXT("/Engine/BasicShapes/Plane.Plane");
-	static ConstructorHelpers::FObjectFinder<UObject> Object(*Path);
-	return static_cast<UStaticMesh*>(Object.Object);
+	static UStaticMesh* uStaticMesh = nullptr;
+	if (uStaticMesh == nullptr) {
+		FString path = "/Engine/BasicShapes/Plane.Plane";
+		uStaticMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), nullptr, *path));
+	}
+	return uStaticMesh;
 }
 UStaticMesh* AEntity::GetSphereMesh() {
-	static FString Path = TEXT("/Engine/BasicShapes/Sphere.Sphere");
-	static ConstructorHelpers::FObjectFinder<UObject> Object(*Path);
-	return static_cast<UStaticMesh*>(Object.Object);
+	static UStaticMesh* uStaticMesh = nullptr;
+	if (uStaticMesh == nullptr) {
+		FString path = "/Engine/BasicShapes/Sphere.Sphere";
+		uStaticMesh = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), nullptr, *path));
+	}
+	return uStaticMesh;
 }
 UMaterialInstance* AEntity::GetMaterialInstance() {
-	static FString Path = TEXT("/Game/Materials/MaterialInstance.MaterialInstance");
-	static ConstructorHelpers::FObjectFinder<UObject> Object(*Path);
-	return static_cast<UMaterialInstance*>(Object.Object);
-}
-AEntity* AEntity::Spawn(Identifier value, FVector location) {
-	//static Hero
-	//static ConstructorHelpers::FObjectFinder<UObject> Indicator(TEXT("/Game/Blueprints/BP_Indicator.BP_Indicator_C"));
-	//static ConstructorHelpers::FObjectFinder<UObject> Dust     (TEXT("/Game/Blueprints/BP_Particle_Dust.BP_Particle_Dust_C"));
-	
-	UObject* obj = nullptr;
-	switch (value) {
-	case Identifier::Hero:			obj = nullptr;				break;
-	//case Identifier::Indicator:		obj = Indicator.Object;		break;
-	//case Identifier::Dust:			obj = Dust.Object;			break;
-	default:						obj = nullptr;				break;
+	static UMaterialInstance* uInstance = nullptr;
+	if (uInstance == nullptr) {
+		FString path = "/Game/Materials/MaterialInstance.MaterialInstance";
+		uInstance = Cast<UMaterialInstance>(StaticLoadObject(UMaterialInstance::StaticClass(), nullptr, *path));
 	}
-
-	if (obj == nullptr) return nullptr;
-	return GetWorld()->SpawnActor<AEntity>(static_cast<UClass*>(obj), location, FRotator::ZeroRotator);
+	return uInstance;
+}
+UTexture* AEntity::GetTexture(Identifier value) {
+	static UTexture* uTexture[static_cast<uint8>(Identifier::Max)] = { nullptr, };
+	uint8 index = static_cast<uint8>(value);
+	if (uTexture[index] == nullptr) {
+		FString name = StaticEnum<Identifier>()->GetNameStringByIndex(index);
+		FString path = "/Game/Materials/" + name + "." + name;
+		uTexture[index] = Cast<UTexture>(StaticLoadObject(UTexture::StaticClass(), nullptr, *path));
+	}
+	return uTexture[index];
+}
+UClass* AEntity::GetBlueprint(Identifier value) {
+	static UClass* uClass[static_cast<uint8>(Identifier::Max)] = { nullptr, };
+	uint8 index = static_cast<uint8>(value);
+	if (uClass[index] == nullptr) {
+		FString name = StaticEnum<Identifier>()->GetNameStringByIndex(index);
+		FString path = "/Game/Blueprints/BP_" + name + ".BP_" + name + "_C";
+		uClass[index] = Cast<UClass>(StaticLoadObject(UClass::StaticClass(), nullptr, *path));
+	}
+	return uClass[index];
 }
 
 
 
 AEntity::AEntity() {
  	PrimaryActorTick.bCanEverTick = true;
-	Spawn(Identifier::None);
+	GetPlaneMesh ();
+	GetSphereMesh();
+	GetMaterialInstance();
 
 	hitboxComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Hitbox"));
 	hitboxComponent->InitCapsuleSize(DefaultHitboxRadius * 100, DefaultHitboxHeight * 50);
@@ -76,40 +91,46 @@ AEntity::AEntity() {
 	shadowComponent->SetStaticMesh(GetSphereMesh());
 	shadowComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	shadowComponent->SetVisibility(false);
-	spriteComponent->SetupAttachment(hitboxComponent);
+	shadowComponent->SetupAttachment(hitboxComponent);
 }
 
 void AEntity::BeginPlay() {
 	Super::BeginPlay();
 
-	yPrev = GetActorLocation().Y;
+	zPrev = GetActorLocation().Z;
+
+	FString name = GetName();
+	FString edit;
+	for (int64 i = 3; i < name.Len(); i++) {
+		if (FChar::IsDigit(name[i])) continue;
+		if (name[i] == '_') continue;
+		if (name[i] == ' ') continue;
+		edit.AppendChar(name[i]);
+	}
+	int64 index = FindObject<UEnum>(ANY_PACKAGE, TEXT("Identifier"), true)->GetIndexByName(*edit);
+	if (index != INDEX_NONE) identifier = static_cast<Identifier>(index);
 
 	SetHitbox(hitboxRadius, hitboxHeight);
 	hitboxComponent->GetBodyInstance()->bLockXRotation = true;
 	hitboxComponent->GetBodyInstance()->bLockYRotation = true;
 	hitboxComponent->GetBodyInstance()->bLockZRotation = true;
 	hitboxComponent->GetBodyInstance()->MassScale = mass;
-
-	UTexture* texture = nullptr;
-	materialInstance->GetTextureParameterValue(TEXT("Texture"), texture);
-	float xSize = Cast<UTexture2D>(texture)->GetSizeX();
-	float ySize = Cast<UTexture2D>(texture)->GetSizeX();
-	spriteCount = xSize / ySize;
-	spriteComponent->SetWorldScale3D(FVector::OneVector * ySize * 0.04f);
-	spriteComponent->SetMaterial(0, materialInstance);
+	
+	if (sprite == Identifier::Default) sprite = identifier;
+	material = UMaterialInstanceDynamic::Create(GetMaterialInstance(), this);
+	spriteComponent->SetMaterial(0, material);
+	SetSprite(sprite);
 
 	shadowComponent->SetVisibility(true);
 	shadowComponent->bCastHiddenShadow = true;
 	shadowComponent->bHiddenInGame = true;
 
-	SetState(state);
-
 	SetGroup(group);
 
 	uint8 tagTemp = tag;
 	tag = 0;
-	for (uint8 i = 0; i < ToInt(Tag::Max); i++) {
-		Tag value = ToEnum<Tag>(1 << i);
+	for (uint8 i = 0; i < static_cast<uint8>(Tag::Max); i++) {
+		Tag value = static_cast<Tag>(1 << i);
 		if ((tagTemp & (1 << i)) == 0) continue;
 		AddTag(value);
 	}
@@ -120,8 +141,8 @@ void AEntity::BeginPlay() {
 	effectDuration.Init(0.0f, static_cast<uint8>(Effect::Max));
 	float strength = 0.0f;
 	float duration = 0.0f;
-	for (uint8 i = 0; i < ToInt(Effect::Max); i++) {
-		Effect value = ToEnum<Effect>(1 << i);
+	for (uint8 i = 0; i < static_cast<uint8>(Effect::Max); i++) {
+		Effect value = static_cast<Effect>(1 << i);
 		if ((effect & (1 << i)) == 0 || (effectImmunity & (1 << i)) != 0) continue;
 		switch (value) {
 		case Effect::HealthBoost: strength = 0.0f, duration = EffectMaxDuration; break;
@@ -135,7 +156,6 @@ void AEntity::BeginPlay() {
 		}
 		AddEffect(value, strength, duration);
 	}
-	
 }
 
 
@@ -143,10 +163,10 @@ void AEntity::BeginPlay() {
 void AEntity::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
-	float yCurr = GetActorLocation().Y;
-	if (yCurr < yPrev) {
+	float z = GetActorLocation().Z;
+	if (z < zPrev - 0.01f) {
 		isFalling = true;
-		fallSpeed = -GetVelocity().Y;
+		fallSpeed = -GetVelocity().Z;
 	}
 	else if (isFalling) {
 		if (ParticleThreshold < fallSpeed) {
@@ -157,12 +177,23 @@ void AEntity::Tick(float DeltaTime) {
 		isFalling = false;
 		fallSpeed = 0.0f;
 	}
-	yPrev = yCurr;
+	zPrev = z;
 
 	UpdateSprite(DeltaTime);
+	UpdateAction(DeltaTime);
 	UpdateEffect(DeltaTime);
 }
 bool AEntity::IsFalling() { return isFalling; }
+
+
+
+Identifier AEntity::GetIdentifier() {
+	return identifier;
+}
+AEntity* AEntity::Spawn(Identifier value, FVector location) {
+	if (GetBlueprint(value) == nullptr) return nullptr;
+	return GetWorld()->SpawnActor<AEntity>(GetBlueprint(value), location, FRotator::ZeroRotator);
+}
 
 
 
@@ -176,7 +207,7 @@ void AEntity::OnHitboxChanged() {
 		hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		AddTag(Tag::Piercing);
 	}
-	FVector scale = FVector(hitboxRadius * 2, hitboxRadius * 2, hitboxHeight) * 0.01f;
+	FVector scale = FVector(hitboxRadius * 2, hitboxRadius * 2, hitboxHeight);
 	shadowComponent->SetWorldScale3D(scale - FVector::OneVector * 0.2f);
 }
 float AEntity::GetHitboxRadius() { return hitboxRadius; }
@@ -203,7 +234,6 @@ FVector AEntity::GetFootLocation() {
 
 
 
-int32 AEntity::GetSpriteCount() { return spriteCount; }
 int32 AEntity::GetSpriteIndex() { return spriteIndex; }
 bool  AEntity::GetSpriteXFlip() { return spriteXFlip; }
 void  AEntity::SetSpriteIndex(int32 value) {
@@ -217,17 +247,38 @@ void  AEntity::SetSpriteXFlip(bool value) {
 void  AEntity::UpdateSprite(float DeltaTime) {
 	spriteDelay += DeltaTime;
 }
-
-
-
-State AEntity::GetState() {
-	return state;
+Identifier AEntity::GetSprite() {
+	return sprite;
 }
-void AEntity::SetState(State value) {
-	state = value;
+void AEntity::SetSprite(Identifier value) {
+	if (GetTexture(value) == nullptr) return;
+	material->SetTextureParameterValue(TEXT("Texture"), GetTexture(value));
+}
+
+
+
+Action AEntity::GetAction() {
+	return action;
+}
+void AEntity::SetAction(Action value) {
+	action = value;
+	actionDelay = 0.0f;
 	switch (value) {
-	case State::Healthy: break;
-	case State::Dead:    break;
+	case Action::Idle:   break;
+	case Action::Move:   break;
+	case Action::Jump:   break;
+	case Action::Dodge:  break;
+	case Action::Defeat: break;
+	}
+}
+void AEntity::UpdateAction(float DeltaTime) {
+	actionDelay += DeltaTime;
+	switch (action) {
+	case Action::Idle:   break;
+	case Action::Move:   break;
+	case Action::Jump:   break;
+	case Action::Dodge:  break;
+	case Action::Defeat: break;
 	}
 }
 
@@ -243,11 +294,11 @@ void AEntity::SetGroup(Group value) {
 
 
 bool AEntity::HasTag(Tag value) {
-	return tag & ToInt(value);
+	return tag & static_cast<uint8>(value);
 }
 bool AEntity::AddTag(Tag value) {
 	if (HasTag(value)) return false;
-	tag |= ToInt(value);
+	tag |= static_cast<uint8>(value);
 	switch (value) {
 	case Tag::Floating:        hitboxComponent->GetBodyInstance()->bEnableGravity = false; break;
 	case Tag::Piercing:        hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly); break;
@@ -260,7 +311,7 @@ bool AEntity::AddTag(Tag value) {
 }
 bool AEntity::RemoveTag(Tag value) {
 	if (!HasTag(value)) return false;
-	tag &= ~ToInt(value);
+	tag &= ~static_cast<uint8>(value);
 	switch (value) {
 	case Tag::Floating:        hitboxComponent->GetBodyInstance()->bEnableGravity = true; break;
 	case Tag::Piercing:        hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics); break;
@@ -275,14 +326,14 @@ bool AEntity::RemoveTag(Tag value) {
 
 
 bool AEntity::HasEffect(Effect value) {
-	return (ToInt(effect) & ToInt(value)) != 0;
+	return static_cast<uint8>(effect) & static_cast<uint8>(value);
 }
 bool AEntity::AddEffect(Effect value, float strength, float duration) {
-	if ((ToInt(effectImmunity) & ToInt(value)) != 0) return false;
-	uint8 i = GetIndex(value);
-	effect |= ToInt(value);
-	effectStrength[i] = strength;
-	effectDuration[i] = duration;
+	if (static_cast<uint8>(effectImmunity) & static_cast<uint8>(value)) return false;
+	uint8 index = GetIndex(value);
+	effect |= static_cast<uint8>(value);
+	effectStrength[index] = strength;
+	effectDuration[index] = duration;
 	switch (value) {
 	case Effect::HealthBoost: break;
 	case Effect::DamageBoost: break;
@@ -297,10 +348,10 @@ bool AEntity::AddEffect(Effect value, float strength, float duration) {
 }
 bool AEntity::RemoveEffect(Effect value) {
 	if (!HasEffect(value)) return false;
-	uint8 i = GetIndex(value);
-	effect &= ~ToInt(value);
-	effectStrength[i] = 0;
-	effectDuration[i] = 0;
+	uint8 index = GetIndex(value);
+	effect &= ~static_cast<uint8>(value);
+	effectStrength[index] = 0;
+	effectDuration[index] = 0;
 	switch (value) {
 	case Effect::HealthBoost: break;
 	case Effect::DamageBoost: break;
@@ -314,20 +365,21 @@ bool AEntity::RemoveEffect(Effect value) {
 	return true;
 }
 uint8 AEntity::GetIndex(Effect value) {
-	for (int i = 0; i < ToInt(Effect::Max); i++) if (ToInt(value) & (1 << i)) return i;
-	return 0;
+	static uint8 list[static_cast<uint8>(Effect::Max)] = { 0, };
+	uint8 index = static_cast<uint8>(value);
+	if (list[index] == 0) for (uint8 i = 0; i < static_cast<uint8>(Effect::Max); i++) if (index & (1 << i)) {
+		list[index] = i;
+		break;
+	}
+	return list[index];
 }
 float AEntity::GetEffectStrength(uint8 value) { return effectStrength[value]; }
 float AEntity::GetEffectDuration(uint8 value) { return effectDuration[value]; }
 void  AEntity::SetEffectStrength(uint8 value, float strength) { effectStrength[value] = strength; }
 void  AEntity::SetEffectDuration(uint8 value, float duration) { effectDuration[value] = duration; }
 void  AEntity::UpdateEffect(float DeltaTime) {
-	for (uint8 i = 0; i < ToInt(Effect::Max); i++) {
-		Effect value = ToEnum<Effect>(1 << i);
-		if (HasEffect(value) && (effectDuration[i] -= DeltaTime) <= 0) {
-			effectStrength[i] = 0;
-			effectDuration[i] = 0;
-			RemoveEffect(value);
-		}
+	for (uint8 i = 0; i < static_cast<uint8>(Effect::Max); i++) {
+		Effect index = static_cast<Effect>(1 << i);
+		if (HasEffect(index) && (effectDuration[i] -= DeltaTime) <= 0) RemoveEffect(index);
 	}
 }
