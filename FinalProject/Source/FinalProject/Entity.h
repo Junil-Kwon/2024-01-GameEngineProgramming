@@ -63,11 +63,6 @@ ENUM_CLASS_FLAGS(Effect);
 
 
 
-FRotator VectorToRotator(FVector  value);
-FVector  RotatorToVector(FRotator value);
-
-
-
 UCLASS(HideCategories = ("Actor Tick", Replication, Rendering, Collision, Actor, Input, LOD, Cooking))
 class FINALPROJECT_API AEntity : public AActor {
 	GENERATED_BODY()
@@ -94,6 +89,8 @@ private:
 	float fallSpeed = 0.0f;
 	bool  isFalling = false;
 public:
+	float GetWorldSpeed();
+	void  SetWorldSpeed(float value);
 	virtual void Tick(float DeltaTime) override;
 	virtual bool IsFalling();
 
@@ -106,9 +103,16 @@ public:
 	Identifier GetIdentifier();
 	AEntity* Spawn(Identifier value, FVector location = FVector::ZeroVector);
 
+	// Arrow
+private:
+	UPROPERTY() class UArrowComponent* arrowComponent;
+public:
+	FRotator VectorToRotator(FVector  value);
+	FVector  RotatorToVector(FRotator value);
+
 	// Hitbox
-	#define DefaultHitboxRadius 0.5f
-	#define DefaultHitboxHeight 1.0f
+	#define DefaultHitboxRadius  50.0f
+	#define DefaultHitboxHeight 100.0f
 private:
 	UPROPERTY() class UCapsuleComponent* hitboxComponent;
 	UPROPERTY(EditAnywhere, Category = "Hitbox") float hitboxRadius = DefaultHitboxRadius;
@@ -119,9 +123,9 @@ protected:
 public:
 	float GetHitboxRadius();
 	float GetHitboxHeight();
-	void  SetHitboxRadius(float value);
-	void  SetHitboxHeight(float value);
-	void  SetHitbox(float radius, float height);
+	void  SetHitboxRadius(float value = DefaultHitboxRadius);
+	void  SetHitboxHeight(float value = DefaultHitboxHeight);
+	void  SetHitbox(float radius = DefaultHitboxRadius, float height = DefaultHitboxHeight);
 	void  SetCollisionProfileName(FName value);
 	FVector GetFootLocation();
 
@@ -140,6 +144,7 @@ protected:
 	void  SetSpriteXFlip(bool  value);
 	virtual void UpdateSprite(float DeltaTime);
 public:
+	UMaterialInstanceDynamic* GetMaterial();
 	Identifier GetSprite();
 	void SetSprite(Identifier value);
 

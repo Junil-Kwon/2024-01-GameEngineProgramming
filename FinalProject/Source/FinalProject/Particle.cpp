@@ -3,16 +3,15 @@
 
 
 AParticle::AParticle() {
-
+	AddTag(Tag::Floating);
+	AddTag(Tag::Piercing);
+	SetHitbox(0.0f, 0.0f);
 }
 
 
 
 void AParticle::BeginPlay() {
 	Super::BeginPlay();
-
-	AddTag(Tag::Floating);
-	AddTag(Tag::Piercing);
 }
 
 

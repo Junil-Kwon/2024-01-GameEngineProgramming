@@ -37,6 +37,11 @@ void AGhost::Tick(float DeltaTime) {
 
 
 
+float AGhost::GetWorldSpeed() { return worldSpeed; }
+void  AGhost::SetWorldSpeed(float value) { worldSpeed = value; }
+
+
+
 void AGhost::Up   (bool pressed) {
 	input[(uint8)Input::Up    ] = pressed;
 	direction.X = pressed ?  1.0f : input[(uint8)Input::Down ] ? -1.0f : 0.0f;

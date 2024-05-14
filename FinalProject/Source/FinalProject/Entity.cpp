@@ -1,20 +1,12 @@
 #include "Entity.h"
+#include "Ghost.h"
 
+#include "Components/ArrowComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstance.h"
 #include "Materials/MaterialInstanceDynamic.h"
-
-
-
-FRotator VectorToRotator(FVector  value) {
-	float degree = 90.0f - FMath::RadiansToDegrees(FMath::Atan2(value.X, value.Y));
-	return FRotator(0.0f, degree, 0.0f);
-}
-FVector  RotatorToVector(FRotator value) {
-	float radian = FMath::DegreesToRadians(value.Yaw);
-	return FVector(FMath::Cos(radian), FMath::Sin(radian), 0.0f);
-}
+#include "Kismet/GameplayStatics.h"
 
 
 
@@ -73,10 +65,16 @@ AEntity::AEntity() {
 	GetSphereMesh();
 	GetMaterialInstance();
 
+	arrowComponent  = CreateDefaultSubobject<UArrowComponent>(TEXT("Arrow"));
+
 	hitboxComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Hitbox"));
-	hitboxComponent->InitCapsuleSize(DefaultHitboxRadius * 100, DefaultHitboxHeight * 50);
+	hitboxComponent->InitCapsuleSize(DefaultHitboxRadius, DefaultHitboxHeight * 0.5f);
 	hitboxComponent->SetSimulatePhysics(true);
 	hitboxComponent->SetCollisionProfileName(TEXT("Creature"));
+	hitboxComponent->GetBodyInstance()->bLockXRotation = true;
+	hitboxComponent->GetBodyInstance()->bLockYRotation = true;
+	hitboxComponent->GetBodyInstance()->bLockZRotation = true;
+	hitboxComponent->GetBodyInstance()->MassScale = mass;
 	SetRootComponent(hitboxComponent);
 
 	spriteComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Sprite"));
@@ -100,22 +98,17 @@ void AEntity::BeginPlay() {
 	zPrev = GetActorLocation().Z;
 
 	FString name = GetName();
-	FString edit;
-	for (int64 i = 3; i < name.Len(); i++) {
-		if (FChar::IsDigit(name[i])) continue;
-		if (name[i] == '_') continue;
-		if (name[i] == ' ') continue;
-		edit.AppendChar(name[i]);
-	}
+	int64 BP_ = name.Find(TEXT("_"), ESearchCase::IgnoreCase, ESearchDir::FromStart, 0);
+	int64 _C_ = name.Find(TEXT("_"), ESearchCase::IgnoreCase, ESearchDir::FromStart, BP_ + 1);
+	FString edit = name.Mid(BP_ + 1, _C_ - BP_ - 1);
+	UE_LOG(LogTemp, Warning, TEXT("%s"), *edit);
 	int64 index = FindObject<UEnum>(ANY_PACKAGE, TEXT("Identifier"), true)->GetIndexByName(*edit);
 	if (index != INDEX_NONE) identifier = static_cast<Identifier>(index);
+	
+	hitboxComponent->GetBodyInstance()->MassScale = mass;
 
 	SetHitbox(hitboxRadius, hitboxHeight);
-	hitboxComponent->GetBodyInstance()->bLockXRotation = true;
-	hitboxComponent->GetBodyInstance()->bLockYRotation = true;
-	hitboxComponent->GetBodyInstance()->bLockZRotation = true;
-	hitboxComponent->GetBodyInstance()->MassScale = mass;
-	
+
 	if (sprite == Identifier::Default) sprite = identifier;
 	material = UMaterialInstanceDynamic::Create(GetMaterialInstance(), this);
 	spriteComponent->SetMaterial(0, material);
@@ -131,7 +124,7 @@ void AEntity::BeginPlay() {
 	tag = 0;
 	for (uint8 i = 0; i < static_cast<uint8>(Tag::Max); i++) {
 		Tag value = static_cast<Tag>(1 << i);
-		if ((tagTemp & (1 << i)) == 0) continue;
+		if (!(tagTemp & (1 << i))) continue;
 		AddTag(value);
 	}
 
@@ -143,7 +136,7 @@ void AEntity::BeginPlay() {
 	float duration = 0.0f;
 	for (uint8 i = 0; i < static_cast<uint8>(Effect::Max); i++) {
 		Effect value = static_cast<Effect>(1 << i);
-		if ((effect & (1 << i)) == 0 || (effectImmunity & (1 << i)) != 0) continue;
+		if (!(effect & (1 << i)) || (effectImmunity & (1 << i))) continue;
 		switch (value) {
 		case Effect::HealthBoost: strength = 0.0f, duration = EffectMaxDuration; break;
 		case Effect::DamageBoost: strength = 0.0f, duration = EffectMaxDuration; break;
@@ -160,28 +153,37 @@ void AEntity::BeginPlay() {
 
 
 
-void AEntity::Tick(float DeltaTime) {
+float AEntity::GetWorldSpeed() {
+	static AGhost* ghost = nullptr;
+	if (ghost == nullptr) ghost = static_cast<AGhost*>(UGameplayStatics::GetPlayerPawn(this, 0));
+	return ghost->GetWorldSpeed();
+}
+void  AEntity::SetWorldSpeed(float value) {
+	static AGhost* ghost = nullptr;
+	if (ghost == nullptr) ghost = static_cast<AGhost*>(UGameplayStatics::GetPlayerPawn(this, 0));
+	ghost->SetWorldSpeed(value);
+}
+void  AEntity::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
 	float z = GetActorLocation().Z;
-	if (z < zPrev - 0.01f) {
+	if (z < zPrev - 0.01f && !HasTag(Tag::Piercing)) {
 		isFalling = true;
 		fallSpeed = -GetVelocity().Z;
 	}
 	else if (isFalling) {
-		if (ParticleThreshold < fallSpeed) {
+		if (ParticleThreshold < fallSpeed && !HasTag(Tag::Piercing)) {
 			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -hitboxRadius *  0.75f, 0.0f));
 			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -hitboxRadius * -0.75f, 0.0f));
 		}
-		UE_LOG(LogTemp, Warning, TEXT("%f"), fallSpeed);
 		isFalling = false;
 		fallSpeed = 0.0f;
 	}
 	zPrev = z;
 
-	UpdateSprite(DeltaTime);
-	UpdateAction(DeltaTime);
-	UpdateEffect(DeltaTime);
+	if (GetWorldSpeed() != 0.0f) UpdateSprite(DeltaTime * GetWorldSpeed());
+	if (GetWorldSpeed() != 0.0f) UpdateAction(DeltaTime * GetWorldSpeed());
+	if (GetWorldSpeed() != 0.0f) UpdateEffect(DeltaTime * GetWorldSpeed());
 }
 bool AEntity::IsFalling() { return isFalling; }
 
@@ -197,8 +199,19 @@ AEntity* AEntity::Spawn(Identifier value, FVector location) {
 
 
 
+FRotator AEntity::VectorToRotator(FVector  value) {
+	float degree = 90.0f - FMath::RadiansToDegrees(FMath::Atan2(value.X, value.Y));
+	return FRotator(0.0f, degree, 0.0f);
+}
+FVector  AEntity::RotatorToVector(FRotator value) {
+	float radian = FMath::DegreesToRadians(value.Yaw);
+	return FVector(FMath::Cos(radian), FMath::Sin(radian), 0.0f);
+}
+
+
+
 void AEntity::OnHitboxChanged() {
-	hitboxComponent->SetCapsuleSize(hitboxRadius * 100, hitboxHeight * 50);
+	hitboxComponent->SetCapsuleSize(hitboxRadius, hitboxHeight * 0.5f);
 	if (hitboxRadius && hitboxHeight) {
 		hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		RemoveTag(Tag::Piercing);
@@ -207,8 +220,10 @@ void AEntity::OnHitboxChanged() {
 		hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		AddTag(Tag::Piercing);
 	}
-	FVector scale = FVector(hitboxRadius * 2, hitboxRadius * 2, hitboxHeight);
-	shadowComponent->SetWorldScale3D(scale - FVector::OneVector * 0.2f);
+	FVector shadowScale = FVector(hitboxRadius * 2, hitboxRadius * 2, hitboxHeight) * 0.01f;
+	shadowScale = shadowScale - FVector::OneVector * 0.2f;
+	if (shadowScale.X <= 0.0f || shadowScale.Z <= 0.0f) shadowScale = FVector::ZeroVector;
+	shadowComponent->SetWorldScale3D(shadowScale);
 }
 float AEntity::GetHitboxRadius() { return hitboxRadius; }
 float AEntity::GetHitboxHeight() { return hitboxHeight; }
@@ -246,6 +261,9 @@ void  AEntity::SetSpriteXFlip(bool value) {
 }
 void  AEntity::UpdateSprite(float DeltaTime) {
 	spriteDelay += DeltaTime;
+}
+UMaterialInstanceDynamic* AEntity::GetMaterial() {
+	return material;
 }
 Identifier AEntity::GetSprite() {
 	return sprite;
@@ -301,7 +319,7 @@ bool AEntity::AddTag(Tag value) {
 	tag |= static_cast<uint8>(value);
 	switch (value) {
 	case Tag::Floating:        hitboxComponent->GetBodyInstance()->bEnableGravity = false; break;
-	case Tag::Piercing:        hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly); break;
+	case Tag::Piercing:        hitboxComponent->SetSimulatePhysics(false); break;
 	case Tag::Invulnerability: break;
 	case Tag::Interactability: break;
 	case Tag::Player:          break;
@@ -314,7 +332,7 @@ bool AEntity::RemoveTag(Tag value) {
 	tag &= ~static_cast<uint8>(value);
 	switch (value) {
 	case Tag::Floating:        hitboxComponent->GetBodyInstance()->bEnableGravity = true; break;
-	case Tag::Piercing:        hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics); break;
+	case Tag::Piercing:        hitboxComponent->SetSimulatePhysics(true); break;
 	case Tag::Invulnerability: break;
 	case Tag::Interactability: break;
 	case Tag::Player:          break;

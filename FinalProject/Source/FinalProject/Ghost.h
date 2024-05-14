@@ -31,7 +31,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-public:	
+public:
 	virtual void Tick(float DeltaTime) override;
 
 
@@ -44,6 +44,14 @@ private:
 private:
 	UPROPERTY() class USpringArmComponent* springArmComponent;
 	UPROPERTY() class UCameraComponent* cameraComponent;
+
+	// World
+	#define DefaultWorldSpeed 1.0f
+private:
+	float worldSpeed = 1.0f;
+public:
+	float GetWorldSpeed();
+	void  SetWorldSpeed(float value);
 
 	// Input
 private:

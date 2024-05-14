@@ -7,13 +7,18 @@
 
 
 ACreature::ACreature() {
-	SetHitbox(0.36f, 1.00f);
+	SetHitbox(36.0f, 100.0f);
 	SetCollisionProfileName("Creature");
 
 	sensorComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Sensor"));
-	sensorComponent->InitSphereRadius(0.0f);
+	sensorComponent->InitSphereRadius(DefaultSensorRange);
 	sensorComponent->SetCollisionProfileName("Sensor");
 	sensorComponent->SetupAttachment(RootComponent);
+
+	magnetComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Magnet"));
+	magnetComponent->InitSphereRadius(DefaultMagnetRange);
+	magnetComponent->SetCollisionProfileName("Sensor");
+	magnetComponent->SetupAttachment(RootComponent);
 }
 
 
@@ -22,14 +27,19 @@ void ACreature::BeginPlay() {
 	Super::BeginPlay();
 
 	SetSensorRange(sensorRange);
-	sensorComponent->OnComponentBeginOverlap.AddDynamic(this, &ACreature::OnBeginSensed);
-	sensorComponent->OnComponentEndOverlap  .AddDynamic(this, &ACreature::OnEndSensed  );
+	sensorComponent->OnComponentBeginOverlap.AddDynamic(this, &ACreature::OnSensorBeginOverlap);
+	sensorComponent->OnComponentEndOverlap  .AddDynamic(this, &ACreature::OnSensorEndOverlap  );
+
+	SetMagnetRange(magnetRange);
+	magnetComponent->OnComponentBeginOverlap.AddDynamic(this, &ACreature::OnMagnetBeginOverlap);
+	magnetComponent->OnComponentEndOverlap  .AddDynamic(this, &ACreature::OnMagnetEndOverlap  );
 	
-	//indicator = static_cast<AIndicator*>(Spawn(Identifier::Indicator));
-	//indicator->SetWidth(indicatorWidth);
-	//indicator->SetGroup(GetGroup());
-	//indicator->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-	//indicator->SetActorRelativeLocation(FVector(0.0f, 0.0f, GetHitboxHeight() * 0.5f + 80.0f));
+	indicator = static_cast<AIndicator*>(Spawn(Identifier::Indicator));
+	indicator->SetWidth(indicatorWidth);
+	indicator->SetGroup(GetGroup());
+	FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
+	indicator->AttachToActor(this, AttachmentRules);
+	indicator->SetActorRelativeLocation(FVector(0.0f, 0.0f, GetHitboxHeight() * 0.5f + 80.0f));
 	
 	health = healthMax;
 	shield = shieldMax;
@@ -39,7 +49,8 @@ void ACreature::BeginPlay() {
 
 void ACreature::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
-	UpdateSensor(DeltaTime);
+
+	if (GetWorldSpeed() != 0.0f) UpdateSensor(DeltaTime * GetWorldSpeed());
 }
 
 
@@ -64,17 +75,42 @@ void  ACreature::SetSensorRange(float range) {
 	sensorRange = range;
 	sensorComponent->SetSphereRadius(range);
 }
-void ACreature::Select(AEntity* entity) {
-}
 void ACreature::UpdateSensor(float DeltaTime) {
 }
-void ACreature::OnBeginSensed(
+void ACreature::OnSensorBeginOverlap(
 	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* PtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+	bool bFromSweep, const FHitResult& SweepResult) {
 }
-void ACreature::OnEndSensed(
+void ACreature::OnSensorEndOverlap(
 	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+}
+
+
+
+float ACreature::GetMagnetRange() {
+	return magnetRange;
+}
+void  ACreature::SetMagnetRange(float range) {
+	magnetRange = range;
+	magnetComponent->SetSphereRadius(range);
+}
+void ACreature::UpdateMagnet(float DeltaTime) {
+}
+void ACreature::OnMagnetBeginOverlap(
+	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+	bool bFromSweep, const FHitResult& SweepResult) {
+}
+void ACreature::OnMagnetEndOverlap(
+	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+}
+
+
+
+void ACreature::Select(AEntity* entity) {
 }
 
 

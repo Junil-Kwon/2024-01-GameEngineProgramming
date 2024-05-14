@@ -28,25 +28,47 @@ protected:
 
 
 	// Sensor
-	#define DefaultSensorRange 200.0f
+	#define DefaultSensorRange 480.0f
 private:
 	UPROPERTY() class USphereComponent* sensorComponent;
 	UPROPERTY(EditAnywhere) float sensorRange = DefaultSensorRange;
 protected:
 	TArray<AEntity*> sensed;
-	AEntity* selected;
 	float GetSensorRange();
 	void  SetSensorRange(float range = DefaultSensorRange);
-	virtual void Select(AEntity* entity);
 	virtual void UpdateSensor(float DeltaTime);
 public:
-	UFUNCTION() virtual void OnBeginSensed(
+	UFUNCTION() virtual void OnSensorBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 		bool bFromSweep, const FHitResult& SweepResult);
-	UFUNCTION() virtual void OnEndSensed(
+	UFUNCTION() virtual void OnSensorEndOverlap(
 		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	// Magent
+	#define DefaultMagnetRange 120.0f
+private:
+	UPROPERTY() class USphereComponent* magnetComponent;
+	UPROPERTY(EditAnywhere) float magnetRange = DefaultMagnetRange;
+protected:
+	TArray<AEntity*> magnetized;
+	float GetMagnetRange();
+	void  SetMagnetRange(float range = DefaultMagnetRange);
+	virtual void UpdateMagnet(float DeltaTime);
+public:
+	UFUNCTION() virtual void OnMagnetBeginOverlap(
+		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+		bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION() virtual void OnMagnetEndOverlap(
+		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	// Select
+protected:
+	AEntity* selected;
+	virtual void Select(AEntity* entity);
 
 
 

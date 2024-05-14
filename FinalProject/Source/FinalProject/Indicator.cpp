@@ -1,10 +1,14 @@
 #include "Indicator.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 
 
 AIndicator::AIndicator() {
+	AddTag(Tag::Floating);
+	AddTag(Tag::Piercing);
+	SetHitbox(0.0f, 0.0f);
 	lBorderComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LBorder"));
 	rBorderComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RBorder"));
 	lHealthComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LHealth"));
@@ -23,13 +27,18 @@ AIndicator::AIndicator() {
 	SetupComponent(iLeaderComponent);
 	lBorderComponent->SetWorldScale3D(FVector(0.04f, 1.28f, 1.28f));
 	rBorderComponent->SetWorldScale3D(FVector(0.04f, 1.28f, 1.28f));
-	
 }
 void AIndicator::SetupComponent(UStaticMeshComponent* component) {
 	component->SetWorldRotation(FRotator(0.0f, 90.0f, 41.409618f));
 	component->SetWorldScale3D(FVector(1.28f, 1.28f, 1.28f));
 	component->SetStaticMesh(GetPlaneMesh());
 	component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	component->SetupAttachment(RootComponent);
+}
+void AIndicator::SetupMaterial(UStaticMeshComponent* component) {
+	UMaterialInstanceDynamic* dynamic = UMaterialInstanceDynamic::Create(GetMaterialInstance(), this);
+	dynamic->SetTextureParameterValue(TEXT("Texture"), GetTexture(GetIdentifier()));
+	component->SetMaterial(0, dynamic);
 }
 
 
@@ -37,8 +46,16 @@ void AIndicator::SetupComponent(UStaticMeshComponent* component) {
 void AIndicator::BeginPlay() {
 	Super::BeginPlay();
 
-	AddTag(Tag::Floating);
-	AddTag(Tag::Piercing);
+	SetSpriteIndex(63);
+	SetupMaterial(lBorderComponent);
+	SetupMaterial(rBorderComponent);
+	SetupMaterial(lHealthComponent);
+	SetupMaterial(rHealthComponent);
+	SetupMaterial(lShieldComponent);
+	SetupMaterial(rShieldComponent);
+	SetupMaterial(iShieldComponent);
+	SetupMaterial(iLeaderComponent);
+
 	SetShield(false);
 	SetLeader(false);
 	SetGroup(Group::None);
@@ -74,19 +91,19 @@ void AIndicator::SetGroup(Group value) {
 void AIndicator::SetShield(bool enable) {
 	if (shield == enable) return;
 	shield = enable;
-	lBorderComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  2 : 1);
-	rBorderComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  2 : 1);
-	lHealthComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  6 : 5);
-	rHealthComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ? 10 : 9);
-	lShieldComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  5 : 0);
-	rShieldComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  9 : 0);
-	iShieldComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ? 13 : 0);
+	lBorderComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  1 :  0);
+	rBorderComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  1 :  0);
+	lHealthComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  5 :  4);
+	rHealthComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  9 :  8);
+	lShieldComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  4 : 63);
+	rShieldComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  8 : 63);
+	iShieldComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ? 12 : 63);
 	SetWidth(width);
 }
 void AIndicator::SetLeader(bool enable) {
 	if (leader == enable) return;
 	leader = enable;
-	iLeaderComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), leader ? 14 : 0);
+	iLeaderComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), leader ? 13 : 63);
 }
 
 void AIndicator::SetHealthRatio(float value) {
