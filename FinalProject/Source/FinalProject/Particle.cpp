@@ -22,7 +22,13 @@ void AParticle::Tick(float DeltaTime) {
 
 
 
-void AParticle::UpdateSprite(float DeltaTime) {
+bool AParticle::UpdateSprite(float DeltaTime) {
 	Super::UpdateSprite(DeltaTime);
 
+	switch (GetIdentifier()) {
+	case Identifier::Dust:
+
+		break;
+	}
+	return true;
 }

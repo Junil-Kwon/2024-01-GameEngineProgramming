@@ -22,5 +22,5 @@ public:
 
 	// Sprite
 protected:
-	virtual void UpdateSprite(float DeltaTime) override;
+	virtual bool UpdateSprite(float DeltaTime) override;
 };

@@ -1,4 +1,5 @@
 #include "Indicator.h"
+
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -35,32 +36,27 @@ void AIndicator::SetupComponent(UStaticMeshComponent* component) {
 	component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	component->SetupAttachment(RootComponent);
 }
-void AIndicator::SetupMaterial(UStaticMeshComponent* component) {
-	UMaterialInstanceDynamic* dynamic = UMaterialInstanceDynamic::Create(GetMaterialInstance(), this);
-	dynamic->SetTextureParameterValue(TEXT("Texture"), GetTexture(GetIdentifier()));
-	component->SetMaterial(0, dynamic);
-}
 
 
 
 void AIndicator::BeginPlay() {
 	Super::BeginPlay();
 
-	SetSpriteIndex(63);
-	SetupMaterial(lBorderComponent);
-	SetupMaterial(rBorderComponent);
-	SetupMaterial(lHealthComponent);
-	SetupMaterial(rHealthComponent);
-	SetupMaterial(lShieldComponent);
-	SetupMaterial(rShieldComponent);
-	SetupMaterial(iShieldComponent);
-	SetupMaterial(iLeaderComponent);
+	SetIndex(nullptr, 63);
+	SetMaterial(lBorderComponent);
+	SetMaterial(rBorderComponent);
+	SetMaterial(lHealthComponent);
+	SetMaterial(rHealthComponent);
+	SetMaterial(lShieldComponent);
+	SetMaterial(rShieldComponent);
+	SetMaterial(iShieldComponent);
+	SetMaterial(iLeaderComponent);
 
 	SetShield(false);
 	SetLeader(false);
 	SetGroup(Group::None);
-	lShieldComponent->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.1f, 0.1f, 0.1f));
-	iShieldComponent->SetVectorParameterValueOnMaterials(TEXT("Color"), FVector(0.1f, 0.1f, 0.1f));
+	SetColor(lShieldComponent, FVector(0.1f, 0.1f, 0.1f));
+	SetColor(iShieldComponent, FVector(0.1f, 0.1f, 0.1f));
 }
 
 
@@ -85,25 +81,25 @@ void AIndicator::SetGroup(Group value) {
 	case Group::Friendly: color = FVector(0.031896, 0.332452, 0.152926); break;
 	case Group::Enemy:    color = FVector(0.332452, 0.044270, 0.064128); break;
 	}
-	lHealthComponent->SetVectorParameterValueOnMaterials(TEXT("Color"), color);
+	SetColor(lHealthComponent, color);
 }
 
 void AIndicator::SetShield(bool enable) {
 	if (shield == enable) return;
 	shield = enable;
-	lBorderComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  1 :  0);
-	rBorderComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  1 :  0);
-	lHealthComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  5 :  4);
-	rHealthComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  9 :  8);
-	lShieldComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  4 : 63);
-	rShieldComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ?  8 : 63);
-	iShieldComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), shield ? 12 : 63);
+	SetIndex(lBorderComponent, shield ?  1 :  0);
+	SetIndex(rBorderComponent, shield ?  1 :  0);
+	SetIndex(lHealthComponent, shield ?  5 :  4);
+	SetIndex(rHealthComponent, shield ?  9 :  8);
+	SetIndex(lShieldComponent, shield ?  4 : 63);
+	SetIndex(rShieldComponent, shield ?  8 : 63);
+	SetIndex(iShieldComponent, shield ? 12 : 63);
 	SetWidth(width);
 }
 void AIndicator::SetLeader(bool enable) {
 	if (leader == enable) return;
 	leader = enable;
-	iLeaderComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), leader ? 13 : 63);
+	SetIndex(iLeaderComponent, leader ? 13 : 63);
 }
 
 void AIndicator::SetHealthRatio(float value) {

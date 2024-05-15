@@ -40,7 +40,6 @@ protected:
 	UPROPERTY(EditAnywhere) class UTextRenderComponent* nameComponent;
 	UPROPERTY(EditAnywhere) class UTextRenderComponent* textComponent;
 	void SetupComponent(UStaticMeshComponent* component);
-	void SetupMaterial(UStaticMeshComponent* component);
 public:
 	void SetWidth(float width);
 	void SetGroup(Group value);

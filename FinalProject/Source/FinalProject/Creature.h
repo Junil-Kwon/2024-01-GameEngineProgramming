@@ -20,10 +20,33 @@ public:
 
 
 
+	// Action
+protected:
+	virtual bool UpdateAction(float DeltaTime) override;
+
+	// Group
+public:
+	virtual void SetGroup(Group value) override;
+
+	// Tag
+public:
+	virtual bool AddTag(Tag value) override;
+	virtual bool RemoveTag(Tag value) override;
+
+	// Effect
+protected:
+	virtual bool UpdateEffect(float DeltaTime) override;
+public:
+	virtual bool AddEffect(Effect value, float strength, float duration) override;
+	virtual bool RemoveEffect(Effect value) override;
+
+
+
 	// Input
 protected:
-	bool* GetInput();
+	bool GetInput(Action value);
 	FVector GetInputDirection();
+	virtual bool UpdateOutput();
 
 
 
@@ -33,10 +56,10 @@ private:
 	UPROPERTY() class USphereComponent* sensorComponent;
 	UPROPERTY(EditAnywhere) float sensorRange = DefaultSensorRange;
 protected:
-	TArray<AEntity*> sensed;
+	TArray<AEntity*> sensorArray;
 	float GetSensorRange();
 	void  SetSensorRange(float range = DefaultSensorRange);
-	virtual void UpdateSensor(float DeltaTime);
+	virtual bool UpdateSensor(float DeltaTime);
 public:
 	UFUNCTION() virtual void OnSensorBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -52,10 +75,10 @@ private:
 	UPROPERTY() class USphereComponent* magnetComponent;
 	UPROPERTY(EditAnywhere) float magnetRange = DefaultMagnetRange;
 protected:
-	TArray<AEntity*> magnetized;
+	TArray<AEntity*> magnetArray;
 	float GetMagnetRange();
 	void  SetMagnetRange(float range = DefaultMagnetRange);
-	virtual void UpdateMagnet(float DeltaTime);
+	virtual bool UpdateMagnet(float DeltaTime);
 public:
 	UFUNCTION() virtual void OnMagnetBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -85,15 +108,30 @@ public:
 	// Stats
 	#define DefaultHealth 1.0f
 	#define DefaultShield 0.0f
+	#define DefaultEnerge 0.0f
 	#define DefaultDamage 0.0f
+
+	#define MendCooldown 4.0f
+	#define HurtCooldown 0.2f
 private:
-	UPROPERTY(EditAnywhere) float healthMax = DefaultHealth;
-	UPROPERTY(EditAnywhere) float shieldMax = DefaultShield;
-	UPROPERTY(EditAnywhere) float damage    = DefaultDamage;
-	float health = DefaultHealth;
-	float shield = DefaultShield;
+	UPROPERTY(EditAnywhere) float health = DefaultHealth;
+	UPROPERTY(EditAnywhere) float shield = DefaultShield;
+	UPROPERTY(EditAnywhere) float energe = DefaultEnerge;
+	UPROPERTY(EditAnywhere) float damage = DefaultDamage;
+	float healthMax = DefaultHealth;
+	float shieldMax = DefaultShield;
+	float energeMax = DefaultEnerge;
+	float hurtCooldown = 0.0f;
+	float mendCooldown = 0.0f;
+	
 protected:
 	float GetHealth();
-	void  AdjustHealth(float value);
+	virtual void OnDamaged(float value);
+	virtual void OnShieldBroken();
 	virtual void OnDie();
+public:
+	void AdjustMaxHealth(float value = DefaultHealth);
+	void AdjustMaxShield(float value = DefaultShield);
+	void AdjustMaxEnerge(float value = DefaultEnerge);
+	void AdjustMaxDamage(float value = DefaultDamage);
 };

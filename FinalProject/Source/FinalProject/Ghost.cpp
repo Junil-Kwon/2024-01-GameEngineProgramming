@@ -1,4 +1,5 @@
 #include "Ghost.h"
+
 #include "Components/SphereComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
@@ -39,6 +40,16 @@ void AGhost::Tick(float DeltaTime) {
 
 float AGhost::GetWorldSpeed() { return worldSpeed; }
 void  AGhost::SetWorldSpeed(float value) { worldSpeed = value; }
+
+
+
+ACreature* AGhost::GetPlayer() {
+	return player;
+}
+void AGhost::SetPlayer(ACreature* value) {
+	if (player != nullptr) player->RemoveTag(Tag::Player);
+	player = value;
+}
 
 
 
@@ -89,8 +100,8 @@ void AGhost::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Menu",  IE_Released, this, &AGhost::C    , false);
 
 }
-bool* AGhost::GetInput() {
-	return input;
+bool AGhost::GetInput(Action value) {
+	return input[static_cast<uint8>(value)];
 }
 FVector AGhost::GetInputDirection() {
 	return direction;

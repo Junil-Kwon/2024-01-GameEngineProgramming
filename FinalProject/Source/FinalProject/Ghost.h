@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Creature.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "Ghost.generated.h"
@@ -53,6 +54,14 @@ public:
 	float GetWorldSpeed();
 	void  SetWorldSpeed(float value);
 
+	// Player
+private:
+	UPROPERTY() class ACreature* player;
+public:
+	ACreature* GetPlayer();
+	void SetPlayer(ACreature* value);
+
+
 	// Input
 private:
 	bool input[(uint8)Input::Max] = { false, };
@@ -68,6 +77,6 @@ private:
 	void C    (bool pressed);
 public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	bool* GetInput();
+	bool GetInput(Action value);
 	FVector GetInputDirection();
 };
