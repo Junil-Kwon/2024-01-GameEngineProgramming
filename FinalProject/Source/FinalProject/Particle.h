@@ -15,12 +15,9 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-public:
-	virtual void Tick(float DeltaTime) override;
 
 
-
-	// Sprite
+	// Action
 protected:
-	virtual bool UpdateSprite(float DeltaTime) override;
+	virtual bool UpdateAction(float DeltaTime) override;
 };

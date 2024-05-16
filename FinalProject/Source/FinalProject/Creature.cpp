@@ -35,7 +35,7 @@ void ACreature::BeginPlay() {
 	magnetComponent->OnComponentBeginOverlap.AddDynamic(this, &ACreature::OnMagnetBeginOverlap);
 	magnetComponent->OnComponentEndOverlap  .AddDynamic(this, &ACreature::OnMagnetEndOverlap  );
 	
-	indicator = static_cast<AIndicator*>(Spawn(Identifier::Indicator));
+	indicator = static_cast<AIndicator*>(SpawnEntity(Identifier::Indicator));
 	if (indicator) {
 		indicator->SetWidth(indicatorWidth);
 		indicator->SetGroup(GetGroup());
@@ -44,18 +44,17 @@ void ACreature::BeginPlay() {
 		indicator->SetActorRelativeLocation(FVector(0.0f, 0.0f, GetHitboxHeight() * 0.5f + 80.0f));
 	}
 	
-	SetGroup(GetGroup());
-
 	healthMax = health;
 	shieldMax = shield;
+	energeMax = energe;
 }
 
 
 
 void ACreature::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
-	if (GetWorldSpeed() != 0.0f) UpdateSensor(DeltaTime * GetWorldSpeed());
-	if (GetWorldSpeed() != 0.0f) UpdateMagnet(DeltaTime * GetWorldSpeed());
+	UpdateSensor(DeltaTime * GetWorldSpeed());
+	UpdateMagnet(DeltaTime * GetWorldSpeed());
 }
 
 
@@ -155,45 +154,16 @@ bool ACreature::RemoveEffect(Effect value) {
 
 
 
-bool ACreature::GetInput(Action value) {
-	if (!GetGhost()) return nullptr;
-	return GetGhost()->GetInput(value);
-}
-FVector ACreature::GetInputDirection() {
-	if (!GetGhost()) return FVector::ZeroVector;
-	return GetGhost()->GetInputDirection();
-}
-bool ACreature::UpdateOutput() {
-	if (HasTag(Tag::Player)) {
-		switch (GetAction()) {
-		case Action::Idle:
-			 break;
-		case Action::Move:
-			 break;
-		case Action::Jump:
-
-			break;
-		case Action::Dodge:
-			 break;
-		}
-		return false;
-	}
+bool ACreature::UpdateSensor(float DeltaTime) {
+	if (sensorArray.Num() == 0) return false;
 	return true;
 }
-
-
-
-
 float ACreature::GetSensorRange() {
 	return sensorRange;
 }
 void  ACreature::SetSensorRange(float range) {
 	sensorRange = range;
 	sensorComponent->SetSphereRadius(range);
-}
-bool ACreature::UpdateSensor(float DeltaTime) {
-	if (sensorArray.Num() == 0) return false;
-	return true;
 }
 void ACreature::OnSensorBeginOverlap(
 	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -207,13 +177,6 @@ void ACreature::OnSensorEndOverlap(
 
 
 
-float ACreature::GetMagnetRange() {
-	return magnetRange;
-}
-void  ACreature::SetMagnetRange(float range) {
-	magnetRange = range;
-	magnetComponent->SetSphereRadius(range);
-}
 bool ACreature::UpdateMagnet(float DeltaTime) {
 	if (magnetArray.Num() == 0) return false;
 	if (GetGroup() != GetGhost()->GetPlayer()->GetGroup()) return false;
@@ -241,6 +204,13 @@ bool ACreature::UpdateMagnet(float DeltaTime) {
 	}
 	return true;
 }
+float ACreature::GetMagnetRange() {
+	return magnetRange;
+}
+void  ACreature::SetMagnetRange(float range) {
+	magnetRange = range;
+	magnetComponent->SetSphereRadius(range);
+}
 void ACreature::OnMagnetBeginOverlap(
 	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
@@ -250,7 +220,6 @@ void ACreature::OnMagnetBeginOverlap(
 	if (entity == nullptr) return;
 	if (!magnetArray.Contains(entity) && entity->HasTag(Tag::Interactability)) {
 		magnetArray.Add(entity);
-		if (selected == nullptr) Select(entity);
 	}
 }
 void ACreature::OnMagnetEndOverlap(
@@ -287,7 +256,6 @@ AIndicator* ACreature::GetIndicator() {
 
 
 
-float ACreature::GetHealth() { return health + shield + GetEffectStrength(GetIndex(Effect::HealthBoost)); }
 void  ACreature::OnDamaged(float value) {
 	if (0.0f < value) {
 		if (HasTag(Tag::Invulnerability)) return;
@@ -314,6 +282,9 @@ void  ACreature::OnShieldBroken() {
 void  ACreature::OnDie() {
 	SetAction(Action::Defeat);
 	// if (HasEffect(Effect::Burn)) smoke effect, if enough strength, ashed effect
+}
+float ACreature::GetHealth() {
+	return health + shield + GetEffectStrength(GetIndex(Effect::HealthBoost));
 }
 
 

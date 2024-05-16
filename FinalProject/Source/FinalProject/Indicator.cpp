@@ -42,21 +42,21 @@ void AIndicator::SetupComponent(UStaticMeshComponent* component) {
 void AIndicator::BeginPlay() {
 	Super::BeginPlay();
 
-	SetIndex(nullptr, 63);
-	SetMaterial(lBorderComponent);
-	SetMaterial(rBorderComponent);
-	SetMaterial(lHealthComponent);
-	SetMaterial(rHealthComponent);
-	SetMaterial(lShieldComponent);
-	SetMaterial(rShieldComponent);
-	SetMaterial(iShieldComponent);
-	SetMaterial(iLeaderComponent);
+	SetSpriteIndex(nullptr, 63);
+	CreateMaterial(lBorderComponent);
+	CreateMaterial(rBorderComponent);
+	CreateMaterial(lHealthComponent);
+	CreateMaterial(rHealthComponent);
+	CreateMaterial(lShieldComponent);
+	CreateMaterial(rShieldComponent);
+	CreateMaterial(iShieldComponent);
+	CreateMaterial(iLeaderComponent);
 
 	SetShield(false);
 	SetLeader(false);
 	SetGroup(Group::None);
-	SetColor(lShieldComponent, FVector(0.1f, 0.1f, 0.1f));
-	SetColor(iShieldComponent, FVector(0.1f, 0.1f, 0.1f));
+	SetSpriteColor(lShieldComponent, FVector(0.1f, 0.1f, 0.1f));
+	SetSpriteColor(iShieldComponent, FVector(0.1f, 0.1f, 0.1f));
 }
 
 
@@ -81,25 +81,25 @@ void AIndicator::SetGroup(Group value) {
 	case Group::Friendly: color = FVector(0.031896, 0.332452, 0.152926); break;
 	case Group::Enemy:    color = FVector(0.332452, 0.044270, 0.064128); break;
 	}
-	SetColor(lHealthComponent, color);
+	SetSpriteColor(lHealthComponent, color);
 }
 
 void AIndicator::SetShield(bool enable) {
 	if (shield == enable) return;
 	shield = enable;
-	SetIndex(lBorderComponent, shield ?  1 :  0);
-	SetIndex(rBorderComponent, shield ?  1 :  0);
-	SetIndex(lHealthComponent, shield ?  5 :  4);
-	SetIndex(rHealthComponent, shield ?  9 :  8);
-	SetIndex(lShieldComponent, shield ?  4 : 63);
-	SetIndex(rShieldComponent, shield ?  8 : 63);
-	SetIndex(iShieldComponent, shield ? 12 : 63);
+	SetSpriteIndex(lBorderComponent, shield ?  1 :  0);
+	SetSpriteIndex(rBorderComponent, shield ?  1 :  0);
+	SetSpriteIndex(lHealthComponent, shield ?  5 :  4);
+	SetSpriteIndex(rHealthComponent, shield ?  9 :  8);
+	SetSpriteIndex(lShieldComponent, shield ?  4 : 63);
+	SetSpriteIndex(rShieldComponent, shield ?  8 : 63);
+	SetSpriteIndex(iShieldComponent, shield ? 12 : 63);
 	SetWidth(width);
 }
 void AIndicator::SetLeader(bool enable) {
 	if (leader == enable) return;
 	leader = enable;
-	SetIndex(iLeaderComponent, leader ? 13 : 63);
+	SetSpriteIndex(iLeaderComponent, leader ? 13 : 63);
 }
 
 void AIndicator::SetHealthRatio(float value) {

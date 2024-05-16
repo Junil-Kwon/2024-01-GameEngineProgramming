@@ -11,6 +11,7 @@
 
 
 bool AEntity::operator==(const AEntity& other) const { return this == &other; }
+
 template<typename TEnum> FString AEntity::ToFString(TEnum value) {
 	return StaticEnum<TEnum>()->GetNameStringByValue(static_cast<uint8>(value));
 }
@@ -18,29 +19,17 @@ template<typename TEnum> TEnum AEntity::ToEnum(FString value) {
 	int64 index = StaticEnum<TEnum>()->GetValueByName(FName(*value));
 	return static_cast<TEnum>(index == INDEX_NONE ? 0 : index);
 }
+FRotator AEntity::ToRotator(FVector  value) {
+	float degree = 90.0f - FMath::RadiansToDegrees(FMath::Atan2(value.X, value.Y));
+	return FRotator(0.0f, degree, 0.0f);
+}
+FVector  AEntity::ToVector(FRotator value) {
+	float radian = FMath::DegreesToRadians(value.Yaw);
+	return FVector(FMath::Cos(radian), FMath::Sin(radian), 0.0f);
+}
 
-UClass* AEntity::GetBlueprint(Identifier value) {
-	static UClass* uClass[static_cast<uint8>(Identifier::Length)] = { nullptr, };
-	uint8 index = static_cast<uint8>(value);
-	if (uClass[index] == nullptr) {
-		FString name = StaticEnum<Identifier>()->GetNameStringByIndex(index);
-		FString path = "/Game/Blueprints/BP_" + name + ".BP_" + name + "_C";
-		uClass[index] = Cast<UClass>(StaticLoadObject(UClass::StaticClass(), nullptr, *path));
-	}
-	if (!uClass[index]) UE_LOG(LogTemp, Warning, TEXT("Blueprint 'BP_%s' not found"), *ToFString(value));
-	return uClass[index];
-}
-UTexture* AEntity::GetTexture(Identifier value) {
-	static UTexture* uTexture[static_cast<uint8>(Identifier::Length)] = { nullptr, };
-	uint8 index = static_cast<uint8>(value);
-	if (uTexture[index] == nullptr) {
-		FString name = StaticEnum<Identifier>()->GetNameStringByIndex(index);
-		FString path = "/Game/Materials/" + name + "." + name;
-		uTexture[index] = Cast<UTexture>(StaticLoadObject(UTexture::StaticClass(), nullptr, *path));
-	}
-	if (!uTexture[index]) UE_LOG(LogTemp, Warning, TEXT("Texture '%s' not found"), *ToFString(value));
-	return uTexture[index];
-}
+
+
 UStaticMesh* AEntity::GetPlaneMesh() {
 	static UStaticMesh* uStaticMesh = nullptr;
 	if (uStaticMesh == nullptr) {
@@ -57,41 +46,73 @@ UStaticMesh* AEntity::GetSphereMesh() {
 	}
 	return uStaticMesh;
 }
-void AEntity::SetMaterial(UStaticMeshComponent* component) {
+UTexture* AEntity::GetTexture(Identifier value) {
+	static UTexture* uTexture[static_cast<uint8>(Identifier::Length)] = { nullptr, };
+	uint8 index = static_cast<uint8>(value);
+	if (uTexture[index] == nullptr) {
+		FString name = StaticEnum<Identifier>()->GetNameStringByIndex(index);
+		FString path = "/Game/Materials/" + name + "." + name;
+		uTexture[index] = Cast<UTexture>(StaticLoadObject(UTexture::StaticClass(), nullptr, *path));
+	}
+	if (!uTexture[index]) UE_LOG(LogTemp, Warning, TEXT("Texture '%s' not found"), *ToFString(value));
+	return uTexture[index];
+}
+UClass* AEntity::GetBlueprint(Identifier value) {
+	static UClass* uClass[static_cast<uint8>(Identifier::Length)] = { nullptr, };
+	uint8 index = static_cast<uint8>(value);
+	if (uClass[index] == nullptr) {
+		FString name = StaticEnum<Identifier>()->GetNameStringByIndex(index);
+		FString path = "/Game/Blueprints/BP_" + name + ".BP_" + name + "_C";
+		uClass[index] = Cast<UClass>(StaticLoadObject(UClass::StaticClass(), nullptr, *path));
+	}
+	if (!uClass[index]) UE_LOG(LogTemp, Warning, TEXT("Blueprint 'BP_%s' not found"), *ToFString(value));
+	return uClass[index];
+}
+UMaterialInstance* AEntity::GetMaterialInstance() {
 	static UMaterialInstance* uInstance = nullptr;
 	if (uInstance == nullptr) {
 		FString path = "/Game/Materials/MaterialInstance.MaterialInstance";
 		uInstance = Cast<UMaterialInstance>(StaticLoadObject(UMaterialInstance::StaticClass(), nullptr, *path));
 	}
 	if (!uInstance) UE_LOG(LogTemp, Warning, TEXT("Material 'MaterialInstance' not found"));
+	return uInstance;
+}
+
+
+
+void AEntity::CreateMaterial(UStaticMeshComponent* component) {
 	if (component == nullptr) component = spriteComponent;
-	UMaterialInstanceDynamic* material = UMaterialInstanceDynamic::Create(uInstance, this);
+	UMaterialInstanceDynamic* material = UMaterialInstanceDynamic::Create(GetMaterialInstance(), this);
 	material->SetTextureParameterValue(TEXT("Texture"), GetTexture(identifier));
 	component->SetMaterial(0, material);
 }
-void AEntity::SetIndex(UStaticMeshComponent* component, int32 value) {
+void AEntity::SetSpriteIndex(UStaticMeshComponent* component, int32 value) {
 	if (component == nullptr) component = spriteComponent;
 	component->SetScalarParameterValueOnMaterials(TEXT("Index"), value);
 }
-void AEntity::SetXFlip(UStaticMeshComponent* component, bool value) {
+void AEntity::SetSpriteXFlip(UStaticMeshComponent* component, bool value) {
 	if (component == nullptr) component = spriteComponent;
 	component->SetScalarParameterValueOnMaterials(TEXT("XFlip"), value ? 1.0f : 0.0f);
 }
-void AEntity::SetColor(UStaticMeshComponent* component, FVector value) {
+void AEntity::SetSpriteColor(UStaticMeshComponent* component, FVector value) {
 	if (component == nullptr) component = spriteComponent;
 	component->SetVectorParameterValueOnMaterials(TEXT("Color"), value);
 }
-void AEntity::SetIntensity(UStaticMeshComponent* component, float value) {
+void AEntity::SetSpriteLight(UStaticMeshComponent* component, float value) {
 	if (component == nullptr) component = spriteComponent;
 	component->SetScalarParameterValueOnMaterials(TEXT("Intensity"), value);
 }
 
 
 
+AEntity* AEntity::SpawnEntity(Identifier value, FVector location) {
+	return GetWorld()->SpawnActor<AEntity>(GetBlueprint(value), location, FRotator::ZeroRotator);
+}
+
+
+
 AEntity::AEntity() {
  	PrimaryActorTick.bCanEverTick = true;
-
-	arrowComponent  = CreateDefaultSubobject<UArrowComponent>(TEXT("Arrow"));
 
 	hitboxComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Hitbox"));
 	hitboxComponent->InitCapsuleSize(DefaultHitboxRadius, DefaultHitboxHeight * 0.5f);
@@ -107,6 +128,7 @@ AEntity::AEntity() {
 	spriteComponent->SetWorldRotation(FRotator(0.0f, 90.0f, 41.409618f));
 	spriteComponent->SetWorldScale3D(FVector(1.28f, 1.28f, 1.28f));
 	spriteComponent->SetStaticMesh(GetPlaneMesh());
+	spriteComponent->SetMaterial(0, GetMaterialInstance());
 	spriteComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	spriteComponent->SetupAttachment(RootComponent);
 
@@ -119,7 +141,7 @@ AEntity::AEntity() {
 
 void AEntity::BeginPlay() {
 	Super::BeginPlay();
-	zPrev = GetActorLocation().Z;
+	zPrevious = GetActorLocation().Z;
 
 	FString name = GetName();
 	int64 BP = name.Find(TEXT("_"), ESearchCase::IgnoreCase, ESearchDir::FromStart,      0);
@@ -129,10 +151,9 @@ void AEntity::BeginPlay() {
 	
 	hitboxComponent->GetBodyInstance()->MassScale = mass;
 	hitboxComponent->OnComponentHit.AddDynamic(this, &AEntity::OnHit);
-
 	SetHitbox(hitboxRadius, hitboxHeight);
 
-	SetMaterial();
+	CreateMaterial();
 
 	shadowComponent->SetVisibility(true);
 	shadowComponent->bCastHiddenShadow = true;
@@ -173,9 +194,11 @@ void AEntity::BeginPlay() {
 
 
 AGhost* AEntity::GetGhost() {
-	static AGhost* aGhost = nullptr;
-	if (aGhost == nullptr) aGhost = Cast<AGhost>(UGameplayStatics::GetPlayerPawn(this->GetWorld(), 0));
-	return aGhost;
+	//static AGhost* aGhost = nullptr;
+	//if (aGhost == nullptr) aGhost = Cast<AGhost>(UGameplayStatics::GetPlayerPawn(this->GetWorld(), 0));
+	//if (aGhost == nullptr) UE_LOG(LogTemp, Warning, TEXT("Ghost not found"));
+	//return aGhost;
+	return Cast<AGhost>(UGameplayStatics::GetPlayerPawn(this->GetWorld(), 0));
 }
 float AEntity::GetWorldSpeed() {
 	return GetGhost() ? GetGhost()->GetWorldSpeed() : DefaultWorldSpeed;
@@ -189,45 +212,44 @@ void  AEntity::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
 	float z = GetActorLocation().Z;
-	if (z < zPrev - 0.01f && !HasTag(Tag::Piercing)) {
+	if (z < zPrevious - 0.01f && !HasTag(Tag::Piercing)) {
 		isFalling = true;
-		fallSpeed = -GetVelocity().Z;
+		fallSpeed = GetVelocity().Z;
 	}
 	else if (isFalling) {
-		if (ParticleThreshold < fallSpeed && !HasTag(Tag::Piercing)) {
-			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -hitboxRadius *  0.75f, 0.0f));
-			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -hitboxRadius * -0.75f, 0.0f));
+		if (fallSpeed < ParticleThreshold && !HasTag(Tag::Piercing)) {
+			SpawnEntity(Identifier::Dust, GetFootLocation() + FVector(0.0f, -hitboxRadius *  0.75f, 0.0f));
+			SpawnEntity(Identifier::Dust, GetFootLocation() + FVector(0.0f, -hitboxRadius * -0.75f, 0.0f));
 		}
 		isFalling = false;
 		fallSpeed = 0.0f;
 	}
-	zPrev = z;
-
-	if (GetWorldSpeed() != 0.0f) UpdateSprite(DeltaTime * GetWorldSpeed());
-	if (GetWorldSpeed() != 0.0f) UpdateAction(DeltaTime * GetWorldSpeed());
-	if (GetWorldSpeed() != 0.0f) UpdateEffect(DeltaTime * GetWorldSpeed());
+	if (z < VoidThreshold) {
+		Destroy();
+		return;
+	}
+	zPrevious = z;
+	
+	UpdateInputs(DeltaTime * GetWorldSpeed());
+	UpdateAction(DeltaTime * GetWorldSpeed());
+	UpdateEffect(DeltaTime * GetWorldSpeed());
+	direction.Normalize();
+	velocity = direction * GetWorldSpeed() * speed;
+	if (HasEffect(Effect::Speed )) velocity *=        GetEffectStrength(GetIndex(Effect::Speed ));
+	if (HasEffect(Effect::Freeze)) velocity *= 1.0f - GetEffectStrength(GetIndex(Effect::Freeze));
+	
+	// movement realization
+	UE_LOG(LogTemp, Warning, TEXT("%f, %f"), velocity.X, velocity.Y);
+	hitboxComponent->ComponentVelocity = velocity + (force *= 0.95f);
 }
+FVector AEntity::GetDirection() { return direction; }
+void AEntity::SetDirection(FVector value) { direction = value; direction.Normalize(); }
+void AEntity::AddForce(FVector value) { force += value / mass; }
 bool AEntity::IsFalling() { return isFalling; }
 
 
 
-Identifier AEntity::GetIdentifier() {
-	return identifier;
-}
-AEntity* AEntity::Spawn(Identifier value, FVector location) {
-	return GetWorld()->SpawnActor<AEntity>(GetBlueprint(value), location, FRotator::ZeroRotator);
-}
-
-
-
-FRotator AEntity::VectorToRotator(FVector  value) {
-	float degree = 90.0f - FMath::RadiansToDegrees(FMath::Atan2(value.X, value.Y));
-	return FRotator(0.0f, degree, 0.0f);
-}
-FVector  AEntity::RotatorToVector(FRotator value) {
-	float radian = FMath::DegreesToRadians(value.Yaw);
-	return FVector(FMath::Cos(radian), FMath::Sin(radian), 0.0f);
-}
+Identifier AEntity::GetIdentifier() { return identifier; }
 
 
 
@@ -280,9 +302,13 @@ void AEntity::OnHit(
 
 
 
-bool  AEntity::UpdateSprite(float DeltaTime) {
-	spriteDelay += DeltaTime;
-	return true;
+bool AEntity::GetInput(Action value) {
+	if (!GetGhost()) return false;
+	return GetGhost()->GetInput(value);
+}
+FVector AEntity::GetInputDirection() {
+	if (!GetGhost()) return FVector::ZeroVector;
+	return GetGhost()->GetInputDirection();
 }
 
 
@@ -290,16 +316,26 @@ bool  AEntity::UpdateSprite(float DeltaTime) {
 Action AEntity::GetAction() {
 	return action;
 }
-void AEntity::SetAction(Action value) {
+bool AEntity::SetAction(Action value) {
+	if (!VerifyAction(value)) return false;
 	action = value;
 	actionDelay = 0.0f;
-	switch (value) {
-	case Action::Idle:   break;
-	case Action::Move:   break;
-	case Action::Jump:   break;
-	case Action::Dodge:  break;
-	case Action::Defeat: break;
+	return true;
+}
+bool AEntity::VerifyAction(Action value) {
+	return false;
+}
+bool AEntity::UpdateInputs(float DeltaTime) {
+	if (HasTag(Tag::Player)) {
+		direction = GetInputDirection();
+		SetAction(direction.IsZero() ? Action::Idle : Action::Move);
+		for (uint8 i = 0; i < static_cast<uint8>(Action::Length); i++) {
+			Action index = static_cast<Action>(1 << i);
+			if (GetInput(index)) SetAction(index);
+		}
+		return false;
 	}
+	return true;
 }
 bool AEntity::UpdateAction(float DeltaTime) {
 	actionDelay += DeltaTime;
@@ -307,7 +343,9 @@ bool AEntity::UpdateAction(float DeltaTime) {
 	case Action::Idle:   break;
 	case Action::Move:   break;
 	case Action::Jump:   break;
-	case Action::Dodge:  break;
+	case Action::Dash:   break;
+	case Action::Attack: break;
+	case Action::Defend: break;
 	case Action::Defeat: break;
 	}
 	return true;
@@ -315,12 +353,8 @@ bool AEntity::UpdateAction(float DeltaTime) {
 
 
 
-Group AEntity::GetGroup() {
-	return group;
-}
-void AEntity::SetGroup(Group value) {
-	group = value;
-}
+Group AEntity::GetGroup() { return group; }
+void AEntity::SetGroup(Group value) { group = value; }
 
 
 

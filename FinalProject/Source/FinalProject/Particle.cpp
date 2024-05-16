@@ -8,22 +8,14 @@ AParticle::AParticle() {
 	SetHitbox(0.0f, 0.0f);
 }
 
-
-
 void AParticle::BeginPlay() {
 	Super::BeginPlay();
 }
 
 
 
-void AParticle::Tick(float DeltaTime) {
-	Super::Tick(DeltaTime);
-}
-
-
-
-bool AParticle::UpdateSprite(float DeltaTime) {
-	Super::UpdateSprite(DeltaTime);
+bool AParticle::UpdateAction(float DeltaTime) {
+	if (!Super::UpdateAction(DeltaTime)) return false;
 
 	switch (GetIdentifier()) {
 	case Identifier::Dust:

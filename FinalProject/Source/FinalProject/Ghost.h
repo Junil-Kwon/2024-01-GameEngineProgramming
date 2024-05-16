@@ -7,22 +7,6 @@
 
 
 
-UENUM(BlueprintType)
-enum class Input : uint8 {
-	Up				= 0,
-	Down			,
-	Left			,
-	Right			,
-	Space			,
-	Shift			,
-	Z				,
-	X				,
-	C				,
-	Max				UMETA(Hidden),
-};
-
-
-
 UCLASS(HideCategories = ("Actor Tick", Camera, Replication, Rendering, Collision, Actor, Input, LOD, Cooking))
 class FINALPROJECT_API AGhost : public APawn {
 	GENERATED_BODY()
@@ -63,18 +47,23 @@ public:
 
 
 	// Input
+	#define Up    0
+	#define Down  1
+	#define Left  2
+	#define Right 3
 private:
-	bool input[(uint8)Input::Max] = { false, };
 	FVector direction = FVector::ZeroVector;
-	void Up   (bool pressed);
-	void Down (bool pressed);
-	void Left (bool pressed);
-	void Right(bool pressed);
-	void Space(bool pressed);
-	void Shift(bool pressed);
-	void Z    (bool pressed);
-	void X    (bool pressed);
-	void C    (bool pressed);
+	bool inputDirection[4] = { false, };
+	bool inputAction[(uint8)Action::Length] = { false, };
+	void InputMoveUp   (bool pressed);
+	void InputMoveDown (bool pressed);
+	void InputMoveLeft (bool pressed);
+	void InputMoveRight(bool pressed);
+	void InputJump     (bool pressed);
+	void InputDash     (bool pressed);
+	void InputAttack   (bool pressed);
+	void InputDefend   (bool pressed);
+	void InputMenu     (bool pressed);
 public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	bool GetInput(Action value);

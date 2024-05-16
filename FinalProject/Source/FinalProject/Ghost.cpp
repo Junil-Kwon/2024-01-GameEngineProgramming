@@ -53,55 +53,55 @@ void AGhost::SetPlayer(ACreature* value) {
 
 
 
-void AGhost::Up   (bool pressed) {
-	input[(uint8)Input::Up    ] = pressed;
-	direction.X = pressed ?  1.0f : input[(uint8)Input::Down ] ? -1.0f : 0.0f;
+void AGhost::InputMoveUp   (bool pressed) {
+	inputDirection[Up   ] = pressed;
+	direction.X = pressed ?  1.0f : (inputDirection[Down ] ? -1.0f : 0.0f);
 }
-void AGhost::Down (bool pressed) {
-	input[(uint8)Input::Down  ] = pressed;
-	direction.X = pressed ? -1.0f : input[(uint8)Input::Up   ] ?  1.0f : 0.0f;
+void AGhost::InputMoveDown (bool pressed) {
+	inputDirection[Down ] = pressed;
+	direction.X = pressed ? -1.0f : (inputDirection[Up   ] ?  1.0f : 0.0f);
 }
-void AGhost::Left (bool pressed) {
-	input[(uint8)Input::Left  ] = pressed;
-	direction.Y = pressed ? -1.0f : input[(uint8)Input::Right] ?  1.0f : 0.0f;
+void AGhost::InputMoveLeft (bool pressed) {
+	inputDirection[Left ] = pressed;
+	direction.Y = pressed ? -1.0f : (inputDirection[Right] ?  1.0f : 0.0f);
 }
-void AGhost::Right(bool pressed) {
-	input[(uint8)Input::Right ] = pressed;
-	direction.Y = pressed ?  1.0f : input[(uint8)Input::Left ] ? -1.0f : 0.0f;
+void AGhost::InputMoveRight(bool pressed) {
+	inputDirection[Right] = pressed;
+	direction.Y = pressed ?  1.0f : (inputDirection[Left ] ? -1.0f : 0.0f);
 }
-void AGhost::Space(bool pressed) { input[(uint8)Input::Space] = pressed; }
-void AGhost::Shift(bool pressed) { input[(uint8)Input::Shift] = pressed; }
-void AGhost::Z    (bool pressed) { input[(uint8)Input::Z    ] = pressed; }
-void AGhost::X    (bool pressed) { input[(uint8)Input::X    ] = pressed; }
-void AGhost::C    (bool pressed) { input[(uint8)Input::C    ] = pressed; }
+void AGhost::InputJump  (bool pressed) { inputAction[(uint8)Action::Jump  ] = pressed; }
+void AGhost::InputDash  (bool pressed) { inputAction[(uint8)Action::Dash  ] = pressed; }
+void AGhost::InputAttack(bool pressed) { inputAction[(uint8)Action::Attack] = pressed; }
+void AGhost::InputDefend(bool pressed) { inputAction[(uint8)Action::Defend] = pressed; }
+void AGhost::InputMenu  (bool pressed) {  }
 
-void AGhost::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
+void AGhost::SetupPlayerInputComponent(UInputComponent* input) {
+	Super::SetupPlayerInputComponent(input);
 
-	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Up",    IE_Pressed,  this, &AGhost::Up   , true );
-	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Up",    IE_Released, this, &AGhost::Up   , false);
-	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Down",  IE_Pressed,  this, &AGhost::Down , true );
-	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Down",  IE_Released, this, &AGhost::Down , false);
-	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Left",  IE_Pressed,  this, &AGhost::Left , true );
-	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Left",  IE_Released, this, &AGhost::Left , false);
-	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Right", IE_Pressed,  this, &AGhost::Right, true );
-	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Right", IE_Released, this, &AGhost::Right, false);
+	input->BindAction<TBaseDelegate<void, bool>>("MoveUp",    IE_Pressed,  this, &AGhost::InputMoveUp,    true );
+	input->BindAction<TBaseDelegate<void, bool>>("MoveUp",    IE_Released, this, &AGhost::InputMoveUp,    false);
+	input->BindAction<TBaseDelegate<void, bool>>("MoveDown",  IE_Pressed,  this, &AGhost::InputMoveDown,  true );
+	input->BindAction<TBaseDelegate<void, bool>>("MoveDown",  IE_Released, this, &AGhost::InputMoveDown,  false);
+	input->BindAction<TBaseDelegate<void, bool>>("MoveLeft",  IE_Pressed,  this, &AGhost::InputMoveLeft,  true );
+	input->BindAction<TBaseDelegate<void, bool>>("MoveLeft",  IE_Released, this, &AGhost::InputMoveLeft,  false);
+	input->BindAction<TBaseDelegate<void, bool>>("MoveRight", IE_Pressed,  this, &AGhost::InputMoveRight, true );
+	input->BindAction<TBaseDelegate<void, bool>>("MoveRight", IE_Released, this, &AGhost::InputMoveRight, false);
 
-	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Jump",  IE_Pressed,  this, &AGhost::Space, true );
-	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Jump",  IE_Released, this, &AGhost::Space, false);
-	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Dodge", IE_Pressed,  this, &AGhost::Shift, true );
-	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Dodge", IE_Released, this, &AGhost::Shift, false);
+	input->BindAction<TBaseDelegate<void, bool>>("Jump",      IE_Pressed,  this, &AGhost::InputJump,      true );
+	input->BindAction<TBaseDelegate<void, bool>>("Jump",      IE_Released, this, &AGhost::InputJump,      false);
+	input->BindAction<TBaseDelegate<void, bool>>("Dash",      IE_Pressed,  this, &AGhost::InputDash,      true );
+	input->BindAction<TBaseDelegate<void, bool>>("Dash",      IE_Released, this, &AGhost::InputDash,      false);
 
-	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Act",   IE_Pressed,  this, &AGhost::Z    , true );
-	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Act",   IE_Released, this, &AGhost::Z    , false);
-	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Swap",  IE_Pressed,  this, &AGhost::X    , true );
-	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Swap",  IE_Released, this, &AGhost::X    , false);
-	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Menu",  IE_Pressed,  this, &AGhost::C    , true );
-	PlayerInputComponent->BindAction<TBaseDelegate<void, bool>>("Menu",  IE_Released, this, &AGhost::C    , false);
+	input->BindAction<TBaseDelegate<void, bool>>("Action",    IE_Pressed,  this, &AGhost::InputAttack,    true );
+	input->BindAction<TBaseDelegate<void, bool>>("Action",    IE_Released, this, &AGhost::InputAttack,    false);
+	input->BindAction<TBaseDelegate<void, bool>>("Defend",    IE_Pressed,  this, &AGhost::InputDefend,    true );
+	input->BindAction<TBaseDelegate<void, bool>>("Defend",    IE_Released, this, &AGhost::InputDefend,    false);
+	input->BindAction<TBaseDelegate<void, bool>>("Menu",      IE_Pressed,  this, &AGhost::InputMenu,      true );
+	input->BindAction<TBaseDelegate<void, bool>>("Menu",      IE_Released, this, &AGhost::InputMenu,      false);
 
 }
 bool AGhost::GetInput(Action value) {
-	return input[static_cast<uint8>(value)];
+	return inputAction[static_cast<uint8>(value)];
 }
 FVector AGhost::GetInputDirection() {
 	return direction;

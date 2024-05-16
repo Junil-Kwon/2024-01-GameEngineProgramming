@@ -30,23 +30,15 @@ public:
 
 	// Tag
 public:
-	virtual bool AddTag(Tag value) override;
+	virtual bool AddTag   (Tag value) override;
 	virtual bool RemoveTag(Tag value) override;
 
 	// Effect
 protected:
 	virtual bool UpdateEffect(float DeltaTime) override;
 public:
-	virtual bool AddEffect(Effect value, float strength, float duration) override;
+	virtual bool AddEffect   (Effect value, float strength, float duration) override;
 	virtual bool RemoveEffect(Effect value) override;
-
-
-
-	// Input
-protected:
-	bool GetInput(Action value);
-	FVector GetInputDirection();
-	virtual bool UpdateOutput();
 
 
 
@@ -57,10 +49,10 @@ private:
 	UPROPERTY(EditAnywhere) float sensorRange = DefaultSensorRange;
 protected:
 	TArray<AEntity*> sensorArray;
-	float GetSensorRange();
-	void  SetSensorRange(float range = DefaultSensorRange);
 	virtual bool UpdateSensor(float DeltaTime);
 public:
+	float GetSensorRange();
+	void  SetSensorRange(float range = DefaultSensorRange);
 	UFUNCTION() virtual void OnSensorBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
@@ -76,10 +68,10 @@ private:
 	UPROPERTY(EditAnywhere) float magnetRange = DefaultMagnetRange;
 protected:
 	TArray<AEntity*> magnetArray;
-	float GetMagnetRange();
-	void  SetMagnetRange(float range = DefaultMagnetRange);
 	virtual bool UpdateMagnet(float DeltaTime);
 public:
+	float GetMagnetRange();
+	void  SetMagnetRange(float range = DefaultMagnetRange);
 	UFUNCTION() virtual void OnMagnetBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
@@ -125,11 +117,11 @@ private:
 	float mendCooldown = 0.0f;
 	
 protected:
-	float GetHealth();
 	virtual void OnDamaged(float value);
 	virtual void OnShieldBroken();
 	virtual void OnDie();
 public:
+	float GetHealth();
 	void AdjustMaxHealth(float value = DefaultHealth);
 	void AdjustMaxShield(float value = DefaultShield);
 	void AdjustMaxEnerge(float value = DefaultEnerge);
