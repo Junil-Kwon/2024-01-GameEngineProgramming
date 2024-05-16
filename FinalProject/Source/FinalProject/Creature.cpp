@@ -48,6 +48,13 @@ void ACreature::BeginPlay() {
 	shieldMax = shield;
 	energeMax = energe;
 }
+void ACreature::EndPlay(const EEndPlayReason::Type EndPlayReason) {
+	indicator->Destroy();
+	if (HasTag(Tag::Player)) {
+		UE_LOG(LogTemp, Warning, TEXT("Player destroyed."));
+		GetGhost()->SetPlayer(nullptr);
+	}
+}
 
 
 

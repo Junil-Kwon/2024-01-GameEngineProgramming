@@ -19,7 +19,8 @@ bool AParticle::UpdateAction(float DeltaTime) {
 
 	switch (GetIdentifier()) {
 	case Identifier::Dust:
-
+		SetSpriteIndex(nullptr, FMath::Min(0 + static_cast<int32>(actionDelay * 10), 5));
+		if (0.5f < actionDelay) Destroy();
 		break;
 	}
 	return true;

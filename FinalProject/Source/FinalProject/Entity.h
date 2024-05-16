@@ -97,15 +97,17 @@ public:
 	AEntity();
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 
 
 	// Physics
-	#define Gravity           -980.0f
-	#define ParticleThreshold -500.0f
-	#define VoidThreshold     -100.0f
-	#define DefaultSpeed       400.0f
+	#define Gravity            -980.0f
+	#define ParticleThreshold  -500.0f
+	#define VoidThreshold     -1000.0f
+	#define DefaultSpeed        300.0f
 private:
+	UPROPERTY() class AGhost* ghost;
 	float zPrevious = 0.0f;
 	float fallSpeed = 0.0f;
 	bool  isFalling = false;

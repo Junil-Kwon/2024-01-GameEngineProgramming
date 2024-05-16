@@ -69,10 +69,10 @@ bool AHero::UpdateAction(float DeltaTime) {
 		SetSpriteIndex(nullptr,  4 + static_cast<int32>(actionDelay * 10) % 6);
 		break;
 	case Action::Jump:
-		SetSpriteIndex(nullptr, FMath::Max(10 + static_cast<int32>(actionDelay * 10), 13));
+		SetSpriteIndex(nullptr, FMath::Min(10 + static_cast<int32>(actionDelay * 10), 13));
 		break;
 	case Action::Dash:
-		SetSpriteIndex(nullptr, FMath::Max(14 + static_cast<int32>(actionDelay * 10), 19));
+		SetSpriteIndex(nullptr, FMath::Min(14 + static_cast<int32>(actionDelay * 10), 19));
 		break;
 	case Action::Attack:
 		
@@ -81,7 +81,7 @@ bool AHero::UpdateAction(float DeltaTime) {
 		
 		break;
 	case Action::Defeat:
-		SetSpriteIndex(nullptr, FMath::Max(20 + static_cast<int32>(actionDelay * 10), 23));
+		SetSpriteIndex(nullptr, FMath::Min(20 + static_cast<int32>(actionDelay * 10), 23));
 		break;
 	}
 

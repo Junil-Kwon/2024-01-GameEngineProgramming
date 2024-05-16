@@ -190,15 +190,14 @@ void AEntity::BeginPlay() {
 		AddEffect(value, strength, duration);
 	}
 }
+void AEntity::EndPlay(const EEndPlayReason::Type EndPlayReason) {
+}
 
 
 
 AGhost* AEntity::GetGhost() {
-	//static AGhost* aGhost = nullptr;
-	//if (aGhost == nullptr) aGhost = Cast<AGhost>(UGameplayStatics::GetPlayerPawn(this->GetWorld(), 0));
-	//if (aGhost == nullptr) UE_LOG(LogTemp, Warning, TEXT("Ghost not found"));
-	//return aGhost;
-	return Cast<AGhost>(UGameplayStatics::GetPlayerPawn(this->GetWorld(), 0));
+	if (ghost == nullptr) ghost = Cast<AGhost>(UGameplayStatics::GetPlayerPawn(this->GetWorld(), 0));
+	return ghost;
 }
 float AEntity::GetWorldSpeed() {
 	return GetGhost() ? GetGhost()->GetWorldSpeed() : DefaultWorldSpeed;
@@ -234,13 +233,12 @@ void  AEntity::Tick(float DeltaTime) {
 	UpdateAction(DeltaTime * GetWorldSpeed());
 	UpdateEffect(DeltaTime * GetWorldSpeed());
 	direction.Normalize();
-	velocity = direction * GetWorldSpeed() * speed;
-	if (HasEffect(Effect::Speed )) velocity *=        GetEffectStrength(GetIndex(Effect::Speed ));
-	if (HasEffect(Effect::Freeze)) velocity *= 1.0f - GetEffectStrength(GetIndex(Effect::Freeze));
-	
-	// movement realization
-	UE_LOG(LogTemp, Warning, TEXT("%f, %f"), velocity.X, velocity.Y);
-	hitboxComponent->ComponentVelocity = velocity + (force *= 0.95f);
+	FVector velocityTemp = direction * GetWorldSpeed() * speed;
+	if (HasEffect(Effect::Speed )) velocityTemp *=        GetEffectStrength(GetIndex(Effect::Speed ));
+	if (HasEffect(Effect::Freeze)) velocityTemp *= 1.0f - GetEffectStrength(GetIndex(Effect::Freeze));
+	velocity = velocity * 0.88f + velocityTemp * 0.12f;
+	SetActorLocation(GetActorLocation() + (velocity + force) * DeltaTime);
+	force = force * (1 - DeltaTime);
 }
 FVector AEntity::GetDirection() { return direction; }
 void AEntity::SetDirection(FVector value) { direction = value; direction.Normalize(); }
@@ -328,9 +326,10 @@ bool AEntity::VerifyAction(Action value) {
 bool AEntity::UpdateInputs(float DeltaTime) {
 	if (HasTag(Tag::Player)) {
 		direction = GetInputDirection();
-		SetAction(direction.IsZero() ? Action::Idle : Action::Move);
+		if (action == Action::Idle && !direction.IsZero()) SetAction(Action::Move);
+		if (action == Action::Move &&  direction.IsZero()) SetAction(Action::Idle);
 		for (uint8 i = 0; i < static_cast<uint8>(Action::Length); i++) {
-			Action index = static_cast<Action>(1 << i);
+			Action index = static_cast<Action>(i);
 			if (GetInput(index)) SetAction(index);
 		}
 		return false;
