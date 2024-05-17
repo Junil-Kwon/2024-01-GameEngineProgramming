@@ -12,12 +12,12 @@ ACreature::ACreature() {
 	SetCollisionProfileName("Creature");
 
 	sensorComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Sensor"));
-	sensorComponent->InitSphereRadius(DefaultSensorRange);
+	sensorComponent->InitSphereRadius(defaultSensorRange);
 	sensorComponent->SetCollisionProfileName("Sensor");
 	sensorComponent->SetupAttachment(RootComponent);
 
 	magnetComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Magnet"));
-	magnetComponent->InitSphereRadius(DefaultMagnetRange);
+	magnetComponent->InitSphereRadius(defaultMagnetRange);
 	magnetComponent->SetCollisionProfileName("Sensor");
 	magnetComponent->SetupAttachment(RootComponent);
 }
@@ -27,14 +27,15 @@ ACreature::ACreature() {
 void ACreature::BeginPlay() {
 	Super::BeginPlay();
 
-	SetSensorRange(sensorRange);
+	SetSensorRange(defaultSensorRange);
 	sensorComponent->OnComponentBeginOverlap.AddDynamic(this, &ACreature::OnSensorBeginOverlap);
 	sensorComponent->OnComponentEndOverlap  .AddDynamic(this, &ACreature::OnSensorEndOverlap  );
 
-	SetMagnetRange(magnetRange);
+	SetMagnetRange(defaultMagnetRange);
 	magnetComponent->OnComponentBeginOverlap.AddDynamic(this, &ACreature::OnMagnetBeginOverlap);
 	magnetComponent->OnComponentEndOverlap  .AddDynamic(this, &ACreature::OnMagnetEndOverlap  );
 	
+	indicatorWidth = defaultIndicatorWidth;
 	indicator = static_cast<AIndicator*>(SpawnEntity(Identifier::Indicator));
 	if (indicator) {
 		indicator->SetWidth(indicatorWidth);

@@ -44,16 +44,17 @@ public:
 
 
 	// Sensor
-	#define DefaultSensorRange 480.0f
+protected:
+	UPROPERTY(EditAnywhere) float defaultSensorRange = 480.0f;
 private:
 	UPROPERTY() class USphereComponent* sensorComponent;
-	UPROPERTY(EditAnywhere) float sensorRange = DefaultSensorRange;
+	float sensorRange;
 protected:
 	TArray<AEntity*> sensorArray;
 	virtual bool UpdateSensor(float DeltaTime);
 public:
 	float GetSensorRange();
-	void  SetSensorRange(float range = DefaultSensorRange);
+	void  SetSensorRange(float range);
 	UFUNCTION() virtual void OnSensorBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
@@ -63,16 +64,17 @@ public:
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	// Magent
-	#define DefaultMagnetRange 120.0f
+protected:
+	UPROPERTY(EditAnywhere) float defaultMagnetRange = 120.0f;
 private:
 	UPROPERTY() class USphereComponent* magnetComponent;
-	UPROPERTY(EditAnywhere) float magnetRange = DefaultMagnetRange;
+	float magnetRange;
 protected:
 	TArray<AEntity*> magnetArray;
 	virtual bool UpdateMagnet(float DeltaTime);
 public:
 	float GetMagnetRange();
-	void  SetMagnetRange(float range = DefaultMagnetRange);
+	void  SetMagnetRange(float range);
 	UFUNCTION() virtual void OnMagnetBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
@@ -89,10 +91,11 @@ protected:
 
 
 	// Indicator
-	#define DefaultIndicatorWidth 24.0f
+protected:
+	UPROPERTY(EditAnywhere) float defaultIndicatorWidth = 24.0f;
 private:
 	UPROPERTY() class AIndicator* indicator;
-	UPROPERTY(EditAnywhere) float indicatorWidth = DefaultIndicatorWidth;
+	float indicatorWidth;
 public:
 	AIndicator* GetIndicator();
 

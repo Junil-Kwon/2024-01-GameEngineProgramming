@@ -3,8 +3,8 @@
 
 
 AParticle::AParticle() {
-	AddTag(Tag::Floating);
-	AddTag(Tag::Piercing);
+	defaultTag += 1 << GetIndex(Tag::Floating);
+	defaultTag += 1 << GetIndex(Tag::Piercing);
 	SetHitbox(0.0f, 0.0f);
 }
 

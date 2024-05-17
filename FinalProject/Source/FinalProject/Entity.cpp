@@ -115,7 +115,7 @@ AEntity::AEntity() {
  	PrimaryActorTick.bCanEverTick = true;
 
 	hitboxComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Hitbox"));
-	hitboxComponent->InitCapsuleSize(DefaultHitboxRadius, DefaultHitboxHeight * 0.5f);
+	hitboxComponent->InitCapsuleSize(defaultHitboxRadius, defaultHitboxHeight * 0.5f);
 	hitboxComponent->SetSimulatePhysics(true);
 	hitboxComponent->SetCollisionProfileName(TEXT("Creature"));
 	hitboxComponent->GetBodyInstance()->bLockXRotation = true;
@@ -151,7 +151,8 @@ void AEntity::BeginPlay() {
 	
 	hitboxComponent->GetBodyInstance()->MassScale = mass;
 	hitboxComponent->OnComponentHit.AddDynamic(this, &AEntity::OnHit);
-	SetHitbox(hitboxRadius, hitboxHeight);
+	SetHitbox(defaultHitboxRadius, defaultHitboxHeight);
+	SetMass(defaultMass);
 
 	CreateMaterial();
 
@@ -159,35 +160,17 @@ void AEntity::BeginPlay() {
 	shadowComponent->bCastHiddenShadow = true;
 	shadowComponent->bHiddenInGame = true;
 
-	SetGroup(group);
+	SetGroup(defaultGroup);
 
-	uint8 tagTemp = tag;
-	tag = 0;
 	for (uint8 i = 0; i < static_cast<uint8>(Tag::Length); i++) {
 		Tag value = static_cast<Tag>(1 << i);
-		if (!(tagTemp & (1 << i))) continue;
-		AddTag(value);
+		if (defaultTag & (1 << i)) AddTag(value);
 	}
 
-	uint8 effectTemp = effect;
-	effect = 0;
-	effectStrength.Init(0.0f, static_cast<uint8>(Effect::Length));
-	effectDuration.Init(0.0f, static_cast<uint8>(Effect::Length));
-	float strength = 0.0f;
-	float duration = 0.0f;
+	effectImmunity = defaultEffectImmunity;
 	for (uint8 i = 0; i < static_cast<uint8>(Effect::Length); i++) {
 		Effect value = static_cast<Effect>(1 << i);
-		if (!(effect & (1 << i)) || (effectImmunity & (1 << i))) continue;
-		switch (value) {
-		case Effect::HealthBoost: strength = 0.0f, duration = EffectMaxDuration; break;
-		case Effect::DamageBoost: strength = 0.0f, duration = EffectMaxDuration; break;
-		case Effect::Resistance:  strength = 0.0f, duration = EffectMaxDuration; break;
-		case Effect::Speed:       strength = 0.0f, duration = EffectMaxDuration; break;
-		case Effect::Burn:        strength = 0.0f, duration = EffectMaxDuration; break;
-		case Effect::Stun:        strength = 0.0f, duration = EffectMaxDuration; break;
-		case Effect::Freeze:      strength = 0.0f, duration = EffectMaxDuration; break;
-		}
-		AddEffect(value, strength, duration);
+		if (defaultEffect & (1 << i) && !(defaultEffectImmunity & (1 << i))) AddEffect(value);
 	}
 }
 void AEntity::EndPlay(const EEndPlayReason::Type EndPlayReason) {
@@ -281,6 +264,13 @@ void  AEntity::SetHitbox(float radius, float height) {
 	hitboxHeight = height;
 	OnHitboxChanged();
 }
+float AEntity::GetMass() {
+	return mass;
+}
+void  AEntity::SetMass(float value) {
+	mass = value;
+	hitboxComponent->GetBodyInstance()->MassScale = mass;
+}
 void  AEntity::SetCollisionProfileName(FName value) {
 	hitboxComponent->SetCollisionProfileName(value);
 }
@@ -357,6 +347,15 @@ void AEntity::SetGroup(Group value) { group = value; }
 
 
 
+uint8 AEntity::GetIndex(Tag value) {
+	static uint8 list[static_cast<uint8>(Tag::Length)] = { 0, };
+	uint8 index = static_cast<uint8>(value);
+	if (list[index] == 0) for (uint8 i = 0; i < static_cast<uint8>(Tag::Length); i++) if (index & (1 << i)) {
+		list[index] = i;
+		break;
+	}
+	return list[index];
+}
 bool AEntity::HasTag(Tag value) {
 	return tag & static_cast<uint8>(value);
 }
@@ -391,6 +390,23 @@ bool AEntity::RemoveTag(Tag value) {
 
 
 
+bool  AEntity::UpdateEffect(float DeltaTime) {
+	for (uint8 i = 0; i < static_cast<uint8>(Effect::Length); i++) {
+		Effect index = static_cast<Effect>(1 << i);
+		if (HasEffect(index) && (effectDuration[i] -= DeltaTime) <= 0) RemoveEffect(index);
+	}
+	return true;
+}
+
+uint8 AEntity::GetIndex(Effect value) {
+	static uint8 list[static_cast<uint8>(Effect::Length)] = { 0, };
+	uint8 index = static_cast<uint8>(value);
+	if (list[index] == 0) for (uint8 i = 0; i < static_cast<uint8>(Effect::Length); i++) if (index & (1 << i)) {
+		list[index] = i;
+		break;
+	}
+	return list[index];
+}
 bool AEntity::HasEffect(Effect value) {
 	return static_cast<uint8>(effect) & static_cast<uint8>(value);
 }
@@ -428,28 +444,19 @@ bool AEntity::RemoveEffect(Effect value) {
 	effectDuration[index] = 0;
 	return true;
 }
-uint8 AEntity::GetIndex(Effect value) {
-	static uint8 list[static_cast<uint8>(Effect::Length)] = { 0, };
-	uint8 index = static_cast<uint8>(value);
-	if (list[index] == 0) for (uint8 i = 0; i < static_cast<uint8>(Effect::Length); i++) if (index & (1 << i)) {
-		list[index] = i;
-		break;
-	}
-	return list[index];
-}
 float AEntity::GetEffectStrength(uint8 index) { return effectStrength[index]; }
 float AEntity::GetEffectDuration(uint8 index) { return effectDuration[index]; }
 void  AEntity::AdjustEffectStrength(uint8 index, float strength) {
 	Effect value = static_cast<Effect>(1 << index);
 	strength = effectStrength[index] + strength;
 	switch (value) {
-	case Effect::HealthBoost: strength = FMath::Clamp(strength, 0.0f, EffectMaxStrength); break;
-	case Effect::DamageBoost: strength = FMath::Clamp(strength, 0.0f, EffectMaxStrength); break;
-	case Effect::Resistance:  strength = FMath::Clamp(strength, 0.0f, 1.0f);              break;
-	case Effect::Speed:       strength = FMath::Clamp(strength, 0.0f, EffectMaxStrength); break;
-	case Effect::Burn:        strength = FMath::Clamp(strength, 0.0f, EffectMaxStrength); break;
-	case Effect::Stun:        strength = FMath::Clamp(strength, 0.0f, EffectMaxStrength); break;
-	case Effect::Freeze:      strength = FMath::Clamp(strength, 0.0f, 1.0f);              break;
+	case Effect::HealthBoost: strength = FMath::Clamp(strength, 0.0f, MaxStrength); break;
+	case Effect::DamageBoost: strength = FMath::Clamp(strength, 0.0f, MaxStrength); break;
+	case Effect::Resistance:  strength = FMath::Clamp(strength, 0.0f, 1.0f);        break;
+	case Effect::Speed:       strength = FMath::Clamp(strength, 0.0f, MaxStrength); break;
+	case Effect::Burn:        strength = FMath::Clamp(strength, 0.0f, MaxStrength); break;
+	case Effect::Stun:        strength = FMath::Clamp(strength, 0.0f, MaxStrength); break;
+	case Effect::Freeze:      strength = FMath::Clamp(strength, 0.0f, 1.0f);        break;
 	}
 	effectStrength[index] = strength;
 	if (strength == 0.0f) RemoveEffect(value);
@@ -458,21 +465,14 @@ void  AEntity::AdjustEffectDuration(uint8 index, float duration) {
 	Effect value = static_cast<Effect>(1 << index);
 	duration = effectDuration[index] + duration;
 	switch (value) {
-	case Effect::HealthBoost: duration = FMath::Clamp(duration, 0.0f, EffectMaxDuration); break;
-	case Effect::DamageBoost: duration = FMath::Clamp(duration, 0.0f, EffectMaxDuration); break;
-	case Effect::Resistance:  duration = FMath::Clamp(duration, 0.0f, EffectMaxDuration); break;
-	case Effect::Speed:       duration = FMath::Clamp(duration, 0.0f, EffectMaxDuration); break;
-	case Effect::Burn:        duration = FMath::Clamp(duration, 0.0f, EffectMaxDuration); break;
-	case Effect::Stun:        duration = FMath::Clamp(duration, 0.0f, EffectMaxDuration); break;
-	case Effect::Freeze:      duration = FMath::Clamp(duration, 0.0f, EffectMaxDuration); break;
+	case Effect::HealthBoost: duration = FMath::Clamp(duration, 0.0f, MaxDuration); break;
+	case Effect::DamageBoost: duration = FMath::Clamp(duration, 0.0f, MaxDuration); break;
+	case Effect::Resistance:  duration = FMath::Clamp(duration, 0.0f, MaxDuration); break;
+	case Effect::Speed:       duration = FMath::Clamp(duration, 0.0f, MaxDuration); break;
+	case Effect::Burn:        duration = FMath::Clamp(duration, 0.0f, MaxDuration); break;
+	case Effect::Stun:        duration = FMath::Clamp(duration, 0.0f, MaxDuration); break;
+	case Effect::Freeze:      duration = FMath::Clamp(duration, 0.0f, MaxDuration); break;
 	}
 	effectDuration[index] = duration;
 	if (duration == 0.0f) RemoveEffect(value);
-}
-bool  AEntity::UpdateEffect(float DeltaTime) {
-	for (uint8 i = 0; i < static_cast<uint8>(Effect::Length); i++) {
-		Effect index = static_cast<Effect>(1 << i);
-		if (HasEffect(index) && (effectDuration[i] -= DeltaTime) <= 0) RemoveEffect(index);
-	}
-	return true;
 }

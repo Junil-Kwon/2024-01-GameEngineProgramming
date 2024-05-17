@@ -7,7 +7,7 @@
 
 
 
-UCLASS(HideCategories = ("Actor Tick", Camera, Replication, Rendering, Collision, Actor, Input, LOD, Cooking))
+UCLASS(HideCategories = ("Actor Tick", Camera, Replication, Rendering, Collision, Pawn, Input, LOD, Cooking))
 class FINALPROJECT_API AGhost : public APawn {
 	GENERATED_BODY()
 

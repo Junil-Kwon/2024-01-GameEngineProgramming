@@ -40,7 +40,7 @@ UENUM(BlueprintType, meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true
 enum class Tag : uint8 {
 	None			= 0 UMETA(Hidden),
 	Floating		= 1 << 0,
-	Piercing		= 1 << 1,
+	Piercing        = 1 << 1,
 	Invulnerability	= 1 << 2,
 	Interactability	= 1 << 3,
 	Collectable		= 1 << 4,
@@ -137,21 +137,25 @@ public:
 	Identifier GetIdentifier();
 
 	// Hitbox
-	#define DefaultHitboxRadius  50.0f
-	#define DefaultHitboxHeight 100.0f
+protected:
+	UPROPERTY(EditAnywhere, Category = "Hitbox") float defaultHitboxRadius =  50.0f;
+	UPROPERTY(EditAnywhere, Category = "Hitbox") float defaultHitboxHeight = 100.0f;
+	UPROPERTY(EditAnywhere, Category = "Hitbox") float defaultMass = 1.0f;
 private:
 	UPROPERTY() class UCapsuleComponent* hitboxComponent;
-	UPROPERTY(EditAnywhere, Category = "Hitbox") float hitboxRadius = DefaultHitboxRadius;
-	UPROPERTY(EditAnywhere, Category = "Hitbox") float hitboxHeight = DefaultHitboxHeight;
-	UPROPERTY(EditAnywhere, Category = "Hitbox") float mass = 1.0f;
+	float hitboxRadius;
+	float hitboxHeight;
+	float mass;
 protected:
 	virtual void OnHitboxChanged();
 public:
 	float GetHitboxRadius();
 	float GetHitboxHeight();
-	void  SetHitboxRadius(float value = DefaultHitboxRadius);
-	void  SetHitboxHeight(float value = DefaultHitboxHeight);
-	void  SetHitbox(float radius = DefaultHitboxRadius, float height = DefaultHitboxHeight);
+	void  SetHitboxRadius(float value);
+	void  SetHitboxHeight(float value);
+	void  SetHitbox(float radius, float height);
+	float GetMass();
+	void  SetMass(float value);
 	void  SetCollisionProfileName(FName value);
 	FVector GetFootLocation();
 
@@ -196,37 +200,46 @@ protected:
 	virtual bool UpdateAction(float DeltaTime);
 
 	// Group
+protected:
+	UPROPERTY(EditAnywhere) Group defaultGroup = Group::None;
 private:
-	UPROPERTY(EditAnywhere) Group group = Group::None;
+	Group group;
 public:
 	Group        GetGroup();
 	virtual void SetGroup(Group value);
 
 	// Tag
+protected:
+	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = Tag)) uint8 defaultTag = 0;
 private:
-	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = Tag)) uint8 tag;
+	uint8 tag;
 public:
+	uint8        GetIndex (Tag value);
 	bool         HasTag   (Tag value);
 	virtual bool AddTag   (Tag value);
 	virtual bool RemoveTag(Tag value);
 
 	// Effect
-	#define EffectMaxStrength 9999.0f
-	#define EffectMaxDuration 9999.0f
-private:
-	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = Effect)) uint8 effect = 0;
-	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = Effect)) uint8 effectImmunity = 0;
-	TArray<float> effectStrength;
-	TArray<float> effectDuration;
+	#define MaxStrength 9999.0f
+	#define MaxDuration 9999.0f
 protected:
-	uint8 GetIndex(Effect value);
-	float GetEffectStrength(uint8 value);
-	float GetEffectDuration(uint8 value);
-	void  AdjustEffectStrength(uint8 value, float strength);
-	void  AdjustEffectDuration(uint8 value, float duration);
+	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = Effect)) uint8 defaultEffect = 0;
+	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = Effect)) uint8 defaultEffectImmunity = 0;
+private:
+	uint8 effect;
+	uint8 effectImmunity;
+	float effectStrength[static_cast<uint8>(Effect::Length)] = { 0, };
+	float effectDuration[static_cast<uint8>(Effect::Length)] = { 0, };
+protected:
 	virtual bool UpdateEffect(float DeltaTime);
 public:
+	uint8        GetIndex    (Effect value);
 	bool         HasEffect   (Effect value);
-	virtual bool AddEffect   (Effect value, float strength, float duration = EffectMaxDuration);
+	virtual bool AddEffect   (Effect value, float strength = MaxStrength, float duration = MaxDuration);
 	virtual bool RemoveEffect(Effect value);
+
+	float GetEffectStrength   (uint8 value);
+	float GetEffectDuration   (uint8 value);
+	void  AdjustEffectStrength(uint8 value, float strength);
+	void  AdjustEffectDuration(uint8 value, float duration);
 };
