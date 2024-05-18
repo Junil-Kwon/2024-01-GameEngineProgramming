@@ -7,9 +7,11 @@
 
 
 AIndicator::AIndicator() {
-	AddTag(Tag::Floating);
-	AddTag(Tag::Piercing);
-	SetHitbox(0.0f, 0.0f);
+	defaultTag += 1 << GetIndex(Tag::Floating);
+	defaultTag += 1 << GetIndex(Tag::Piercing);
+	defaultHitboxRadius = 0.0f;
+	defaultHitboxHeight = 0.0f;
+
 	lBorderComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LBorder"));
 	rBorderComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RBorder"));
 	lHealthComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LHealth"));

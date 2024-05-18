@@ -41,12 +41,13 @@ enum class Tag : uint8 {
 	None			= 0 UMETA(Hidden),
 	Floating		= 1 << 0,
 	Piercing        = 1 << 1,
-	Invulnerability	= 1 << 2,
-	Interactability	= 1 << 3,
-	Collectable		= 1 << 4,
-	Player			= 1 << 5,
-	Leader			= 1 << 6,
-	Length			= 7 UMETA(Hidden),
+	Pinned			= 1 << 2,
+	Invulnerability	= 1 << 3,
+	Interactability	= 1 << 4,
+	Collectable		= 1 << 5,
+	Player			= 1 << 6,
+	Leader			= 1 << 7,
+	Length			= 8 UMETA(Hidden),
 };
 ENUM_CLASS_FLAGS(Tag);
 
@@ -98,35 +99,6 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
-
-
-	// Physics
-	#define Gravity            -980.0f
-	#define ParticleThreshold  -500.0f
-	#define VoidThreshold     -1000.0f
-	#define DefaultSpeed        300.0f
-private:
-	UPROPERTY() class AGhost* ghost;
-	float zPrevious = 0.0f;
-	float fallSpeed = 0.0f;
-	bool  isFalling = false;
-public:
-	UFUNCTION() AGhost* GetGhost();
-	float GetWorldSpeed();
-	void  SetWorldSpeed(float value);
-	virtual void Tick(float DeltaTime) override;
-	bool IsFalling();
-
-private:
-	UPROPERTY(EditAnywhere) float speed = DefaultSpeed;
-	FVector direction = FVector::ZeroVector;
-	FVector velocity  = FVector::ZeroVector;
-	FVector force     = FVector::ZeroVector;
-public:
-	FVector GetDirection();
-	void    SetDirection(FVector value);
-	void    AddForce    (FVector value);
 
 
 
@@ -183,6 +155,39 @@ private:
 
 
 
+	// Physics
+	#define Gravity            -980.0f
+	#define ParticleThreshold  -500.0f
+	#define VoidThreshold     -1000.0f
+private:
+	UPROPERTY() class AGhost* ghost;
+	float zPrevious = 0.0f;
+	float fallSpeed = 0.0f;
+	bool  isFalling = false;
+public:
+	UFUNCTION() AGhost* GetGhost();
+	float GetWorldSpeed();
+	void  SetWorldSpeed(float value);
+	virtual void Tick(float DeltaTime) override;
+	bool IsFalling();
+
+	// Movement
+	#define DefaultSpeed        300.0f
+protected:
+	UPROPERTY(EditAnywhere) float defaultSpeed = DefaultSpeed;
+private:
+	float speed;
+	FVector direction = FVector::ZeroVector;
+	FVector velocity  = FVector::ZeroVector;
+	FVector force     = FVector::ZeroVector;
+	FVector locationPrevious = FVector::ZeroVector;
+public:
+	FVector GetDirection();
+	void    SetDirection(FVector value);
+	void    AddForce    (FVector value);
+
+
+
 	// Input
 protected:
 	bool GetInput(Action value);
@@ -230,6 +235,7 @@ private:
 	uint8 effectImmunity;
 	float effectStrength[static_cast<uint8>(Effect::Length)] = { 0, };
 	float effectDuration[static_cast<uint8>(Effect::Length)] = { 0, };
+	FVector pinned = FVector::ZeroVector;
 protected:
 	virtual bool UpdateEffect(float DeltaTime);
 public:

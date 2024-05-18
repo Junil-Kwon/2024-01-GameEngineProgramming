@@ -117,6 +117,7 @@ AEntity::AEntity() {
 	hitboxComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Hitbox"));
 	hitboxComponent->InitCapsuleSize(defaultHitboxRadius, defaultHitboxHeight * 0.5f);
 	hitboxComponent->SetSimulatePhysics(true);
+	hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	hitboxComponent->SetCollisionProfileName(TEXT("Creature"));
 	hitboxComponent->GetBodyInstance()->bLockXRotation = true;
 	hitboxComponent->GetBodyInstance()->bLockYRotation = true;
@@ -160,6 +161,8 @@ void AEntity::BeginPlay() {
 	shadowComponent->bCastHiddenShadow = true;
 	shadowComponent->bHiddenInGame = true;
 
+	speed = defaultSpeed;
+
 	SetGroup(defaultGroup);
 
 	for (uint8 i = 0; i < static_cast<uint8>(Tag::Length); i++) {
@@ -174,6 +177,58 @@ void AEntity::BeginPlay() {
 	}
 }
 void AEntity::EndPlay(const EEndPlayReason::Type EndPlayReason) {
+}
+
+
+
+Identifier AEntity::GetIdentifier() { return identifier; }
+
+
+
+void AEntity::OnHitboxChanged() {
+	hitboxComponent->SetCapsuleSize(hitboxRadius, hitboxHeight * 0.5f);
+	FVector shadowScale = FVector(hitboxRadius * 2, hitboxRadius * 2, hitboxHeight) * 0.01f;
+	shadowScale = shadowScale - FVector::OneVector * 0.2f;
+	if (shadowScale.X <= 0.0f || shadowScale.Z <= 0.0f) shadowScale = FVector::ZeroVector;
+	shadowComponent->SetWorldScale3D(shadowScale);
+}
+float AEntity::GetHitboxRadius() { return hitboxRadius; }
+float AEntity::GetHitboxHeight() { return hitboxHeight; }
+void  AEntity::SetHitboxRadius(float value) {
+	hitboxRadius = value;
+	OnHitboxChanged();
+}
+void  AEntity::SetHitboxHeight(float value) {
+	hitboxHeight = value;
+	OnHitboxChanged();
+}
+void  AEntity::SetHitbox(float radius, float height) {
+	hitboxRadius = radius;
+	hitboxHeight = height;
+	OnHitboxChanged();
+}
+float AEntity::GetMass() {
+	return mass;
+}
+void  AEntity::SetMass(float value) {
+	mass = value;
+	hitboxComponent->GetBodyInstance()->MassScale = mass;
+}
+void  AEntity::SetCollisionProfileName(FName value) {
+	hitboxComponent->SetCollisionProfileName(value);
+}
+FVector AEntity::GetFootLocation() {
+	return GetActorLocation() + FVector(-hitboxHeight * 0.5f, 0.0f, -hitboxHeight * 0.5f + 48.0f);
+}
+
+
+
+void AEntity::OnInteract(AEntity* other) {
+}
+void AEntity::OnHit(
+	UPrimitiveComponent* HitComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, FVector NormalImpulse,
+	const FHitResult& Hit) {
 }
 
 
@@ -220,73 +275,15 @@ void  AEntity::Tick(float DeltaTime) {
 	if (HasEffect(Effect::Speed )) velocityTemp *=        GetEffectStrength(GetIndex(Effect::Speed ));
 	if (HasEffect(Effect::Freeze)) velocityTemp *= 1.0f - GetEffectStrength(GetIndex(Effect::Freeze));
 	velocity = velocity * 0.88f + velocityTemp * 0.12f;
-	SetActorLocation(GetActorLocation() + (velocity + force) * DeltaTime);
-	force = force * (1 - DeltaTime);
+
+	if (HasTag(Tag::Pinned)) SetActorLocation(pinned);
+	else SetActorLocation(GetActorLocation() + (velocity + force) * DeltaTime);
+	force *= (1 - DeltaTime);
 }
 FVector AEntity::GetDirection() { return direction; }
 void AEntity::SetDirection(FVector value) { direction = value; direction.Normalize(); }
 void AEntity::AddForce(FVector value) { force += value / mass; }
 bool AEntity::IsFalling() { return isFalling; }
-
-
-
-Identifier AEntity::GetIdentifier() { return identifier; }
-
-
-
-void AEntity::OnHitboxChanged() {
-	hitboxComponent->SetCapsuleSize(hitboxRadius, hitboxHeight * 0.5f);
-	if (hitboxRadius && hitboxHeight) {
-		hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-		RemoveTag(Tag::Piercing);
-	}
-	else {
-		hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		AddTag(Tag::Piercing);
-	}
-	FVector shadowScale = FVector(hitboxRadius * 2, hitboxRadius * 2, hitboxHeight) * 0.01f;
-	shadowScale = shadowScale - FVector::OneVector * 0.2f;
-	if (shadowScale.X <= 0.0f || shadowScale.Z <= 0.0f) shadowScale = FVector::ZeroVector;
-	shadowComponent->SetWorldScale3D(shadowScale);
-}
-float AEntity::GetHitboxRadius() { return hitboxRadius; }
-float AEntity::GetHitboxHeight() { return hitboxHeight; }
-void  AEntity::SetHitboxRadius(float value) {
-	hitboxRadius = value;
-	OnHitboxChanged();
-}
-void  AEntity::SetHitboxHeight(float value) {
-	hitboxHeight = value;
-	OnHitboxChanged();
-}
-void  AEntity::SetHitbox(float radius, float height) {
-	hitboxRadius = radius;
-	hitboxHeight = height;
-	OnHitboxChanged();
-}
-float AEntity::GetMass() {
-	return mass;
-}
-void  AEntity::SetMass(float value) {
-	mass = value;
-	hitboxComponent->GetBodyInstance()->MassScale = mass;
-}
-void  AEntity::SetCollisionProfileName(FName value) {
-	hitboxComponent->SetCollisionProfileName(value);
-}
-FVector AEntity::GetFootLocation() {
-	return GetActorLocation() + FVector(-hitboxHeight * 0.5f, 0.0f, -hitboxHeight * 0.5f + 48.0f);
-}
-
-
-
-void AEntity::OnInteract(AEntity* other) {
-}
-void AEntity::OnHit(
-	UPrimitiveComponent* HitComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, FVector NormalImpulse,
-	const FHitResult& Hit) {
-}
 
 
 
@@ -361,10 +358,12 @@ bool AEntity::HasTag(Tag value) {
 }
 bool AEntity::AddTag(Tag value) {
 	if (HasTag(value)) return false;
+	UE_LOG(LogTemp, Warning, TEXT("%s add %s"), *GetName(), *ToFString(value));
 	tag |= static_cast<uint8>(value);
 	switch (value) {
-	case Tag::Floating:        hitboxComponent->GetBodyInstance()->bEnableGravity = false; break;
-	case Tag::Piercing:        hitboxComponent->SetSimulatePhysics(false); break;
+	case Tag::Floating:        hitboxComponent->SetSimulatePhysics(false); break;
+	case Tag::Piercing:        hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly); break;
+	case Tag::Pinned: 	       hitboxComponent->SetSimulatePhysics(false); pinned = GetActorLocation(); break;
 	case Tag::Invulnerability: break;
 	case Tag::Interactability: break;
 	case Tag::Collectable:     break;
@@ -377,8 +376,9 @@ bool AEntity::RemoveTag(Tag value) {
 	if (!HasTag(value)) return false;
 	tag &= ~static_cast<uint8>(value);
 	switch (value) {
-	case Tag::Floating:        hitboxComponent->GetBodyInstance()->bEnableGravity = true; break;
-	case Tag::Piercing:        hitboxComponent->SetSimulatePhysics(true); break;
+	case Tag::Floating:        hitboxComponent->SetSimulatePhysics(true); break;
+	case Tag::Piercing:        hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics); break;
+	case Tag::Pinned: 	       if (!HasTag(Tag::Floating)) hitboxComponent->SetSimulatePhysics(true); break;
 	case Tag::Invulnerability: break;
 	case Tag::Interactability: break;
 	case Tag::Collectable:     break;

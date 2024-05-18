@@ -8,8 +8,8 @@
 
 
 ACreature::ACreature() {
-	SetHitbox(36.0f, 100.0f);
-	SetCollisionProfileName("Creature");
+	defaultHitboxRadius =  36.0f;
+	defaultHitboxHeight = 100.0f;
 
 	sensorComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Sensor"));
 	sensorComponent->InitSphereRadius(defaultSensorRange);
@@ -101,6 +101,7 @@ bool ACreature::AddTag(Tag value) {
 	switch (value) {
 	case Tag::Floating:        break;
 	case Tag::Piercing:        break;
+	case Tag::Pinned:          break;
 	case Tag::Invulnerability: break;
 	case Tag::Interactability: break;
 	case Tag::Collectable:     break;
@@ -114,6 +115,7 @@ bool ACreature::RemoveTag(Tag value) {
 	switch (value) {
 	case Tag::Floating:        break;
 	case Tag::Piercing:        break;
+	case Tag::Pinned:          break;
 	case Tag::Invulnerability: break;
 	case Tag::Interactability: break;
 	case Tag::Collectable:     break;

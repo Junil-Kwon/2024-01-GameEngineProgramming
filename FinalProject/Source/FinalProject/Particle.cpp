@@ -5,7 +5,8 @@
 AParticle::AParticle() {
 	defaultTag += 1 << GetIndex(Tag::Floating);
 	defaultTag += 1 << GetIndex(Tag::Piercing);
-	SetHitbox(0.0f, 0.0f);
+	defaultHitboxRadius = 0.0f;
+	defaultHitboxHeight = 0.0f;
 }
 
 void AParticle::BeginPlay() {
