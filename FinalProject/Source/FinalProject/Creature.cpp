@@ -1,321 +1,44 @@
 #include "Creature.h"
-#include "Ghost.h"
 #include "Indicator.h"
-
-#include "Components/SphereComponent.h"
-#include "Kismet/GameplayStatics.h"
+#include "Components/CapsuleComponent.h"
 
 
 
 ACreature::ACreature() {
-	defaultHitboxRadius =  36.0f;
-	defaultHitboxHeight = 100.0f;
+	GetCapsuleComponent()->InitCapsuleSize(36.0f, 60.0f);
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Creature"));
+	
+	effectStrength.Init(0.0f, static_cast<int32>(Effect::Max));
+	effectDuration.Init(0.0f, static_cast<int32>(Effect::Max));
 
-	sensorComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Sensor"));
-	sensorComponent->InitSphereRadius(defaultSensorRange);
-	sensorComponent->SetCollisionProfileName("Sensor");
-	sensorComponent->SetupAttachment(RootComponent);
-
-	magnetComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Magnet"));
-	magnetComponent->InitSphereRadius(defaultMagnetRange);
-	magnetComponent->SetCollisionProfileName("Sensor");
-	magnetComponent->SetupAttachment(RootComponent);
+	health = healthMax;
 }
-
-
 
 void ACreature::BeginPlay() {
 	Super::BeginPlay();
 
-	SetSensorRange(defaultSensorRange);
-	sensorComponent->OnComponentBeginOverlap.AddDynamic(this, &ACreature::OnSensorBeginOverlap);
-	sensorComponent->OnComponentEndOverlap  .AddDynamic(this, &ACreature::OnSensorEndOverlap  );
-
-	SetMagnetRange(defaultMagnetRange);
-	magnetComponent->OnComponentBeginOverlap.AddDynamic(this, &ACreature::OnMagnetBeginOverlap);
-	magnetComponent->OnComponentEndOverlap  .AddDynamic(this, &ACreature::OnMagnetEndOverlap  );
-	
-	indicatorWidth = defaultIndicatorWidth;
-	indicator = static_cast<AIndicator*>(SpawnEntity(Identifier::Indicator));
-	if (indicator) {
-		indicator->SetWidth(indicatorWidth);
-		indicator->SetGroup(GetGroup());
-		FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
-		indicator->AttachToActor(this, AttachmentRules);
-		indicator->SetActorRelativeLocation(FVector(0.0f, 0.0f, GetHitboxHeight() * 0.5f + 80.0f));
-	}
-	
-	healthMax = health;
-	shieldMax = shield;
-	energeMax = energe;
+	indicator = GetWorld()->SpawnActor<AIndicator>(indicatorClass, FVector::ZeroVector, FRotator::ZeroRotator);
+	indicator->SetActorRelativeLocation(FVector(0.0f, 0.0f, 128.0f));
+	indicator->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+	indicator->SetWidth(indicatorWidth);
+	indicator->SetGroup(group);
 }
-void ACreature::EndPlay(const EEndPlayReason::Type EndPlayReason) {
-	indicator->Destroy();
-	if (HasTag(Tag::Player)) {
-		UE_LOG(LogTemp, Warning, TEXT("Player destroyed."));
-		GetGhost()->SetPlayer(nullptr);
-	}
-}
-
-
 
 void ACreature::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
-	UpdateSensor(DeltaTime * GetWorldSpeed());
-	UpdateMagnet(DeltaTime * GetWorldSpeed());
+}
+
+bool ACreature::operator==(const ACreature& other) const {
+	return this == &other;
 }
 
 
 
-bool ACreature::UpdateAction(float DeltaTime) {
-	if (!Super::UpdateAction(DeltaTime)) return false;
-
-	if (0.0f < energeMax) {
-		energe = FMath::Max(energe + energeMax * 0.1f * DeltaTime, energeMax);
-	}
-	if (0.0f < hurtCooldown) {
-		if ((hurtCooldown -= DeltaTime) < 0.0f) {
-
-		}
-	}
-	if (shield && shield != shieldMax) {
-		if ((mendCooldown -= DeltaTime) < 0.0f) {
-			shield = FMath::Max(shield + shieldMax * 0.1f, shieldMax);
-			mendCooldown = MendCooldown;
-		}
-	}
-	return true;
+float ACreature::GetHealth() { return health; }
+void  ACreature::SetHealth(float value) { health = value; indicator->SetRatio(health / healthMax); }
+void  ACreature::AdjustHealth(float value) {
+	health = health + value < 0 ? 0 : (healthMax < health + value ? healthMax : health + value);
+	if (health == 0) Die();
 }
-
-
-
-void ACreature::SetGroup(Group value) {
-	Super::SetGroup(value);
-	if (indicator) indicator->SetGroup(value);
-}
-
-
-
-bool ACreature::AddTag(Tag value) {
-	if (!Super::AddTag(value)) return false;
-	switch (value) {
-	case Tag::Floating:        break;
-	case Tag::Piercing:        break;
-	case Tag::Pinned:          break;
-	case Tag::Invulnerability: break;
-	case Tag::Interactability: break;
-	case Tag::Collectable:     break;
-	case Tag::Player:          GetGhost()->SetPlayer(this); break;
-	case Tag::Leader:          break;
-	}
-	return true;
-}
-bool ACreature::RemoveTag(Tag value) {
-	if (!Super::RemoveTag(value)) return false;
-	switch (value) {
-	case Tag::Floating:        break;
-	case Tag::Piercing:        break;
-	case Tag::Pinned:          break;
-	case Tag::Invulnerability: break;
-	case Tag::Interactability: break;
-	case Tag::Collectable:     break;
-	case Tag::Player:          if (GetGhost()->GetPlayer() == this) GetGhost()->SetPlayer(nullptr); break;
-	case Tag::Leader:          break;
-	}
-	return true;
-}
-
-
-
-bool ACreature::UpdateEffect(float DeltaTime) {
-	if (!Super::UpdateEffect(DeltaTime)) return false;
-	for (uint8 i = 0; i < static_cast<uint8>(Effect::Length); i++) {
-		Effect index = static_cast<Effect>(1 << i);
-		// color effect, tick damage, etc.
-	}
-	return true;
-}
-bool ACreature::AddEffect(Effect value, float strength, float duration) {
-	if (!Super::AddEffect(value, strength, duration)) return false;
-	switch (value) {
-	case Effect::HealthBoost: break;
-	case Effect::DamageBoost: break;
-	case Effect::Resistance:  break;
-	case Effect::Speed:       break;
-	case Effect::Burn:        break;
-	case Effect::Stun:        break;
-	case Effect::Freeze:      break;
-	}
-	return true;
-}
-bool ACreature::RemoveEffect(Effect value) {
-	if (!Super::RemoveEffect(value)) return false;
-	switch (value) {
-	case Effect::HealthBoost: break;
-	case Effect::DamageBoost: break;
-	case Effect::Resistance:  break;
-	case Effect::Speed:       break;
-	case Effect::Burn:        break;
-	case Effect::Stun:        break;
-	case Effect::Freeze:      break;
-	}
-	return true;
-}
-
-
-
-bool ACreature::UpdateSensor(float DeltaTime) {
-	if (sensorArray.Num() == 0) return false;
-	return true;
-}
-float ACreature::GetSensorRange() {
-	return sensorRange;
-}
-void  ACreature::SetSensorRange(float range) {
-	sensorRange = range;
-	sensorComponent->SetSphereRadius(range);
-}
-void ACreature::OnSensorBeginOverlap(
-	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
-	bool bFromSweep, const FHitResult& SweepResult) {
-}
-void ACreature::OnSensorEndOverlap(
-	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
-}
-
-
-
-bool ACreature::UpdateMagnet(float DeltaTime) {
-	if (magnetArray.Num() == 0) return false;
-	if (GetGroup() != GetGhost()->GetPlayer()->GetGroup()) return false;
-
-	for (int32 i = magnetArray.Num() - 1; -1 < i; i--) {
-		if (magnetArray[i] == nullptr) {
-			magnetArray.RemoveAt(i);
-			continue;
-		}
-		// pull other actor to this actor
-	}
-	if (HasTag(Tag::Player)) {
-		// player interaction
-		AEntity* entity = nullptr;
-		float distance = magnetRange;
-		for (int32 i = 0; i < magnetArray.Num(); i++) {
-			if (HasTag(Tag::Collectable)) continue;
-			float s = FVector::Distance(magnetArray[i]->GetActorLocation(), GetActorLocation());
-			if (s < distance) {
-				entity = magnetArray[i];
-				distance = s;
-			}
-		}
-		Select(entity);
-	}
-	return true;
-}
-float ACreature::GetMagnetRange() {
-	return magnetRange;
-}
-void  ACreature::SetMagnetRange(float range) {
-	magnetRange = range;
-	magnetComponent->SetSphereRadius(range);
-}
-void ACreature::OnMagnetBeginOverlap(
-	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
-	bool bFromSweep, const FHitResult& SweepResult) {
-
-	AEntity* entity = Cast<AEntity>(OtherActor);
-	if (entity == nullptr) return;
-	if (!magnetArray.Contains(entity) && entity->HasTag(Tag::Interactability)) {
-		magnetArray.Add(entity);
-	}
-}
-void ACreature::OnMagnetEndOverlap(
-	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
-
-	AEntity* entity = Cast<AEntity>(OtherActor);
-	if (entity == nullptr) return;
-	if (magnetArray.Contains(entity)) {
-		magnetArray.Remove(entity);
-		if (selected == entity) Select(nullptr);
-	}
-}
-
-
-
-void ACreature::Select(AEntity* entity) {
-	if (entity == selected) return;
-	if (selected != nullptr) {
-		// deselect 'selected'
-		selected = nullptr;
-	}
-	if (entity != nullptr) {
-		selected = entity;
-		// select 'selected'
-	}
-}
-
-
-
-AIndicator* ACreature::GetIndicator() {
-	return indicator;
-}
-
-
-
-void  ACreature::OnDamaged(float value) {
-	if (0.0f < value) {
-		if (HasTag(Tag::Invulnerability)) return;
-		if (HasEffect(Effect::Resistance)) value *= 1 - GetEffectStrength(GetIndex(Effect::Resistance));
-		if (HasEffect(Effect::HealthBoost)) {
-			uint8 i = GetIndex(Effect::HealthBoost);
-			float absorption = FMath::Max(GetEffectStrength(i), value) - FMath::Min(GetEffectStrength(i), value);
-			AdjustEffectStrength(i, -absorption);
-			value -= absorption;
-		}
-		hurtCooldown = HurtCooldown;
-		mendCooldown = MendCooldown;
-	}
-	float shieldTemp = shield;
-	if (shield) shield = FMath::Clamp(shield - value, 0.0f, shieldMax);
-	else        health = FMath::Clamp(health - value, 0.0f, healthMax);
-	if (shield == 0.0f && shieldTemp) OnShieldBroken();
-	if (health == 0.0f) OnDie();
-	// refresh indicator
-}
-void  ACreature::OnShieldBroken() {
-	shieldMax = 0.0f;
-}
-void  ACreature::OnDie() {
-	SetAction(Action::Defeat);
-	// if (HasEffect(Effect::Burn)) smoke effect, if enough strength, ashed effect
-}
-float ACreature::GetHealth() {
-	return health + shield + GetEffectStrength(GetIndex(Effect::HealthBoost));
-}
-
-
-
-void ACreature::AdjustMaxHealth(float value) {
-	healthMax += FMath::Min(healthMax + value, 0.0f);
-	health    += FMath::Min(health    + value, 0.0f);
-	if (health == 0.0f) OnDie();
-	// refresh indicator
-}
-void ACreature::AdjustMaxShield(float value) {
-	shieldMax += FMath::Min(shieldMax + value, 0.0f);
-	shield    += FMath::Min(shield    + value, 0.0f);
-	if (shield == 0.0f) OnShieldBroken();
-	// refresh indicator
-}
-void ACreature::AdjustMaxEnerge(float value) {
-	energeMax += FMath::Min(energeMax + value, 0.0f);
-	energe    += FMath::Min(energe    + value, 0.0f);
-	// refresh indicator
-}
-void ACreature::AdjustMaxDamage(float value) {
-	damage = FMath::Min(damage + value, 0.0f);
+void ACreature::Die() {
 }

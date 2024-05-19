@@ -1,122 +1,78 @@
 #include "Indicator.h"
-
+#include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Components/TextRenderComponent.h"
-#include "Materials/MaterialInstanceDynamic.h"
 
 
 
 AIndicator::AIndicator() {
-	defaultTag += 1 << GetIndex(Tag::Floating);
-	defaultTag += 1 << GetIndex(Tag::Piercing);
-	defaultHitboxRadius = 0.0f;
-	defaultHitboxHeight = 0.0f;
+ 	PrimaryActorTick.bCanEverTick = true;
 
-	lBorderComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LBorder"));
-	rBorderComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RBorder"));
-	lHealthComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LHealth"));
-	rHealthComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RHealth"));
-	lShieldComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LShield"));
-	rShieldComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RShield"));
-	iShieldComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("IShield"));
-	iLeaderComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ILeader"));
-	SetupComponent(lBorderComponent);
-	SetupComponent(rBorderComponent);
-	SetupComponent(lHealthComponent);
-	SetupComponent(rHealthComponent);
-	SetupComponent(lShieldComponent);
-	SetupComponent(rShieldComponent);
-	SetupComponent(iShieldComponent);
-	SetupComponent(iLeaderComponent);
-	lBorderComponent->SetWorldScale3D(FVector(0.04f, 1.28f, 1.28f));
-	rBorderComponent->SetWorldScale3D(FVector(0.04f, 1.28f, 1.28f));
+	boxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxComponent"));
+	boxComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SetRootComponent(boxComponent);
+
+	mesh0Component = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh0Component"));
+	mesh0Component->SetRelativeLocation(FVector(0.0f, -64.0f - 2.0f, 0.0f));
+	mesh0Component->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
+	mesh0Component->SetRelativeScale3D(FVector(0.64f, 1.28f, 1.28f));
+	mesh0Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	mesh0Component->SetupAttachment(boxComponent);
+
+	mesh1Component = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh1Component"));
+	mesh1Component->SetRelativeLocation(FVector(0.0f,  64.0f + 2.0f, 0.0f));
+	mesh1Component->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
+	mesh1Component->SetRelativeScale3D(FVector(0.64f, 1.28f, 1.28f));
+	mesh1Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	mesh1Component->SetupAttachment(boxComponent);
+
+	mesh2Component = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh2Component"));
+	mesh2Component->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
+	mesh2Component->SetRelativeScale3D(FVector(1.28f, 1.28f, 1.28f));
+	mesh2Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	mesh2Component->SetupAttachment(boxComponent);
+
+	mesh3Component = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh3Component"));
+	mesh3Component->SetRelativeLocation(FVector(-0.5f, 0.0f, 0.5f));
+	mesh3Component->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
+	mesh3Component->SetRelativeScale3D(FVector(1.28f, 1.28f, 1.28f));
+	mesh3Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	mesh3Component->SetupAttachment(boxComponent);
 }
-void AIndicator::SetupComponent(UStaticMeshComponent* component) {
-	component->SetWorldRotation(FRotator(0.0f, 90.0f, 41.409618f));
-	component->SetWorldScale3D(FVector(1.28f, 1.28f, 1.28f));
-	component->SetStaticMesh(GetPlaneMesh());
-	component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	component->SetupAttachment(RootComponent);
-}
-
-
 
 void AIndicator::BeginPlay() {
 	Super::BeginPlay();
-
-	SetSpriteIndex(nullptr, 63);
-	CreateMaterial(lBorderComponent);
-	CreateMaterial(rBorderComponent);
-	CreateMaterial(lHealthComponent);
-	CreateMaterial(rHealthComponent);
-	CreateMaterial(lShieldComponent);
-	CreateMaterial(rShieldComponent);
-	CreateMaterial(iShieldComponent);
-	CreateMaterial(iLeaderComponent);
-
-	SetShield(false);
-	SetLeader(false);
+	
+	SetWidth(16);
+	SetRatio( 1);
+	mesh0Component->SetScalarParameterValueOnMaterials(TEXT("Index"), 0);
+	mesh1Component->SetScalarParameterValueOnMaterials(TEXT("Index"), 0);
+	mesh2Component->SetScalarParameterValueOnMaterials(TEXT("Index"), 4);
+	mesh3Component->SetScalarParameterValueOnMaterials(TEXT("Index"), 8);
 	SetGroup(Group::None);
-	SetSpriteColor(lShieldComponent, FVector(0.1f, 0.1f, 0.1f));
-	SetSpriteColor(iShieldComponent, FVector(0.1f, 0.1f, 0.1f));
 }
-
 
 void AIndicator::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 }
 
-
-
 void AIndicator::SetWidth(float value) {
 	width = value;
-	float i = shield ? 26.0f : 0.0f;
-	lBorderComponent->SetWorldLocation(FVector(0.0f, i + width * -2.0f -  2.0f, 0.0f));
-	rBorderComponent->SetWorldLocation(FVector(0.0f, i + width *  2.0f +  2.0f, 0.0f));
-	iShieldComponent->SetWorldLocation(FVector(0.0f, i + width * -2.0f - 34.0f, 0.0f));
-	SetHealthRatio(-1);
-	SetShieldRatio(-1);
+	mesh0Component->SetRelativeLocation(FVector(0.0f, width * -2.0f - 2.0f, 0.0f));
+	mesh1Component->SetRelativeLocation(FVector(0.0f, width *  2.0f + 2.0f, 0.0f));
+	mesh2Component->SetRelativeScale3D(FVector(width * 0.04f, 1.28f, 1.28f));
+	mesh3Component->SetRelativeScale3D(FVector(width * 0.04f, 1.28f, 1.28f));
 }
+
+void AIndicator::SetRatio(float value) {
+	mesh3Component->SetRelativeLocation(FVector(-0.5f, width * (1 - value) * -2.0f, 0.5f));
+	mesh3Component->SetRelativeScale3D(FVector(width * value * 0.04f, 1.28f, 1.28f));
+}
+
 void AIndicator::SetGroup(Group value) {
 	FVector color = FVector::OneVector;
 	switch (value) {
 	case Group::Friendly: color = FVector(0.031896, 0.332452, 0.152926); break;
 	case Group::Enemy:    color = FVector(0.332452, 0.044270, 0.064128); break;
 	}
-	SetSpriteColor(lHealthComponent, color);
-}
-
-void AIndicator::SetShield(bool enable) {
-	if (shield == enable) return;
-	shield = enable;
-	SetSpriteIndex(lBorderComponent, shield ?  1 :  0);
-	SetSpriteIndex(rBorderComponent, shield ?  1 :  0);
-	SetSpriteIndex(lHealthComponent, shield ?  5 :  4);
-	SetSpriteIndex(rHealthComponent, shield ?  9 :  8);
-	SetSpriteIndex(lShieldComponent, shield ?  4 : 63);
-	SetSpriteIndex(rShieldComponent, shield ?  8 : 63);
-	SetSpriteIndex(iShieldComponent, shield ? 12 : 63);
-	SetWidth(width);
-}
-void AIndicator::SetLeader(bool enable) {
-	if (leader == enable) return;
-	leader = enable;
-	SetSpriteIndex(iLeaderComponent, leader ? 13 : 63);
-}
-
-void AIndicator::SetHealthRatio(float value) {
-	if (value != -1) healthRatio = FMath::Clamp(value, 0.0f, 1.0f);
-	float i = shield ? 26.0f : 0.0f;
-	lHealthComponent->SetWorldLocation(FVector(0.0f, i + width * (1 - healthRatio) * -2.0f, 0.0f));
-	rHealthComponent->SetWorldLocation(FVector(0.0f, i + width * (    healthRatio) *  2.0f, 0.0f));
-	lHealthComponent->SetWorldScale3D (FVector(width * 0.04f * (    healthRatio), 1.28f, 1.28f));
-	rHealthComponent->SetWorldScale3D (FVector(width * 0.04f * (1 - healthRatio), 1.28f, 1.28f));
-}
-void AIndicator::SetShieldRatio(float value) {
-	if (value != -1) shieldRatio = FMath::Clamp(value, 0.0f, 1.0f);
-	float i = shield ? 26.0f : 0.0f;
-	lShieldComponent->SetWorldLocation(FVector(0.0f, i + width * (1 - shieldRatio) * -2.0f, 0.0f));
-	rShieldComponent->SetWorldLocation(FVector(0.0f, i + width * (    shieldRatio) *  2.0f, 0.0f));
-	lShieldComponent->SetWorldScale3D(FVector(width * 0.04f * (    shieldRatio), 1.28f, 1.28f));
-	rShieldComponent->SetWorldScale3D(FVector(width * 0.04f * (1 - shieldRatio), 1.28f, 1.28f));
+	mesh3Component->SetVectorParameterValueOnMaterials(TEXT("Color"), color);
 }

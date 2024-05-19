@@ -1,12 +1,10 @@
 #include "Entity.h"
-#include "Ghost.h"
-
-#include "Components/ArrowComponent.h"
+#include "Particle.h"
+#include "Indicator.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Materials/MaterialInstance.h"
-#include "Materials/MaterialInstanceDynamic.h"
-#include "Kismet/GameplayStatics.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include <type_traits>
 
 
 
@@ -114,365 +112,107 @@ AEntity* AEntity::SpawnEntity(Identifier value, FVector location) {
 AEntity::AEntity() {
  	PrimaryActorTick.bCanEverTick = true;
 
-	hitboxComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Hitbox"));
-	hitboxComponent->InitCapsuleSize(defaultHitboxRadius, defaultHitboxHeight * 0.5f);
-	hitboxComponent->SetSimulatePhysics(true);
-	hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	hitboxComponent->SetCollisionProfileName(TEXT("Creature"));
-	hitboxComponent->GetBodyInstance()->bLockXRotation = true;
-	hitboxComponent->GetBodyInstance()->bLockYRotation = true;
-	hitboxComponent->GetBodyInstance()->bLockZRotation = true;
-	hitboxComponent->GetBodyInstance()->MassScale = mass;
-	SetRootComponent(hitboxComponent);
+	static ConstructorHelpers::FClassFinder<AParticle> ParticleClass(TEXT("/Game/Blueprints/BP_Particle_Dust.BP_Particle_Dust_C"));
+	if (ParticleClass.Succeeded()) particleClass = ParticleClass.Class;
+	static ConstructorHelpers::FClassFinder<AIndicator> IndicatorClass(TEXT("/Game/Blueprints/BP_Indicator.BP_Indicator_C"));
+	if (IndicatorClass.Succeeded()) indicatorClass = IndicatorClass.Class;
 
-	spriteComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Sprite"));
-	spriteComponent->SetWorldRotation(FRotator(0.0f, 90.0f, 41.409618f));
-	spriteComponent->SetWorldScale3D(FVector(1.28f, 1.28f, 1.28f));
-	spriteComponent->SetStaticMesh(GetPlaneMesh());
-	spriteComponent->SetMaterial(0, GetMaterialInstance());
-	spriteComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	spriteComponent->SetupAttachment(RootComponent);
-
-	shadowComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Shadow"));
-	shadowComponent->SetStaticMesh(GetSphereMesh());
-	shadowComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	shadowComponent->SetVisibility(false);
-	shadowComponent->SetupAttachment(RootComponent);
-}
-
-void AEntity::BeginPlay() {
-	Super::BeginPlay();
-	zPrevious = GetActorLocation().Z;
-
-	FString name = GetName();
-	int64 BP = name.Find(TEXT("_"), ESearchCase::IgnoreCase, ESearchDir::FromStart,      0);
-	int64 C0 = name.Find(TEXT("_"), ESearchCase::IgnoreCase, ESearchDir::FromStart, BP + 1);
-	FString edit = name.Mid(BP + 1, C0 - BP - 1);
-	identifier = ToEnum<Identifier>(edit);
-	
-	hitboxComponent->GetBodyInstance()->MassScale = mass;
-	hitboxComponent->OnComponentHit.AddDynamic(this, &AEntity::OnHit);
-	SetHitbox(defaultHitboxRadius, defaultHitboxHeight);
-	SetMass(defaultMass);
-
-	CreateMaterial();
-
-	shadowComponent->SetVisibility(true);
+	shadowComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShadowComponent"));
+	shadowComponent->SetRelativeScale3D(FVector(0.5f, 0.5f, 0.5f));
 	shadowComponent->bCastHiddenShadow = true;
 	shadowComponent->bHiddenInGame = true;
+	shadowComponent->SetupAttachment(RootComponent);
 
-	speed = defaultSpeed;
-
-	SetGroup(defaultGroup);
-
-	for (uint8 i = 0; i < static_cast<uint8>(Tag::Length); i++) {
-		Tag value = static_cast<Tag>(1 << i);
-		if (defaultTag & (1 << i)) AddTag(value);
-	}
-
-	effectImmunity = defaultEffectImmunity;
-	for (uint8 i = 0; i < static_cast<uint8>(Effect::Length); i++) {
-		Effect value = static_cast<Effect>(1 << i);
-		if (defaultEffect & (1 << i) && !(defaultEffectImmunity & (1 << i))) AddEffect(value);
-	}
+	meshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
+	meshComponent->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
+	meshComponent->SetRelativeScale3D(FVector(1.28f, 1.28f, 1.28f));
+	meshComponent->SetupAttachment(RootComponent);
 }
-void AEntity::EndPlay(const EEndPlayReason::Type EndPlayReason) {
-}
+void AEntity::BeginPlay() {
+	Super::BeginPlay();
+	
+	GetCharacterMovement()->JumpZVelocity = 800.0f;
+	GetCharacterMovement()->GravityScale = HasTag(Tag::Floating) ? 0.0f : 3.0f;
+	GetCharacterMovement()->MaxWalkSpeed = speed;
+	GetCharacterMovement()->MaxAcceleration = speed * 100;
 
-
-
-Identifier AEntity::GetIdentifier() { return identifier; }
-
-
-
-void AEntity::OnHitboxChanged() {
-	hitboxComponent->SetCapsuleSize(hitboxRadius, hitboxHeight * 0.5f);
-	FVector shadowScale = FVector(hitboxRadius * 2, hitboxRadius * 2, hitboxHeight) * 0.01f;
-	shadowScale = shadowScale - FVector::OneVector * 0.2f;
-	if (shadowScale.X <= 0.0f || shadowScale.Z <= 0.0f) shadowScale = FVector::ZeroVector;
-	shadowComponent->SetWorldScale3D(shadowScale);
-}
-float AEntity::GetHitboxRadius() { return hitboxRadius; }
-float AEntity::GetHitboxHeight() { return hitboxHeight; }
-void  AEntity::SetHitboxRadius(float value) {
-	hitboxRadius = value;
-	OnHitboxChanged();
-}
-void  AEntity::SetHitboxHeight(float value) {
-	hitboxHeight = value;
-	OnHitboxChanged();
-}
-void  AEntity::SetHitbox(float radius, float height) {
-	hitboxRadius = radius;
-	hitboxHeight = height;
-	OnHitboxChanged();
-}
-float AEntity::GetMass() {
-	return mass;
-}
-void  AEntity::SetMass(float value) {
-	mass = value;
-	hitboxComponent->GetBodyInstance()->MassScale = mass;
-}
-void  AEntity::SetCollisionProfileName(FName value) {
-	hitboxComponent->SetCollisionProfileName(value);
-}
-FVector AEntity::GetFootLocation() {
-	return GetActorLocation() + FVector(-hitboxHeight * 0.5f, 0.0f, -hitboxHeight * 0.5f + 48.0f);
+	hitboxRadius = GetCapsuleComponent()->GetUnscaledCapsuleRadius();
+	hitboxHeight = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() * 2.0f;
 }
 
-
-
-void AEntity::OnInteract(AEntity* other) {
-}
-void AEntity::OnHit(
-	UPrimitiveComponent* HitComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, FVector NormalImpulse,
-	const FHitResult& Hit) {
-}
-
-
-
-AGhost* AEntity::GetGhost() {
-	if (ghost == nullptr) ghost = Cast<AGhost>(UGameplayStatics::GetPlayerPawn(this->GetWorld(), 0));
-	return ghost;
-}
-float AEntity::GetWorldSpeed() {
-	return GetGhost() ? GetGhost()->GetWorldSpeed() : DefaultWorldSpeed;
-}
-void  AEntity::SetWorldSpeed(float value) {
-	if (!GetGhost()) return;
-	GetGhost()->SetWorldSpeed(value);
-	GetWorld()->GetWorldSettings()->WorldGravityZ = Gravity * value;
-}
-void  AEntity::Tick(float DeltaTime) {
+void AEntity::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
-	float z = GetActorLocation().Z;
-	if (z < zPrevious - 0.01f && !HasTag(Tag::Piercing)) {
+	if (GetCharacterMovement()->IsFalling()) {
 		isFalling = true;
-		fallSpeed = GetVelocity().Z;
+		fallSpeed = GetCharacterMovement()->Velocity.Z;
+		if (fallSpeed < MaxFallSpeed) GetCharacterMovement()->Velocity.Z = MaxFallSpeed;
 	}
 	else if (isFalling) {
-		if (fallSpeed < ParticleThreshold && !HasTag(Tag::Piercing)) {
-			SpawnEntity(Identifier::Dust, GetFootLocation() + FVector(0.0f, -hitboxRadius *  0.75f, 0.0f));
-			SpawnEntity(Identifier::Dust, GetFootLocation() + FVector(0.0f, -hitboxRadius * -0.75f, 0.0f));
+		if (fallSpeed < Particlethreshold) {
+			Spawn<AParticle>(GetFootLocation() + FVector(0.0f, -hitboxRadius *  0.75f, 0.0f));
+			Spawn<AParticle>(GetFootLocation() + FVector(0.0f, -hitboxRadius * -0.75f, 0.0f));
 		}
 		isFalling = false;
 		fallSpeed = 0.0f;
 	}
-	if (z < VoidThreshold) {
-		Destroy();
-		return;
+
+	for (uint8 i = 0; i < ToInt(Effect::Length); i++) {
 	}
-	zPrevious = z;
-	
-	UpdateInputs(DeltaTime * GetWorldSpeed());
-	UpdateAction(DeltaTime * GetWorldSpeed());
-	UpdateEffect(DeltaTime * GetWorldSpeed());
-	direction.Normalize();
-	FVector velocityTemp = direction * GetWorldSpeed() * speed;
-	if (HasEffect(Effect::Speed )) velocityTemp *=        GetEffectStrength(GetIndex(Effect::Speed ));
-	if (HasEffect(Effect::Freeze)) velocityTemp *= 1.0f - GetEffectStrength(GetIndex(Effect::Freeze));
-	velocity = velocity * 0.88f + velocityTemp * 0.12f;
+	UpdateEffect();
 
-	if (HasTag(Tag::Pinned)) SetActorLocation(pinned);
-	else SetActorLocation(GetActorLocation() + (velocity + force) * DeltaTime);
-	force *= (1 - DeltaTime);
+	spriteDelay += DeltaTime;
+	UpdateSprite();
 }
-FVector AEntity::GetDirection() { return direction; }
-void AEntity::SetDirection(FVector value) { direction = value; direction.Normalize(); }
-void AEntity::AddForce(FVector value) { force += value / mass; }
-bool AEntity::IsFalling() { return isFalling; }
-
-
-
-bool AEntity::GetInput(Action value) {
-	if (!GetGhost()) return false;
-	return GetGhost()->GetInput(value);
-}
-FVector AEntity::GetInputDirection() {
-	if (!GetGhost()) return FVector::ZeroVector;
-	return GetGhost()->GetInputDirection();
+void AEntity::EndPlay(const EEndPlayReason::Type EndPlayReason) {
+	Super::EndPlay(EndPlayReason);
 }
 
 
 
-Action AEntity::GetAction() {
-	return action;
+template <typename T> T* AEntity::Spawn(FVector Location) {
+	if constexpr (std::is_base_of<AIndicator, T>::value) {
+		return GetWorld()->SpawnActor<T>(indicatorClass, Location, FRotator::ZeroRotator);
+	}
+	if constexpr (std::is_base_of<AParticle, T>::value) {
+		return GetWorld()->SpawnActor<T>(particleClass, Location, FRotator::ZeroRotator);
+	}
 }
-bool AEntity::SetAction(Action value) {
-	if (!VerifyAction(value)) return false;
-	action = value;
-	actionDelay = 0.0f;
+
+
+
+bool AEntity::HasTag(Tag value = ToEnum<Tag>(~0)) {
+	return (ToInt(tag) & ToInt(value)) != 0;
+}
+void AEntity::AddTag(Tag value) {
+	tag = ToEnum<Tag>(ToInt(tag) | ToInt(value));
+}
+void AEntity::RemoveTag(Tag value) {
+	tag = ToEnum<Tag>(ToInt(tag) & ~ToInt(value));
+}
+
+bool AEntity::HasEffect(Effect value = ToEnum<Effect>(~0)) {
+	return (ToInt(effect) & ToInt(value)) != 0;
+}
+bool AEntity::AddEffect(Effect value, float strength = 1.0f, float duration = 1.0f) {
+	if ((ToInt(effectImmunity) & ToInt(value)) != 0) return false;
+	effect = ToEnum<Effect>(ToInt(effect) | ToInt(value));
 	return true;
 }
-bool AEntity::VerifyAction(Action value) {
-	return false;
+void AEntity::RemoveEffect(Effect value) {
+	effect = ToEnum<Effect>(ToInt(effect) & ~ToInt(value));
 }
-bool AEntity::UpdateInputs(float DeltaTime) {
-	if (HasTag(Tag::Player)) {
-		direction = GetInputDirection();
-		if (action == Action::Idle && !direction.IsZero()) SetAction(Action::Move);
-		if (action == Action::Move &&  direction.IsZero()) SetAction(Action::Idle);
-		for (uint8 i = 0; i < static_cast<uint8>(Action::Length); i++) {
-			Action index = static_cast<Action>(i);
-			if (GetInput(index)) SetAction(index);
-		}
-		return false;
+
+void AEntity::UpdateEffect() {
+	for (uint8 i = 0; i < ToInt(Effect::Max); i++) {
 	}
-	return true;
 }
-bool AEntity::UpdateAction(float DeltaTime) {
-	actionDelay += DeltaTime;
-	switch (action) {
-	case Action::Idle:   break;
-	case Action::Move:   break;
-	case Action::Jump:   break;
-	case Action::Dash:   break;
-	case Action::Attack: break;
-	case Action::Defend: break;
-	case Action::Defeat: break;
-	}
-	return true;
+
+void AEntity::UpdateSprite() {
 }
 
 
 
-Group AEntity::GetGroup() { return group; }
-void AEntity::SetGroup(Group value) { group = value; }
-
-
-
-uint8 AEntity::GetIndex(Tag value) {
-	static uint8 list[static_cast<uint8>(Tag::Length)] = { 0, };
-	uint8 index = static_cast<uint8>(value);
-	if (list[index] == 0) for (uint8 i = 0; i < static_cast<uint8>(Tag::Length); i++) if (index & (1 << i)) {
-		list[index] = i;
-		break;
-	}
-	return list[index];
-}
-bool AEntity::HasTag(Tag value) {
-	return tag & static_cast<uint8>(value);
-}
-bool AEntity::AddTag(Tag value) {
-	if (HasTag(value)) return false;
-	UE_LOG(LogTemp, Warning, TEXT("%s add %s"), *GetName(), *ToFString(value));
-	tag |= static_cast<uint8>(value);
-	switch (value) {
-	case Tag::Floating:        hitboxComponent->SetSimulatePhysics(false); break;
-	case Tag::Piercing:        hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly); break;
-	case Tag::Pinned: 	       hitboxComponent->SetSimulatePhysics(false); pinned = GetActorLocation(); break;
-	case Tag::Invulnerability: break;
-	case Tag::Interactability: break;
-	case Tag::Collectable:     break;
-	case Tag::Player:          break;
-	case Tag::Leader:          break;
-	}
-	return true;
-}
-bool AEntity::RemoveTag(Tag value) {
-	if (!HasTag(value)) return false;
-	tag &= ~static_cast<uint8>(value);
-	switch (value) {
-	case Tag::Floating:        hitboxComponent->SetSimulatePhysics(true); break;
-	case Tag::Piercing:        hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics); break;
-	case Tag::Pinned: 	       if (!HasTag(Tag::Floating)) hitboxComponent->SetSimulatePhysics(true); break;
-	case Tag::Invulnerability: break;
-	case Tag::Interactability: break;
-	case Tag::Collectable:     break;
-	case Tag::Player:          break;
-	case Tag::Leader:          break;
-	}
-	return true;
-}
-
-
-
-bool  AEntity::UpdateEffect(float DeltaTime) {
-	for (uint8 i = 0; i < static_cast<uint8>(Effect::Length); i++) {
-		Effect index = static_cast<Effect>(1 << i);
-		if (HasEffect(index) && (effectDuration[i] -= DeltaTime) <= 0) RemoveEffect(index);
-	}
-	return true;
-}
-
-uint8 AEntity::GetIndex(Effect value) {
-	static uint8 list[static_cast<uint8>(Effect::Length)] = { 0, };
-	uint8 index = static_cast<uint8>(value);
-	if (list[index] == 0) for (uint8 i = 0; i < static_cast<uint8>(Effect::Length); i++) if (index & (1 << i)) {
-		list[index] = i;
-		break;
-	}
-	return list[index];
-}
-bool AEntity::HasEffect(Effect value) {
-	return static_cast<uint8>(effect) & static_cast<uint8>(value);
-}
-bool AEntity::AddEffect(Effect value, float strength, float duration) {
-	if (static_cast<uint8>(effectImmunity) & static_cast<uint8>(value)) return false;
-	uint8 index = GetIndex(value);
-	switch (value) {
-	case Effect::HealthBoost: break;
-	case Effect::DamageBoost: break;
-	case Effect::Resistance:  break;
-	case Effect::Speed:       break;
-	case Effect::Burn:        break;
-	case Effect::Stun:        break;
-	case Effect::Freeze:      break;
-	}
-	effect |= static_cast<uint8>(value);
-	AdjustEffectStrength(index, strength);
-	AdjustEffectDuration(index, duration);
-	return true;
-}
-bool AEntity::RemoveEffect(Effect value) {
-	if (!HasEffect(value)) return false;
-	uint8 index = GetIndex(value);
-	switch (value) {
-	case Effect::HealthBoost: break;
-	case Effect::DamageBoost: break;
-	case Effect::Resistance:  break;
-	case Effect::Speed:       break;
-	case Effect::Burn:        break;
-	case Effect::Stun:        break;
-	case Effect::Freeze:      break;
-	}
-	effect &= ~static_cast<uint8>(value);
-	effectStrength[index] = 0;
-	effectDuration[index] = 0;
-	return true;
-}
-float AEntity::GetEffectStrength(uint8 index) { return effectStrength[index]; }
-float AEntity::GetEffectDuration(uint8 index) { return effectDuration[index]; }
-void  AEntity::AdjustEffectStrength(uint8 index, float strength) {
-	Effect value = static_cast<Effect>(1 << index);
-	strength = effectStrength[index] + strength;
-	switch (value) {
-	case Effect::HealthBoost: strength = FMath::Clamp(strength, 0.0f, MaxStrength); break;
-	case Effect::DamageBoost: strength = FMath::Clamp(strength, 0.0f, MaxStrength); break;
-	case Effect::Resistance:  strength = FMath::Clamp(strength, 0.0f, 1.0f);        break;
-	case Effect::Speed:       strength = FMath::Clamp(strength, 0.0f, MaxStrength); break;
-	case Effect::Burn:        strength = FMath::Clamp(strength, 0.0f, MaxStrength); break;
-	case Effect::Stun:        strength = FMath::Clamp(strength, 0.0f, MaxStrength); break;
-	case Effect::Freeze:      strength = FMath::Clamp(strength, 0.0f, 1.0f);        break;
-	}
-	effectStrength[index] = strength;
-	if (strength == 0.0f) RemoveEffect(value);
-}
-void  AEntity::AdjustEffectDuration(uint8 index, float duration) {
-	Effect value = static_cast<Effect>(1 << index);
-	duration = effectDuration[index] + duration;
-	switch (value) {
-	case Effect::HealthBoost: duration = FMath::Clamp(duration, 0.0f, MaxDuration); break;
-	case Effect::DamageBoost: duration = FMath::Clamp(duration, 0.0f, MaxDuration); break;
-	case Effect::Resistance:  duration = FMath::Clamp(duration, 0.0f, MaxDuration); break;
-	case Effect::Speed:       duration = FMath::Clamp(duration, 0.0f, MaxDuration); break;
-	case Effect::Burn:        duration = FMath::Clamp(duration, 0.0f, MaxDuration); break;
-	case Effect::Stun:        duration = FMath::Clamp(duration, 0.0f, MaxDuration); break;
-	case Effect::Freeze:      duration = FMath::Clamp(duration, 0.0f, MaxDuration); break;
-	}
-	effectDuration[index] = duration;
-	if (duration == 0.0f) RemoveEffect(value);
+FVector AEntity::GetFootLocation() {
+	return GetActorLocation() + FVector(-hitboxHeight * 0.5f, 0.0f, -hitboxHeight * 0.5f + 64.0f);
 }
