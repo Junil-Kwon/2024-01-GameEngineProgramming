@@ -1,47 +1,41 @@
 #include "Particle.h"
-#include "Components/BoxComponent.h"
-#include "Components/StaticMeshComponent.h"
 
 
+
+
+
+// =============================================================================================================
+// Initialization
+// =============================================================================================================
 
 AParticle::AParticle() {
-	PrimaryActorTick.bCanEverTick = true;
-
-	boxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxComponent"));
-	boxComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	SetRootComponent(boxComponent);
-
-	meshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh0Component"));
-	meshComponent->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
-	meshComponent->SetRelativeScale3D(FVector(1.28f, 1.28f, 1.28f));
-	meshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	meshComponent->SetupAttachment(boxComponent);
+	defaultTag += static_cast<uint8>(Tag::Floating);
+	defaultTag += static_cast<uint8>(Tag::Piercing);
 }
-
 void AParticle::BeginPlay() {
 	Super::BeginPlay();
-}
-
-void AParticle::Tick(float DeltaTime) {
-	Super::Tick(DeltaTime);
-
-	UpdateSprite(DeltaTime);
+	SetCollisionProfileName(TEXT("Particle"));
 }
 
 
 
-void AParticle::UpdateSprite(float DeltaTime) {
-	spriteDelay += DeltaTime;
-	switch (identifier) {
-	case Identifier::Dust: if (0.5f < spriteDelay) Destroy(); break;
-	}
 
-	int32 i = 0;
-	switch (identifier) {
-		case Identifier::Dust: i = 1 + static_cast<int32>(spriteDelay * 10); if (5 < i) i = 5; break;
+
+// =============================================================================================================
+// Action
+// =============================================================================================================
+
+bool AParticle::UpdateAction(float DeltaTime) {
+	if (!Super::UpdateAction(DeltaTime)) return false;
+	switch (GetIdentifier()) {
+
+	case Identifier::Dust:
+		SetSpriteIndex(nullptr, FMath::Min(0 + static_cast<int32>(actionDelay * 10), 4));
+		if (0.5f <= actionDelay) Destroy();
+		break;
+
+
+
 	}
-	if (spriteIndex == i) return;
-	spriteIndex = i;
-	meshComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), spriteIndex);
-	//meshComponent->SetScalarParameterValueOnMaterials(TEXT("XFlip"), spriteXflip ? 1.0f : 0.0f);
+	return true;
 }
