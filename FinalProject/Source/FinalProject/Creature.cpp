@@ -31,19 +31,15 @@ void ACreature::BeginPlay() {
 	SetMagnetRange(defaultMagnetRange);
 	
 	indicator = static_cast<AIndicator*>(Spawn(Identifier::Indicator));
-	indicator->SetActorRelativeLocation(FVector(0.0f, 0.0f, 128.0f));
-	indicator->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 	indicatorWidth = defaultIndicatorWidth;
-	indicator->SetWidth(indicatorWidth);
-	
-	Super::BeginPlay();
 
 	healthMax = health;
 	shieldMax = shield;
 	energeMax = energe;
-	indicator->SetHealthRatio(health / healthMax);
-	indicator->SetShieldRatio(shield / shieldMax);
-	indicator->SetEnergeRatio(energe / energeMax);
+
+	Super::BeginPlay();
+
+	indicator->SetCreature(this);
 }
 void ACreature::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 	Super::EndPlay(EndPlayReason);
@@ -180,44 +176,11 @@ void ACreature::Select(AEntity* entity) {
 
 
 // =============================================================================================================
-// Group
+// Indicator
 // =============================================================================================================
 
-void ACreature::SetGroup(Group value) {
-	Super::SetGroup(value);
-	indicator->SetGroup(value);
-}
-
-// =============================================================================================================
-// Tag
-// =============================================================================================================
-
-bool ACreature::AddTag(Tag value) {
-	if (!Super::AddTag(value)) return false;
-	switch (value) {
-	case Tag::Floating:        break;
-	case Tag::Piercing:        break;
-	case Tag::Invulnerability: break;
-	case Tag::Interactability: break;
-	case Tag::Collectable:     break;
-	case Tag::Player:          break;
-	case Tag::Leader:          indicator->SetLeader(true); break;
-	}
-	return true;
-}
-bool ACreature::RemoveTag(Tag value) {
-	if (!Super::RemoveTag(value)) return false;
-	switch (value) {
-	case Tag::Floating:        break;
-	case Tag::Piercing:        break;
-	case Tag::Invulnerability: break;
-	case Tag::Interactability: break;
-	case Tag::Collectable:     break;
-	case Tag::Player:          break;
-	case Tag::Leader:          indicator->SetLeader(false); break;
-	}
-	return true;
-}
+float ACreature::GetIndicatorWidth() { return indicatorWidth; }
+void  ACreature::SetIndicatorWidth(float value) { indicatorWidth = value; }
 
 
 
@@ -258,6 +221,9 @@ void  ACreature::OnDie() {
 float ACreature::GetHealth() { return health; }
 float ACreature::GetShield() { return shield; }
 float ACreature::GetEnerge() { return energe; }
+float ACreature::GetHealthMax() { return healthMax; }
+float ACreature::GetShieldMax() { return shieldMax; }
+float ACreature::GetEnergeMax() { return energeMax; }
 
 void ACreature::AdjustMaxHealth(float value) {
 	healthMax += FMath::Min(healthMax + value, 0.0f);

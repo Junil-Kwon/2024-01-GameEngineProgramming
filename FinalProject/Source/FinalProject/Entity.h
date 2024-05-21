@@ -111,9 +111,10 @@ protected:
 	virtual void BeginPlay() override;
 
 	// Update
-	#define MaxFallSpeed  -1024.0f
-	#define VoidThreshold  -500.0f
-	#define DustThreshold  -500.0f
+	#define DefaultGravityScale     3.0f
+	#define FallSpeedMax        -1024.0f
+	#define VoidZAxis            -500.0f
+	#define DustThreshold        -500.0f
 protected:
 	UPROPERTY(EditAnywhere) float defaultSpeed = 300.0f;
 private:
@@ -241,8 +242,8 @@ public:
 	virtual bool RemoveTag(Tag value);
 
 	// Effect
-	#define EffectMaxStrength 9999.0f
-	#define EffectMaxDuration 9999.0f
+	#define EffectStrengthMax 9999.0f
+	#define EffectDurationMax 9999.0f
 protected:
 	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = Effect)) uint8 defaultEffect         = 0;
 	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = Effect)) uint8 defaultEffectImmunity = 0;
@@ -255,7 +256,7 @@ protected:
 	virtual bool UpdateEffect(float DeltaTime);
 public:
 	bool  HasEffect(Effect value);
-	virtual bool AddEffect   (Effect value, float strength = 1.0f, float duration = EffectMaxDuration);
+	virtual bool AddEffect   (Effect value, float strength = 1.0f, float duration = EffectDurationMax);
 	virtual bool RemoveEffect(Effect value);
 
 	float GetEffectStrength(Effect value);

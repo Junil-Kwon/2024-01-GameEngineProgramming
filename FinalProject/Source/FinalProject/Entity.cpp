@@ -115,11 +115,9 @@ UMaterialInstance* AEntity::GetMaterialInstance() {
 AEntity* AEntity::Spawn(Identifier value, FVector location) {
 	UClass* uClass = GetBlueprint(value);
 	if (!uClass) return nullptr;
-	static FActorSpawnParameters parameter;
-	if (parameter.Instigator == nullptr) {
-		parameter.Instigator = this;
-		parameter.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	}
+	FActorSpawnParameters parameter;
+	parameter.Instigator = NULL;
+	parameter.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	return GetWorld()->SpawnActor<AEntity>(GetBlueprint(value), location, FRotator::ZeroRotator, parameter);
 }
 
@@ -165,6 +163,7 @@ void AEntity::BeginPlay() {
 	identifier = ToEnum<Identifier>(edit);
 
 	SetHitbox(defaultHitboxRadius, defaultHitboxHeight);
+	uArrowComponent->SetRelativeRotation(ToRotator(FVector(0.0f, 1.0f, 0.0f)));
 	CreateMaterial();
 
 	shadowComponent->SetVisibility(true);
@@ -173,7 +172,7 @@ void AEntity::BeginPlay() {
 
 	speed = defaultSpeed;
 	GetCharacterMovement()->JumpZVelocity = 800.0f;
-	GetCharacterMovement()->GravityScale = 3.0f;
+	GetCharacterMovement()->GravityScale = DefaultGravityScale;
 	GetCharacterMovement()->MaxWalkSpeed = speed;
 	GetCharacterMovement()->MaxAcceleration = speed * 100;
 
@@ -197,8 +196,8 @@ void AEntity::Tick(float DeltaTime) {
 	if (GetCharacterMovement()->IsFalling()) {
 		if (!isFalling) isFalling = true;
 		fallSpeed = GetCharacterMovement()->Velocity.Z;
-		if (fallSpeed < MaxFallSpeed) GetCharacterMovement()->Velocity.Z = MaxFallSpeed;
-		if (GetFootLocation().Z < VoidThreshold) Destroy();
+		if (fallSpeed < FallSpeedMax) GetCharacterMovement()->Velocity.Z = FallSpeedMax;
+		if (GetFootLocation().Z < VoidZAxis) Destroy();
 	}
 	else if (isFalling) {
 		if (fallSpeed < DustThreshold) {
@@ -256,7 +255,7 @@ FVector AEntity::GetFootLocation() {
 // =============================================================================================================
 
 FVector AEntity::GetArrowDirection() { return uArrowComponent->GetForwardVector(); }
-void    AEntity::SetArrowDirection(FVector value) { uArrowComponent->SetWorldRotation(ToRotator(value)); }
+void    AEntity::SetArrowDirection(FVector value) { uArrowComponent->SetRelativeRotation(ToRotator(value)); }
 
 // =============================================================================================================
 // Sprite
@@ -417,7 +416,7 @@ bool AEntity::RemoveTag(Tag value) {
 	if (!HasTag(value)) return false;
 	tag &= ~static_cast<uint8>(value);
 	switch (value) {
-	case Tag::Floating:        GetCharacterMovement()->GravityScale = 3.0f; break;
+	case Tag::Floating:        GetCharacterMovement()->GravityScale = DefaultGravityScale; break;
 	case Tag::Piercing:        hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics); break;
 	case Tag::Invulnerability: break;
 	case Tag::Interactability: break;
@@ -434,8 +433,23 @@ bool AEntity::RemoveTag(Tag value) {
 
 bool AEntity::UpdateEffect(float DeltaTime) {
 	for (uint8 i = 0; i < static_cast<uint8>(Effect::Length); i++) {
-		Effect index = static_cast<Effect>(1 << i);
-		if (HasEffect(index) && (effectDuration[i] -= DeltaTime) <= 0) RemoveEffect(index);
+		Effect value = static_cast<Effect>(1 << i);
+		if (!HasEffect(value)) continue;
+		if ((effectDuration[GetIndex(value)] -= DeltaTime) <= 0) {
+			switch (value) {
+			case Effect::HealthBoost:
+			case Effect::DamageBoost:
+			case Effect::Speed:
+			case Effect::Burn:
+				AdjustEffectStrength(value, -DeltaTime); break;
+			case Effect::Resistance:
+			case Effect::Freeze:
+				AdjustEffectStrength(value, -DeltaTime * 0.2f); break;
+			case Effect::Stun:
+			default:
+				RemoveEffect(value); break;
+			}
+		}
 	}
 	return true;
 }
@@ -451,6 +465,7 @@ bool AEntity::AddEffect(Effect value, float strength, float duration) {
 	return true;
 }
 bool AEntity::RemoveEffect(Effect value) {
+	UE_LOG(LogTemp, Warning, TEXT("%s, %f, %f"), *ToFString(value), GetEffectStrength(value), GetEffectDuration(value));
 	if (!HasEffect(value)) return false;
 	effect &= ~static_cast<uint8>(value);
 	effectStrength[GetIndex(value)] = 0;
@@ -463,12 +478,12 @@ float AEntity::GetEffectDuration(Effect value) { return effectDuration[GetIndex(
 void  AEntity::AdjustEffectStrength(Effect value, float strength) {
 	strength = effectStrength[GetIndex(value)] + strength;
 	switch (value) {
-	case Effect::HealthBoost: strength = FMath::Clamp(strength, 0.0f, EffectMaxStrength); break;
-	case Effect::DamageBoost: strength = FMath::Clamp(strength, 0.0f, EffectMaxStrength); break;
+	case Effect::HealthBoost: strength = FMath::Clamp(strength, 0.0f, EffectStrengthMax); break;
+	case Effect::DamageBoost: strength = FMath::Clamp(strength, 0.0f, EffectStrengthMax); break;
 	case Effect::Resistance:  strength = FMath::Clamp(strength, 0.0f, 1.0f);              break;
-	case Effect::Speed:       strength = FMath::Clamp(strength, 0.0f, EffectMaxStrength); break;
-	case Effect::Burn:        strength = FMath::Clamp(strength, 0.0f, EffectMaxStrength); break;
-	case Effect::Stun:        strength = FMath::Clamp(strength, 0.0f, EffectMaxStrength); break;
+	case Effect::Speed:       strength = FMath::Clamp(strength, 0.0f, EffectStrengthMax); break;
+	case Effect::Burn:        strength = FMath::Clamp(strength, 0.0f, EffectStrengthMax); break;
+	case Effect::Stun:        strength = FMath::Clamp(strength, 0.0f, EffectStrengthMax); break;
 	case Effect::Freeze:      strength = FMath::Clamp(strength, 0.0f, 1.0f);              break;
 	}
 	effectStrength[GetIndex(value)] = strength;
@@ -477,13 +492,13 @@ void  AEntity::AdjustEffectStrength(Effect value, float strength) {
 void  AEntity::AdjustEffectDuration(Effect value, float duration) {
 	duration = effectDuration[GetIndex(value)] + duration;
 	switch (value) {
-	case Effect::HealthBoost: duration = FMath::Clamp(duration, 0.0f, EffectMaxDuration); break;
-	case Effect::DamageBoost: duration = FMath::Clamp(duration, 0.0f, EffectMaxDuration); break;
-	case Effect::Resistance:  duration = FMath::Clamp(duration, 0.0f, EffectMaxDuration); break;
-	case Effect::Speed:       duration = FMath::Clamp(duration, 0.0f, EffectMaxDuration); break;
-	case Effect::Burn:        duration = FMath::Clamp(duration, 0.0f, EffectMaxDuration); break;
-	case Effect::Stun:        duration = FMath::Clamp(duration, 0.0f, EffectMaxDuration); break;
-	case Effect::Freeze:      duration = FMath::Clamp(duration, 0.0f, EffectMaxDuration); break;
+	case Effect::HealthBoost: duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
+	case Effect::DamageBoost: duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
+	case Effect::Resistance:  duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
+	case Effect::Speed:       duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
+	case Effect::Burn:        duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
+	case Effect::Stun:        duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
+	case Effect::Freeze:      duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
 	}
 	effectDuration[GetIndex(value)] = duration;
 	if (duration == 0.0f) RemoveEffect(value);

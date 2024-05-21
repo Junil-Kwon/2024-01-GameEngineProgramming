@@ -85,6 +85,10 @@ public:
 	AEntity* selected;
 	virtual void Select(AEntity* entity);
 
+
+
+
+
 	// =========================================================================================================
 	// Indicator
 	// =========================================================================================================
@@ -94,22 +98,10 @@ protected:
 private:
 	UPROPERTY() class AIndicator* indicator;
 	float indicatorWidth;
-
-
-
-
-
-	// =========================================================================================================
-	// Properties
-	// =========================================================================================================
-	// Group
+protected:
+	void  SetIndicatorWidth(float value);
 public:
-	virtual void SetGroup(Group value) override;
-
-	// Tag
-public:
-	virtual bool AddTag   (Tag value) override;
-	virtual bool RemoveTag(Tag value) override;
+	float GetIndicatorWidth();
 
 
 
@@ -140,6 +132,9 @@ public:
 	float GetHealth();
 	float GetShield();
 	float GetEnerge();
+	float GetHealthMax();
+	float GetShieldMax();
+	float GetEnergeMax();
 	void AdjustMaxHealth(float value);
 	void AdjustMaxShield(float value);
 	void AdjustMaxEnerge(float value);
