@@ -72,6 +72,7 @@ bool AHero::UpdateInputs(float DeltaTime) {
 }
 bool AHero::UpdateAction(float DeltaTime) {
 	if (!Super::UpdateAction(DeltaTime)) return false;
+	bool condition = false;
 	switch (GetAction()) {
 	case Action::Idle:
 		SetSpriteIndex(nullptr,  0 + static_cast<int32>(actionDelay *  2) % 4);
@@ -88,13 +89,24 @@ bool AHero::UpdateAction(float DeltaTime) {
 		SetSpriteIndex(nullptr, FMath::Min(10 + static_cast<int32>(actionDelay * 10), 13));
 		AddMovementInput(direction);
 		if (0.1f <= actionDelay && actionDelay - DeltaTime < 0.1f) Jump();
-		if (0.2f <= actionDelay && !GetCharacterMovement()->IsFalling()) SetAction(Action::Idle);
+		if (0.2f <= actionDelay && !GetCharacterMovement()->IsFalling()) {
+			SetAction(Action::Idle);
+			SetActionCooldown(Action::Jump, 0.1f);
+		}
 		break;
 	case Action::Dash:
 		SetSpriteIndex(nullptr, FMath::Min(14 + static_cast<int32>(actionDelay * 10), 19));
 		AddMovementInput(GetArrowDirection());
-		if (actionDelay - DeltaTime == 0.0f) AddEffect(Effect::Speed, 2.0f, 0.3f);
-		if (0.6f <= actionDelay) SetAction(Action::Idle);
+		condition = int32(actionDelay * 10) != int32((actionDelay - DeltaTime) * 10);
+		condition &= !GetCharacterMovement()->IsFalling() && (actionDelay < 0.5f);
+		if (actionDelay - DeltaTime == 0.0f || condition) Spawn(Identifier::Dust, GetFootLocation());
+		if (actionDelay - DeltaTime == 0.0f) AddEffect(Effect::Speed, 1.0f, 0.3f);
+		if (0.6f <= actionDelay) {
+			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() *  0.75f, 0.0f));
+			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() * -0.75f, 0.0f));
+			SetAction(Action::Idle);
+			SetActionCooldown(Action::Dash, 1.0f);
+		}
 		break;
 	case Action::Attack:
 		

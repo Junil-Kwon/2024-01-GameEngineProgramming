@@ -15,6 +15,7 @@ enum class Identifier : uint8 {
 	Object			,
 	Indicator		,
 	Dust			,
+	Flame			,
 	Length			UMETA(Hidden),
 };
 
@@ -113,7 +114,7 @@ protected:
 	// Update
 	#define DefaultGravityScale     3.0f
 	#define FallSpeedMax        -1024.0f
-	#define VoidZAxis            -500.0f
+	#define VoidZAxis           -1024.0f
 	#define DustThreshold        -500.0f
 protected:
 	UPROPERTY(EditAnywhere) float defaultSpeed = 300.0f;
@@ -151,6 +152,7 @@ public:
 	void  SetHitboxHeight(float value);
 	void  SetHitbox(float radius, float height);
 	void  SetCollisionProfileName(FName value);
+	FVector GetHeadLocation();
 	FVector GetFootLocation();
 	
 	// Arrow
@@ -201,10 +203,13 @@ protected:
 	// Action
 private:
 	Action action = Action::Idle;
+	float  actionCooldown[static_cast<uint8>(Action::Length)] = { 0.0f, };
 protected:
 	float  actionDelay = 0.0f;
 	Action GetAction();
 	bool   SetAction(Action value);
+	float  GetActionCooldown(Action value);
+	void   SetActionCooldown(Action value, float cooldown = 0.0f);
 	virtual bool VerifyAction(Action value);
 	virtual bool UpdateInputs(float DeltaTime);
 	virtual bool UpdateAction(float DeltaTime);
@@ -250,9 +255,13 @@ protected:
 private:
 	uint8 effect;
 	uint8 effectImmunity;
-	float effectStrength[static_cast<uint8>(Effect::Length)] = { 0, };
-	float effectDuration[static_cast<uint8>(Effect::Length)] = { 0, };
+	float effectStrength[static_cast<uint8>(Effect::Length)] = { 0.0f, };
+	float effectDuration[static_cast<uint8>(Effect::Length)] = { 0.0f, };
+	float hit = 0.0f;
+	bool  updateColor = false;
+	bool  updateSpeed = false;
 protected:
+	void Hit(float value);
 	virtual bool UpdateEffect(float DeltaTime);
 public:
 	bool  HasEffect(Effect value);
@@ -261,6 +270,6 @@ public:
 
 	float GetEffectStrength(Effect value);
 	float GetEffectDuration(Effect value);
-	void  AdjustEffectStrength(Effect value, float strength);
-	void  AdjustEffectDuration(Effect value, float duration);
+	float AdjustEffectStrength(Effect value, float strength);
+	float AdjustEffectDuration(Effect value, float duration);
 };

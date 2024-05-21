@@ -57,5 +57,5 @@ private:
 	void SetGroup();
 	void SetLeader();
 public:
-	void SetCreature(ACreature* value);
+	void SetTarget(ACreature* value);
 };

@@ -39,7 +39,7 @@ void ACreature::BeginPlay() {
 
 	Super::BeginPlay();
 
-	indicator->SetCreature(this);
+	indicator->SetTarget(this);
 }
 void ACreature::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 	Super::EndPlay(EndPlayReason);

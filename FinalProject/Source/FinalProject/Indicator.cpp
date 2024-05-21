@@ -182,7 +182,7 @@ void AIndicator::SetLeader() {
 	SetSpriteIndex(iLeaderComponent, leader ? 13 : 63);
 }
 
-void AIndicator::SetCreature(ACreature* value) {
+void AIndicator::SetTarget(ACreature* value) {
 	if (value == nullptr) return;
 	creature = value;
 	SetActorRelativeLocation(FVector(0.0f, 0.0f, creature->GetHitboxHeight() * 0.5f + 96.0f));
