@@ -6,7 +6,7 @@
 ### 2024.05.22.
 Add __Interactor__
 
-![Honeycam 2024-05-22 19-29-01](https://github.com/areasplash/2024-01-GameEngineProgramming/assets/50064865/3a0bd4d5-ed83-49b2-b89f-701737699c29)
+![Honeycam 2024-05-22 19-23-54](https://github.com/areasplash/2024-01-GameEngineProgramming/assets/50064865/2ce287ec-d9bb-4794-b808-2a3be7368be2)
 
 
 
