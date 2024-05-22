@@ -1,6 +1,13 @@
 # 2024-01-GameEngineProgramming
  Unreal Engine Final Assignment
 
+### 2024.05.21.
+Add Entity Effect : __HealthBoost, Speed, Burn, Stun, Freeze__
+
+![Honeycam 2024-05-22 00-03-24](https://github.com/areasplash/2024-01-GameEngineProgramming/assets/50064865/ed2bcdd8-0840-4feb-bba5-7e4c5bf0fa73)
+
+
+
 ### 2024.05.11.
 Add __Indicator, Dust Effect__
 
