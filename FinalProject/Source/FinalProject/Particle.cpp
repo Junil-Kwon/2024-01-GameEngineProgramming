@@ -45,6 +45,6 @@ bool AParticle::UpdateAction(float DeltaTime) {
 
 bool AParticle::OnInteract(AEntity* entity) {
 	if (!Super::OnInteract(entity)) return false;
-	AttachToComponent(entity->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+	AttachToComponent(entity->GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform);
 	return true;
 }

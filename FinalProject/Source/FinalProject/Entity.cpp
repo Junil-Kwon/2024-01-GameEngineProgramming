@@ -31,6 +31,10 @@ FVector  AEntity::ToVector(FRotator value) {
 	float radian = FMath::DegreesToRadians(value.Yaw);
 	return FVector(FMath::Cos(radian), FMath::Sin(radian), 0.0f);
 }
+FVector AEntity::RotateVector(FVector value) {
+	static FRotator rotation = FRotator(-48.590382f, 0.0f, 0.0f);
+	return rotation.RotateVector(FVector(value.X, value.Y, value.Z));
+}
 
 
 
@@ -154,7 +158,8 @@ AEntity::AEntity() {
 	hitboxComponent->SetCollisionProfileName(TEXT("Entity"));
 	SetRootComponent(hitboxComponent);
 
-	uArrowComponent = GetArrowComponent();
+	//uArrowComponent = GetArrowComponent();
+	uArrowComponent = CreateDefaultSubobject<UArrowComponent>(TEXT("UArrow"));
 
 	spriteComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Sprite"));
 	spriteComponent->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
@@ -181,6 +186,7 @@ void AEntity::BeginPlay() {
 	identifier = ToEnum<Identifier>(edit);
 
 	SetHitbox(defaultHitboxRadius, defaultHitboxHeight);
+	handLocation = FVector(0.0f, defaultHandLocation.X, defaultHandLocation.Y);
 	uArrowComponent->SetRelativeRotation(ToRotator(FVector(0.0f, 1.0f, 0.0f)));
 	CreateMaterial();
 
@@ -272,11 +278,12 @@ void  AEntity::SetHitbox(float radius, float height) {
 void  AEntity::SetCollisionProfileName(FName value) {
 	hitboxComponent->SetCollisionProfileName(value);
 }
-FVector AEntity::GetHeadLocation() {
-	return GetActorLocation() + FVector(0.0f, 0.0f,  hitboxHeight * 0.5f + 160.0f);
-}
 FVector AEntity::GetFootLocation() {
-	return GetActorLocation() + FVector(-hitboxHeight * 0.5f, 0.0f, -hitboxHeight * 0.5f + 48.0f);
+	return GetActorLocation() + RotateVector(FVector(-24.0f, 0.0f, -hitboxHeight * 0.5f));
+}
+FVector AEntity::GetHandLocation() {
+	FVector hand = FVector(-24.0f, handLocation.Y * (!GetSpriteXFlip() ? 1.0f : -1.0f), handLocation.Z);
+	return GetActorLocation() + RotateVector(hand);
 }
 
 // =============================================================================================================
@@ -491,11 +498,12 @@ bool AEntity::UpdateEffect(float DeltaTime) {
 			if (int32(duration * 4) != int32((duration - DeltaTime) * 4)) {
 				AParticle* particle = static_cast<AParticle*>(Spawn(Identifier::Flame));
 				FVector location = FVector::ZeroVector;
-				float angle = FMath::RandRange(0.0f, 1.0f * PI);
-				location.Y = hitboxRadius * FMath::Cos(angle) * FMath::RandRange(0.8f, 1.0f);
-				location.Z = hitboxHeight * FMath::Sin(angle) * FMath::RandRange(0.6f, 0.8f);
+				float angle = FMath::RandRange(-0.2f * PI, 1.2f * PI);
+				location.X = -24.0f;
+				location.Y = hitboxRadius * FMath::Cos(angle) * FMath::RandRange(0.6f, 0.8f);
+				location.Z = hitboxHeight * FMath::Sin(angle) * FMath::RandRange(0.3f, 0.4f);
+				particle->SetActorLocation(GetActorLocation() + RotateVector(location));
 				particle->OnInteract(this);
-				particle->SetActorRelativeLocation(location);
 			}
 			break;
 		}

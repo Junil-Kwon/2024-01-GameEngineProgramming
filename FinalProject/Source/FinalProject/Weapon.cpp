@@ -37,17 +37,26 @@ void AWeapon::Tick(float DeltaTime) {
 // Action
 // =============================================================================================================
 
+bool AWeapon::UpdateAction(float DeltaTime) {
+	if (!Super::UpdateAction(DeltaTime)) return false;
+	if (parent == nullptr) return false;
+
+	if (GetSpriteXFlip() != parent->GetSpriteXFlip()) {
+		SetSpriteXFlip(nullptr, parent->GetSpriteXFlip());
+		SetActorLocation(parent->GetHandLocation());
+	}
+	
+	return true;
+}
+
 bool AWeapon::OnInteract(AEntity* entity) {
 	if (parent != nullptr) {
 		RemoveTag(Tag::Floating);
 		RemoveTag(Tag::Piercing);
 		AddTag(Tag::Interactability);
 		
-		SetActorRelativeLocation(FVector::ZeroVector);
-		FVector location = parent->GetActorLocation();
-		location += parent->GetArrowDirection() * parent->GetHitboxRadius();
-		SetActorLocation(location);
-		LaunchCharacter(parent->GetArrowDirection() * 200.0f, true, true);
+		SetActorLocation(parent->GetActorLocation() + parent->GetArrowDirection() * parent->GetHitboxRadius());
+		LaunchCharacter(parent->GetArrowDirection() * 200.0f + FVector(0.0f, 0.0f, 200.0f), true, true);
 		parent = nullptr;
 		DetachRootComponentFromParent();
 	}
@@ -58,9 +67,9 @@ bool AWeapon::OnInteract(AEntity* entity) {
 		RemoveTag(Tag::Interactability);
 
 		GetCharacterMovement()->StopMovementImmediately();
-		SetActorRelativeLocation(FVector(-10.0f, 0.0f, 0.0f));
 		parent = static_cast<ACreature*>(entity);
-		AttachToComponent(parent->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+		AttachToComponent(parent->GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform);
+		SetActorLocation(parent->GetHandLocation());
 	}
 	return true;
 }

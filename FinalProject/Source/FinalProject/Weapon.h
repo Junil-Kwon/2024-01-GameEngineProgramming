@@ -33,6 +33,7 @@ public:
 private:
 	UPROPERTY() class ACreature* parent;
 public:
+	virtual bool UpdateAction(float DeltaTime) override;
 	virtual bool OnInteract(AEntity* value) override;
 
 

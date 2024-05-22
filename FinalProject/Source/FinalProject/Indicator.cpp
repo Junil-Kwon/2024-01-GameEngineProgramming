@@ -202,7 +202,7 @@ void AIndicator::Tick(float DeltaTime) {
 bool AIndicator::OnInteract(AEntity* entity) {
 	if (!Super::OnInteract(entity) || !entity->IsA(ACreature::StaticClass())) return false;
 	parent = static_cast<ACreature*>(entity);
-	SetActorRelativeLocation(FVector(0.0f, 0.0f, parent->GetHitboxHeight() * 0.5f + 96.0f));
+	SetActorLocation(FVector(0.0f, 0.0f, parent->GetHitboxHeight() * 0.5f + 96.0f));
 	AttachToComponent(parent->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 	SetWidth();
 	SetGroup();

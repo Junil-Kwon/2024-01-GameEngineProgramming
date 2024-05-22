@@ -52,18 +52,18 @@ void AInteractor::SetActive(bool value) {
 	active = value;
 	SetSpriteIndex(nullptr, value ? 0 : 63);
 	nameComponent->SetText(value ? ToFString(parent->GetIdentifier()) : TEXT(""));
-	if (parent) UpdateRelativeLocation();
+	if (parent) UpdateLocation();
 }
 
 void AInteractor::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
-	if (active) UpdateRelativeLocation();
+	if (active) UpdateLocation();
 }
-void AInteractor::UpdateRelativeLocation() {
+void AInteractor::UpdateLocation() {
 	float height = parent->GetHitboxHeight() * 0.5f + 64.0f;
 	if (parent->IsA(ACreature::StaticClass())) {
 		if (static_cast<ACreature*>(parent)->GetIndicator()->GetActive()) {
-			height += !parent->HasTag(Tag::Leader) ? 96.0f : 148.0f;
+			height += !parent->HasTag(Tag::Leader) ? 96.0f : 152.0f;
 		}
 	}
 	SetActorLocation(parent->GetActorLocation() + FVector(0.0f, 0.0f, height));
@@ -80,7 +80,7 @@ void AInteractor::UpdateRelativeLocation() {
 bool AInteractor::OnInteract(AEntity* entity) {
 	if (!Super::OnInteract(entity)) return false;
 	parent = entity;
-	UpdateRelativeLocation();
+	UpdateLocation();
 	AttachToComponent(parent->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 	return true;
 }

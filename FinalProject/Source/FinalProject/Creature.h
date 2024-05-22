@@ -63,7 +63,7 @@ public:
 
 	// Magnet
 protected:
-	UPROPERTY(EditAnywhere) float defaultMagnetRange = 160.0f;
+	UPROPERTY(EditAnywhere) float defaultMagnetRange = 120.0f;
 private:
 	UPROPERTY() class UCapsuleComponent* magnetComponent;
 	float magnetRange;

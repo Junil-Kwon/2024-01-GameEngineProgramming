@@ -96,6 +96,7 @@ public:
 	bool operator==(const AEntity& other) const;
 	FRotator ToRotator(FVector  value);
 	FVector  ToVector (FRotator value);
+	FVector  RotateVector(FVector value);
 
 	uint8 GetIndex(Tag    value);
 	uint8 GetIndex(Effect value);
@@ -154,10 +155,12 @@ public:
 protected:
 	UPROPERTY(EditAnywhere) float defaultHitboxRadius = 0.0f;
 	UPROPERTY(EditAnywhere) float defaultHitboxHeight = 0.0f;
+	UPROPERTY(EditAnywhere) FVector2D defaultHandLocation = FVector2D::ZeroVector;
 private:
 	UPROPERTY() class UCapsuleComponent* hitboxComponent;
 	float hitboxRadius;
 	float hitboxHeight;
+	FVector handLocation;
 protected:
 	virtual void OnHitboxChanged();
 public:
@@ -167,16 +170,17 @@ public:
 	void  SetHitboxHeight(float value);
 	void  SetHitbox(float radius, float height);
 	void  SetCollisionProfileName(FName value);
-	virtual FVector GetHeadLocation();
 	virtual FVector GetFootLocation();
+	virtual FVector GetHandLocation();
+
 	
 	// Arrow
 private:
 	UPROPERTY() class UArrowComponent* uArrowComponent;
-protected:
-	void    SetArrowDirection(FVector value);
 public:
 	FVector GetArrowDirection();
+protected:
+	void    SetArrowDirection(FVector value);
 
 	// Sprite
 private:
@@ -185,12 +189,13 @@ private:
 	bool    spriteXFlip = false;
 	FVector spriteColor = FVector::OneVector;
 	float   spriteIntensity = 0.0f;
-protected:
-	UFUNCTION() UMaterialInstanceDynamic* CreateMaterial(UStaticMeshComponent* comp = nullptr);
+public:
 	int32   GetSpriteIndex();
 	bool    GetSpriteXFlip();
 	FVector GetSpriteColor();
 	float   GetSpriteIntensity();
+protected:
+	UFUNCTION() UMaterialInstanceDynamic* CreateMaterial(UStaticMeshComponent* comp = nullptr);
 	UFUNCTION() void SetSpriteIndex(UStaticMeshComponent* comp = nullptr, int32   value = 0);
 	UFUNCTION() void SetSpriteXFlip(UStaticMeshComponent* comp = nullptr, bool    value = false);
 	UFUNCTION() void SetSpriteColor(UStaticMeshComponent* comp = nullptr, FVector value = FVector::OneVector);

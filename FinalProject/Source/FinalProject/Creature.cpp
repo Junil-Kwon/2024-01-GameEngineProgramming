@@ -17,6 +17,7 @@
 ACreature::ACreature() {
 	defaultHitboxRadius =  36.0f;
 	defaultHitboxHeight = 100.0f;
+	defaultHandLocation = FVector2D(24.0f, -4.0f);
 	
 	sensorComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Sensor"));
 	sensorComponent->InitCapsuleSize(defaultSensorRange, defaultHitboxHeight * 0.5f);
@@ -222,7 +223,7 @@ bool ACreature::UpdateAction(float DeltaTime) {
 			if (GetSelected()->IsA(AWeapon::StaticClass())) SetWeapon(static_cast<AWeapon*>(GetSelected()));
 			else GetSelected()->OnInteract(this);
 			SetAction(Action::Idle);
-			SetActionCooldown(Action::Attack, 0.2f);
+			SetActionCooldown(Action::Attack, 0.25f);
 			return false;
 		}
 		break;

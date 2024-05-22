@@ -37,7 +37,7 @@ public:
 	void SetActive(bool value);
 	virtual void Tick(float DeltaTime) override;
 private:
-	void UpdateRelativeLocation();
+	void UpdateLocation();
 
 
 
