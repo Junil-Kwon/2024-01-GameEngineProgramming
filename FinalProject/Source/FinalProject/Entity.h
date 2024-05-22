@@ -12,7 +12,10 @@ UENUM(BlueprintType)
 enum class Identifier : uint8 {
 	Default			= 0,
 	Hero			,
-	Object			,
+	Sword			,
+	Chest			,
+	Wand			,
+	Interactor		,
 	Indicator		,
 	Dust			,
 	Flame			,
@@ -67,6 +70,15 @@ enum class Effect : uint8 {
 };
 ENUM_CLASS_FLAGS(Effect);
 
+UENUM(BlueprintType)
+enum class FontType : uint8 {
+	Galmuri7		= 0,
+	Galmuri9		,
+	Galmuri11		,
+	Galmuri11Bold	,
+	Length			UMETA(Hidden),
+};
+
 
 
 
@@ -95,6 +107,8 @@ public:
 	UTexture* GetTexture(Identifier value);
 	UClass* GetBlueprint(Identifier value);
 	UMaterialInstance* GetMaterialInstance();
+	UFUNCTION() void SetFont(UTextRenderComponent* component, FontType value);
+	
 
 	AEntity* Spawn(Identifier value, FVector location = FVector::ZeroVector);
 
@@ -110,6 +124,7 @@ public:
 	AEntity();
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	// Update
 	#define DefaultGravityScale     3.0f
@@ -152,15 +167,16 @@ public:
 	void  SetHitboxHeight(float value);
 	void  SetHitbox(float radius, float height);
 	void  SetCollisionProfileName(FName value);
-	FVector GetHeadLocation();
-	FVector GetFootLocation();
+	virtual FVector GetHeadLocation();
+	virtual FVector GetFootLocation();
 	
 	// Arrow
 private:
 	UPROPERTY() class UArrowComponent* uArrowComponent;
 protected:
-	FVector GetArrowDirection();
 	void    SetArrowDirection(FVector value);
+public:
+	FVector GetArrowDirection();
 
 	// Sprite
 private:
@@ -170,7 +186,7 @@ private:
 	FVector spriteColor = FVector::OneVector;
 	float   spriteIntensity = 0.0f;
 protected:
-	UFUNCTION() void CreateMaterial(UStaticMeshComponent* comp = nullptr);
+	UFUNCTION() UMaterialInstanceDynamic* CreateMaterial(UStaticMeshComponent* comp = nullptr);
 	int32   GetSpriteIndex();
 	bool    GetSpriteXFlip();
 	FVector GetSpriteColor();
@@ -183,6 +199,14 @@ protected:
 	// Shadow
 private:
 	UPROPERTY() class UStaticMeshComponent* shadowComponent;
+
+	// Interactor
+private:
+	UPROPERTY() class AInteractor* interactor;
+	void CreateInteractor();
+	void RemoveInteractor();
+public:
+	UFUNCTION() AInteractor* GetInteractor();
 
 
 
@@ -213,6 +237,9 @@ protected:
 	virtual bool VerifyAction(Action value);
 	virtual bool UpdateInputs(float DeltaTime);
 	virtual bool UpdateAction(float DeltaTime);
+
+public:
+	virtual bool OnInteract(AEntity* entity);
 
 
 

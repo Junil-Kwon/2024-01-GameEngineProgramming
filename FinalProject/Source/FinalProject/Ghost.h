@@ -33,9 +33,9 @@ public:
 
 	// Camera
 private:
-	UPROPERTY() class USphereComponent*    sphereComponent;
-	UPROPERTY() class USpringArmComponent* springComponent;
-	UPROPERTY() class UCameraComponent*    cameraComponent;
+	UPROPERTY(EditAnywhere) class USphereComponent*    sphereComponent;
+	UPROPERTY(EditAnywhere) class USpringArmComponent* springComponent;
+	UPROPERTY(EditAnywhere) class UCameraComponent*    cameraComponent;
 
 
 
@@ -70,4 +70,7 @@ private:
 public:
 	AEntity* GetPlayer();
 	void SetPlayer(AEntity* value);
+
+	void OnPlayerSpawned  ();
+	void OnPlayerDestroyed();
 };

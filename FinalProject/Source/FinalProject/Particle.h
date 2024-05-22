@@ -28,11 +28,6 @@ protected:
 	// Action
 protected:
 	virtual bool UpdateAction(float DeltaTime) override;
-
-
-
-
-	// Particle
 public:
-	void SetTarget(AEntity* value, FVector location = FVector::ZeroVector);
+	virtual bool OnInteract(AEntity* entity) override;
 };

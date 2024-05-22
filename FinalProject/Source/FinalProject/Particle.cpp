@@ -43,16 +43,8 @@ bool AParticle::UpdateAction(float DeltaTime) {
 	return true;
 }
 
-
-
-
-
-// =============================================================================================================
-// Action
-// =============================================================================================================
-
-void AParticle::SetTarget(AEntity* value, FVector location) {
-	if (value == nullptr) return;
-	SetActorRelativeLocation(location);
-	AttachToComponent(value->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+bool AParticle::OnInteract(AEntity* entity) {
+	if (!Super::OnInteract(entity)) return false;
+	AttachToComponent(entity->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+	return true;
 }

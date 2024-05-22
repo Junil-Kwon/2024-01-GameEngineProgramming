@@ -1,5 +1,7 @@
 #include "Creature.h"
 #include "Ghost.h"
+#include "Weapon.h"
+#include "Interactor.h"
 #include "Indicator.h"
 
 #include "Components/CapsuleComponent.h"
@@ -23,7 +25,7 @@ ACreature::ACreature() {
 
 	magnetComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Magnet"));
 	magnetComponent->InitCapsuleSize(defaultMagnetRange, defaultHitboxHeight * 0.5f);
-	sensorComponent->SetCollisionProfileName(TEXT("Sensor"));
+	magnetComponent->SetCollisionProfileName(TEXT("Sensor"));
 	magnetComponent->SetupAttachment(RootComponent);
 }
 void ACreature::BeginPlay() {
@@ -39,10 +41,16 @@ void ACreature::BeginPlay() {
 
 	Super::BeginPlay();
 
-	indicator->SetTarget(this);
+	indicator->OnInteract(this);
+
+	sensorComponent->OnComponentBeginOverlap.AddDynamic(this, &ACreature::OnSensorBeginOverlap);
+	sensorComponent->OnComponentEndOverlap  .AddDynamic(this, &ACreature::OnSensorEndOverlap  );
+	magnetComponent->OnComponentBeginOverlap.AddDynamic(this, &ACreature::OnMagnetBeginOverlap);
+	magnetComponent->OnComponentEndOverlap  .AddDynamic(this, &ACreature::OnMagnetEndOverlap  );
 }
 void ACreature::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 	Super::EndPlay(EndPlayReason);
+	if (HasWeapon()) weapon->Destroy();
 	indicator->Destroy();
 }
 
@@ -100,29 +108,30 @@ void ACreature::OnSensorEndOverlap(
 // =============================================================================================================
 
 bool ACreature::UpdateMagnet(float DeltaTime) {
-	if (magnetArray.Num() == 0) return false;
 	if (GetGroup() != GetGhost()->GetPlayer()->GetGroup()) return false;
 
-	for (int32 i = magnetArray.Num() - 1; -1 < i; i--) {
-		if (magnetArray[i] == nullptr) {
-			magnetArray.RemoveAt(i);
+	for (int32 i = collectable.Num() - 1; -1 < i; i--) {
+		if (collectable[i] == nullptr || !collectable[i]->HasTag(Tag::Collectable)) {
+			collectable.RemoveAt(i);
 			continue;
 		}
 		// pull other actor to this actor
 	}
 	if (HasTag(Tag::Player)) {
-		// player interaction
 		AEntity* entity = nullptr;
-		float distance = magnetRange;
-		for (int32 i = 0; i < magnetArray.Num(); i++) {
-			if (HasTag(Tag::Collectable)) continue;
-			float s = FVector::Distance(magnetArray[i]->GetActorLocation(), GetActorLocation());
-			if (s < distance) {
-				entity = magnetArray[i];
-				distance = s;
+		float nearest = magnetRange;
+		for (int32 i = interactability.Num() - 1; -1 < i; i--) {
+			if (interactability[i] == nullptr || !interactability[i]->HasTag(Tag::Interactability)) {
+				interactability.RemoveAt(i);
+				continue;
+			}
+			float distance = FVector::Distance(interactability[i]->GetActorLocation(), GetActorLocation());
+			if (distance < nearest) {
+				entity = interactability[i];
+				nearest = distance;
 			}
 		}
-		Select(entity);
+		SetSelected(entity);
 	}
 	return true;
 }
@@ -139,9 +148,8 @@ void ACreature::OnMagnetBeginOverlap(
 
 	AEntity* entity = Cast<AEntity>(OtherActor);
 	if (entity == nullptr) return;
-	if (!magnetArray.Contains(entity) && entity->HasTag(Tag::Interactability)) {
-		magnetArray.Add(entity);
-	}
+	if (!interactability.Contains(entity) && entity->HasTag(Tag::Interactability)) interactability.Add(entity);
+	if (!collectable    .Contains(entity) && entity->HasTag(Tag::Collectable    )) collectable    .Add(entity);
 }
 void ACreature::OnMagnetEndOverlap(
 	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -149,38 +157,82 @@ void ACreature::OnMagnetEndOverlap(
 
 	AEntity* entity = Cast<AEntity>(OtherActor);
 	if (entity == nullptr) return;
-	if (magnetArray.Contains(entity)) {
-		magnetArray.Remove(entity);
-		if (selected == entity) Select(nullptr);
-	}
+	if (interactability.Contains(entity)) SetSelected(nullptr);
+	if (interactability.Contains(entity)) interactability.Remove(entity);
+	if (collectable    .Contains(entity)) collectable    .Remove(entity);
 }
 
 // =============================================================================================================
 // Select
 // =============================================================================================================
 
-void ACreature::Select(AEntity* entity) {
+bool     ACreature::HasSelected() { return selected != nullptr; };
+AEntity* ACreature::GetSelected() { return selected; }
+void ACreature::SetSelected(AEntity* entity) {
 	if (entity == selected) return;
 	if (selected != nullptr) {
-		// deselect 'selected'
+		if (selected->HasTag(Tag::Interactability)) selected->GetInteractor()->SetActive(false);
 		selected = nullptr;
 	}
 	if (entity != nullptr) {
 		selected = entity;
-		// select 'selected'
+		if (selected->HasTag(Tag::Interactability)) selected->GetInteractor()->SetActive(true);
 	}
 }
 
+// =============================================================================================================
+// Weapon
+// =============================================================================================================
 
-
-
+bool     ACreature::HasWeapon() { return weapon != nullptr; }
+AWeapon* ACreature::GetWeapon() { return weapon; }
+void ACreature::SetWeapon(AWeapon* value) {
+	if (weapon != nullptr) {
+		weapon->OnInteract(nullptr);
+		OnMagnetBeginOverlap(nullptr, weapon, nullptr, 0, false, FHitResult());
+		weapon = nullptr;
+	}
+	if (weapon == nullptr) {
+		if (value) value->OnInteract(this);
+		weapon = value;
+	}
+}
 
 // =============================================================================================================
 // Indicator
 // =============================================================================================================
 
+AIndicator* ACreature::GetIndicator() { return indicator; }
 float ACreature::GetIndicatorWidth() { return indicatorWidth; }
 void  ACreature::SetIndicatorWidth(float value) { indicatorWidth = value; }
+
+
+
+
+
+// =============================================================================================================
+// Action
+// =============================================================================================================
+
+bool ACreature::UpdateAction(float DeltaTime) {
+	if (!Super::UpdateAction(DeltaTime)) return false;
+	switch (GetAction()) {
+	case Action::Attack:
+		if (HasSelected()) {
+			if (GetSelected()->IsA(AWeapon::StaticClass())) SetWeapon(static_cast<AWeapon*>(GetSelected()));
+			else GetSelected()->OnInteract(this);
+			SetAction(Action::Idle);
+			SetActionCooldown(Action::Attack, 0.2f);
+			return false;
+		}
+		break;
+	case Action::Defend:
+
+		break;
+	}
+	return true;
+}
+
 
 
 
@@ -215,6 +267,8 @@ void  ACreature::OnShieldBroken() {
 }
 void  ACreature::OnDie() {
 	SetAction(Action::Defeat);
+
+	if (HasWeapon()) SetWeapon(nullptr);
 	// if (HasEffect(Effect::Burn)) smoke effect, if enough strength, ashed effect
 }
 

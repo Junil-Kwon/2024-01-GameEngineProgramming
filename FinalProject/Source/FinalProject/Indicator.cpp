@@ -89,26 +89,15 @@ void AIndicator::BeginPlay() {
 // Indicator
 // =============================================================================================================
 
-void AIndicator::Tick(float DeltaTime) {
-	Super::Tick(DeltaTime);
-
-	if (width != creature->GetIndicatorWidth()) SetWidth();
-	else if (health != creature->GetHealth() || shieldMax != creature->GetShieldMax()) SetWidth();
-	else if (shield != creature->GetShield() || shieldMax != creature->GetShieldMax()) SetWidth();
-	else if (energe != creature->GetEnerge() || energeMax != creature->GetEnergeMax()) SetWidth();
-	else if (hboost != creature->GetEffectStrength(Effect::HealthBoost)) SetWidth();
-	if (group != creature->GetGroup()) SetGroup();
-	if (leader != creature->HasTag(Tag::Leader)) SetLeader();
-}
 void AIndicator::SetWidth() {
-	width = creature->GetIndicatorWidth();
-	health = creature->GetHealth();
-	shield = creature->GetShield();
-	energe = creature->GetEnerge();
-	healthMax = creature->GetHealthMax();
-	shieldMax = creature->GetShieldMax();
-	energeMax = creature->GetEnergeMax();
-	hboost = creature->GetEffectStrength(Effect::HealthBoost);
+	width = parent->GetIndicatorWidth();
+	health = parent->GetHealth();
+	shield = parent->GetShield();
+	energe = parent->GetEnerge();
+	healthMax = parent->GetHealthMax();
+	shieldMax = parent->GetShieldMax();
+	energeMax = parent->GetEnergeMax();
+	hboost = parent->GetEffectStrength(Effect::HealthBoost);
 
 	int32 index = (shieldMax != 0.0f) + (energeMax != 0.0f);
 	SetSpriteIndex(lBorderComponent, index);
@@ -168,7 +157,7 @@ void AIndicator::SetWidth() {
 	iShieldComponent->SetRelativeLocation(FVector(0.0f, Width * -2.0f - 10.0f, 0.0f));
 }
 void AIndicator::SetGroup() {
-	group = creature->GetGroup();
+	group = parent->GetGroup();
 	FVector color = FVector::OneVector;
 	switch (group) {
 	case Group::Friendly: color = FVector(0.031896, 0.332452, 0.152926); break;
@@ -178,16 +167,46 @@ void AIndicator::SetGroup() {
 	SetSpriteColor(lHealthComponent, color);
 }
 void AIndicator::SetLeader() {
-	leader = creature->HasTag(Tag::Leader);
+	leader = parent->HasTag(Tag::Leader);
 	SetSpriteIndex(iLeaderComponent, leader ? 13 : 63);
 }
 
-void AIndicator::SetTarget(ACreature* value) {
-	if (value == nullptr) return;
-	creature = value;
-	SetActorRelativeLocation(FVector(0.0f, 0.0f, creature->GetHitboxHeight() * 0.5f + 96.0f));
-	AttachToComponent(creature->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+bool AIndicator::GetActive() {
+	return active;
+}
+void AIndicator::SetActive(bool value) {
+	active = value;
+	//-
+}
+void AIndicator::Tick(float DeltaTime) {
+	Super::Tick(DeltaTime);
+	if (!parent) return;
+
+	if (width != parent->GetIndicatorWidth()) SetWidth();
+	else if (health != parent->GetHealth() || shieldMax != parent->GetShieldMax()) SetWidth();
+	else if (shield != parent->GetShield() || shieldMax != parent->GetShieldMax()) SetWidth();
+	else if (energe != parent->GetEnerge() || energeMax != parent->GetEnergeMax()) SetWidth();
+	else if (hboost != parent->GetEffectStrength(Effect::HealthBoost)) SetWidth();
+	if (group != parent->GetGroup()) SetGroup();
+	if (leader != parent->HasTag(Tag::Leader)) SetLeader();
+}
+
+
+
+
+
+// =============================================================================================================
+// Action
+// =============================================================================================================
+
+bool AIndicator::OnInteract(AEntity* entity) {
+	if (!Super::OnInteract(entity) || !entity->IsA(ACreature::StaticClass())) return false;
+	parent = static_cast<ACreature*>(entity);
+	SetActorRelativeLocation(FVector(0.0f, 0.0f, parent->GetHitboxHeight() * 0.5f + 96.0f));
+	AttachToComponent(parent->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 	SetWidth();
 	SetGroup();
 	SetLeader();
+	SetActive(true);
+	return true;
 }

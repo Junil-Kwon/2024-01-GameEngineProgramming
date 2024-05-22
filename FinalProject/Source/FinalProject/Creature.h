@@ -63,12 +63,12 @@ public:
 
 	// Magnet
 protected:
-	UPROPERTY(EditAnywhere) float defaultMagnetRange = 120.0f;
+	UPROPERTY(EditAnywhere) float defaultMagnetRange = 160.0f;
 private:
 	UPROPERTY() class UCapsuleComponent* magnetComponent;
 	float magnetRange;
 protected:
-	TArray<AEntity*> magnetArray;
+	TArray<AEntity*> interactability, collectable;
 	virtual bool UpdateMagnet(float DeltaTime);
 public:
 	float GetMagnetRange();
@@ -82,26 +82,43 @@ public:
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	// Select
+private:
 	AEntity* selected;
-	virtual void Select(AEntity* entity);
+protected:
+	bool     HasSelected();
+	AEntity* GetSelected();
+	virtual void SetSelected(AEntity* entity);
+	
+	// Weapon
+private:
+	UPROPERTY() class AWeapon* weapon;
+protected:
+	bool     HasWeapon();
+	AWeapon* GetWeapon();
+	virtual void SetWeapon(AWeapon* value);
 
-
-
-
-
-	// =========================================================================================================
-	// Indicator
-	// =========================================================================================================
 	// Indicator
 protected:
 	UPROPERTY(EditAnywhere) float defaultIndicatorWidth = 24.0f;
 private:
 	UPROPERTY() class AIndicator* indicator;
 	float indicatorWidth;
+public:
+	AIndicator* GetIndicator();
+	float GetIndicatorWidth();
 protected:
 	void  SetIndicatorWidth(float value);
-public:
-	float GetIndicatorWidth();
+
+
+
+
+
+	// =========================================================================================================
+	// AI
+	// =========================================================================================================
+	// Action
+protected:
+	virtual bool UpdateAction(float DeltaTime) override;
 
 
 

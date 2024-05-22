@@ -1,11 +1,14 @@
 #include "Entity.h"
 #include "Ghost.h"
+#include "Interactor.h"
 #include "Particle.h"
 
 #include "Components/CapsuleComponent.h"
 #include "Components/ArrowComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/TextRenderComponent.h"
 
+#include "Engine/Font.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -111,7 +114,20 @@ UMaterialInstance* AEntity::GetMaterialInstance() {
 	return uInstance;
 }
 
-
+void AEntity::SetFont(UTextRenderComponent* component, FontType value) {
+	static UMaterial* uMaterial[static_cast<uint8>(FontType::Length)] = { nullptr, };
+	static UFont*     uFont    [static_cast<uint8>(FontType::Length)] = { nullptr, };
+	static FString name = ToFString(value);
+	uint8 index = static_cast<uint8>(value);
+	if (uMaterial[index] == nullptr || uFont[index] == nullptr) {
+		FString pathMaterial = "/Game/Fonts/" + name + "-Material." + name + "-Material";
+		FString pathFont     = "/Game/Fonts/" + name + "-Font."     + name + "-Font";
+		uMaterial[index] = LoadObject<UMaterial>(nullptr, *pathMaterial);
+		uFont    [index] = LoadObject<UFont>    (nullptr, *pathFont    );
+	}
+	component->SetMaterial(0, uMaterial[index]);
+	component->SetFont(uFont[index]);
+}
 
 AEntity* AEntity::Spawn(Identifier value, FVector location) {
 	UClass* uClass = GetBlueprint(value);
@@ -161,6 +177,7 @@ void AEntity::BeginPlay() {
 	int64 BP = name.Find(TEXT("_"), ESearchCase::IgnoreCase, ESearchDir::FromStart, 0);
 	int64 C0 = name.Find(TEXT("_"), ESearchCase::IgnoreCase, ESearchDir::FromStart, BP + 1);
 	FString edit = name.Mid(BP + 1, C0 - BP - 1);
+	for (int64 i = edit.Len() - 1; -1 < i; i--) if ('0' <= edit[i] && edit[i] <= '9') edit.RemoveAt(i, 1);
 	identifier = ToEnum<Identifier>(edit);
 
 	SetHitbox(defaultHitboxRadius, defaultHitboxHeight);
@@ -187,6 +204,11 @@ void AEntity::BeginPlay() {
 		effectDuration[i] = 0;
 		if (defaultEffect & (1 << i)) AddEffect(static_cast<Effect>(1 << i));
 	}
+}
+void AEntity::EndPlay(const EEndPlayReason::Type EndPlayReason) {
+	Super::EndPlay(EndPlayReason);
+	if (HasTag(Tag::Interactability)) RemoveInteractor();
+	if (HasTag(Tag::Player)) GetGhost()->OnPlayerDestroyed();
 }
 
 // =============================================================================================================
@@ -251,7 +273,7 @@ void  AEntity::SetCollisionProfileName(FName value) {
 	hitboxComponent->SetCollisionProfileName(value);
 }
 FVector AEntity::GetHeadLocation() {
-	return GetActorLocation() + FVector(-hitboxHeight * 0.5f, 0.0f,  hitboxHeight * 0.5f + 96.0f);
+	return GetActorLocation() + FVector(0.0f, 0.0f,  hitboxHeight * 0.5f + 160.0f);
 }
 FVector AEntity::GetFootLocation() {
 	return GetActorLocation() + FVector(-hitboxHeight * 0.5f, 0.0f, -hitboxHeight * 0.5f + 48.0f);
@@ -268,11 +290,12 @@ void    AEntity::SetArrowDirection(FVector value) { uArrowComponent->SetRelative
 // Sprite
 // =============================================================================================================
 
-void AEntity::CreateMaterial(UStaticMeshComponent* component) {
+UMaterialInstanceDynamic* AEntity::CreateMaterial(UStaticMeshComponent* component) {
 	if (component == nullptr) component = spriteComponent;
 	UMaterialInstanceDynamic* material = UMaterialInstanceDynamic::Create(GetMaterialInstance(), this);
 	material->SetTextureParameterValue(TEXT("Texture"), GetTexture(identifier));
 	component->SetMaterial(0, material);
+	return material;
 }
 
 int32   AEntity::GetSpriteIndex() { return spriteIndex; }
@@ -312,6 +335,23 @@ void AEntity::SetSpriteIntensity(UStaticMeshComponent* component, float value) {
 	}
 	component->SetScalarParameterValueOnMaterials(TEXT("Intensity"), value);
 }
+
+// =============================================================================================================
+// Interactor
+// =============================================================================================================
+
+void AEntity::CreateInteractor() {
+	if (interactor != nullptr) return;
+	interactor = static_cast<AInteractor*>(Spawn(Identifier::Interactor));
+	interactor->OnInteract(this);
+}
+void AEntity::RemoveInteractor() {
+	if (interactor == nullptr) return;
+	interactor->Destroy();
+	interactor = nullptr;
+}
+
+AInteractor* AEntity::GetInteractor() { return interactor; }
 
 
 
@@ -379,7 +419,9 @@ bool AEntity::UpdateAction(float DeltaTime) {
 	return true;
 }
 
-
+bool AEntity::OnInteract(AEntity* entity) {
+	return (entity != nullptr);
+}
 
 
 
@@ -410,9 +452,9 @@ bool AEntity::AddTag(Tag value) {
 	tag |= static_cast<uint8>(value);
 	switch (value) {
 	case Tag::Floating:        GetCharacterMovement()->GravityScale = 0.0f; break;
-	case Tag::Piercing:        hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly); break;
+	case Tag::Piercing:        hitboxComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision); break;
 	case Tag::Invulnerability: break;
-	case Tag::Interactability: break;
+	case Tag::Interactability: CreateInteractor(); break;
 	case Tag::Collectable:     break;
 	case Tag::Player:          GetGhost()->SetPlayer(this); break;
 	case Tag::Leader:          break;
@@ -426,7 +468,7 @@ bool AEntity::RemoveTag(Tag value) {
 	case Tag::Floating:        GetCharacterMovement()->GravityScale = DefaultGravityScale; break;
 	case Tag::Piercing:        hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics); break;
 	case Tag::Invulnerability: break;
-	case Tag::Interactability: break;
+	case Tag::Interactability: RemoveInteractor(); break;
 	case Tag::Collectable:     break;
 	case Tag::Player:          break;
 	case Tag::Leader:          break;
@@ -447,11 +489,13 @@ bool AEntity::UpdateEffect(float DeltaTime) {
 		switch (value) {
 		case Effect::Burn:
 			if (int32(duration * 4) != int32((duration - DeltaTime) * 4)) {
-				float angle = FMath::RandRange(0.0f, 1.0f * PI);
+				AParticle* particle = static_cast<AParticle*>(Spawn(Identifier::Flame));
 				FVector location = FVector::ZeroVector;
+				float angle = FMath::RandRange(0.0f, 1.0f * PI);
 				location.Y = hitboxRadius * FMath::Cos(angle) * FMath::RandRange(0.8f, 1.0f);
 				location.Z = hitboxHeight * FMath::Sin(angle) * FMath::RandRange(0.6f, 0.8f);
-				static_cast<AParticle*>(Spawn(Identifier::Flame))->SetTarget(this, location);
+				particle->OnInteract(this);
+				particle->SetActorRelativeLocation(location);
 			}
 			break;
 		}
@@ -493,9 +537,9 @@ bool AEntity::UpdateEffect(float DeltaTime) {
 	}
 	if (updateSpeed) {
 		float i = 1.0f;
-		if (HasEffect(Effect::Speed )) i *= GetEffectStrength(Effect::Speed) + 1.0f;
-		if (HasEffect(Effect::Burn  )) i *= FMath::Clamp(GetEffectStrength(Effect::Burn) + 0.5f, 1.0f, 1.5f);
-		if (HasEffect(Effect::Freeze)) i *= FMath::Clamp(1.0f - GetEffectStrength(Effect::Freeze), 0.0f, 1.0f);
+		if (HasEffect(Effect::Speed )) i *= 1.0f + GetEffectStrength(Effect::Speed);
+		if (HasEffect(Effect::Burn  )) i *= 1.0f + FMath::Max(GetEffectStrength(Effect::Burn) * 0.3f, 0.3f);
+		if (HasEffect(Effect::Freeze)) i *= 1.0f - GetEffectStrength(Effect::Freeze);
 		GetCharacterMovement()->MaxWalkSpeed    = speed * i;
 		GetCharacterMovement()->MaxAcceleration = speed * i * 100;
 	}

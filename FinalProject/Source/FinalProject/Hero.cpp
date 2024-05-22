@@ -1,4 +1,5 @@
 #include "Hero.h"
+#include "Weapon.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
 
@@ -109,10 +110,10 @@ bool AHero::UpdateAction(float DeltaTime) {
 		}
 		break;
 	case Action::Attack:
-		
+		SetAction(Action::Idle);
 		break;
 	case Action::Defend:
-		
+		SetAction(Action::Idle);
 		break;
 	case Action::Defeat:
 		SetSpriteIndex(nullptr, FMath::Min(20 + static_cast<int32>(actionDelay * 10), 23));

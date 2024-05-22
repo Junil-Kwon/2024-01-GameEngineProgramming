@@ -19,12 +19,12 @@ AGhost::AGhost() {
 	sphereComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SetRootComponent(sphereComponent);
 
-	springComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-	springComponent->SetWorldLocation(FVector(-4000.0f, 0.0f, 4400.0f));
+	springComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring"));
+	springComponent->SetRelativeLocation(FVector(-4000.0f, 0.0f, 4400.0f));
 	springComponent->SetupAttachment(RootComponent);
 
 	cameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	cameraComponent->SetWorldRotation(FRotator(-45.590382f, 0.0f, 0.0f));
+	cameraComponent->SetRelativeRotation(FRotator(-45.590382f, 0.0f, 0.0f));
 	cameraComponent->PostProcessSettings.BloomIntensity = 0.0f;
 	cameraComponent->FieldOfView = 15.0f;
 	cameraComponent->SetupAttachment(springComponent);
@@ -39,6 +39,7 @@ void AGhost::BeginPlay() {
 
 void AGhost::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
+	if (GetPlayer() != nullptr) SetActorLocation(player->GetActorLocation());
 }
 
 
@@ -115,5 +116,13 @@ AEntity* AGhost::GetPlayer() {
 }
 void AGhost::SetPlayer(AEntity* value) {
 	if (player != nullptr) player->RemoveTag(Tag::Player);
+	else if (value != nullptr) OnPlayerSpawned();
 	player = value;
+}
+
+void AGhost::OnPlayerSpawned() {
+	UE_LOG(LogTemp, Warning, TEXT("Player Spawned."));
+}
+void AGhost::OnPlayerDestroyed() {
+	UE_LOG(LogTemp, Warning, TEXT("Player Destroyed."));
 }

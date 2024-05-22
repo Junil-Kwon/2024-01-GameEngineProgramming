@@ -28,24 +28,20 @@ protected:
 
 	// Indicator
 private:
-	UPROPERTY(EditAnywhere) class UStaticMeshComponent* lBorderComponent;
-	UPROPERTY(EditAnywhere) class UStaticMeshComponent* rBorderComponent;
-	UPROPERTY(EditAnywhere) class UStaticMeshComponent* lHealthComponent;
-	UPROPERTY(EditAnywhere) class UStaticMeshComponent* lHBoostComponent;
-	UPROPERTY(EditAnywhere) class UStaticMeshComponent* rHealthComponent;
-	UPROPERTY(EditAnywhere) class UStaticMeshComponent* lShieldComponent;
-	UPROPERTY(EditAnywhere) class UStaticMeshComponent* rShieldComponent;
-	UPROPERTY(EditAnywhere) class UStaticMeshComponent* lEnergeComponent;
-	UPROPERTY(EditAnywhere) class UStaticMeshComponent* rEnergeComponent;
-	UPROPERTY(EditAnywhere) class UStaticMeshComponent* iShieldComponent;
-	UPROPERTY(EditAnywhere) class UStaticMeshComponent* iLeaderComponent;
+	UPROPERTY() class UStaticMeshComponent* lBorderComponent;
+	UPROPERTY() class UStaticMeshComponent* rBorderComponent;
+	UPROPERTY() class UStaticMeshComponent* lHealthComponent;
+	UPROPERTY() class UStaticMeshComponent* lHBoostComponent;
+	UPROPERTY() class UStaticMeshComponent* rHealthComponent;
+	UPROPERTY() class UStaticMeshComponent* lShieldComponent;
+	UPROPERTY() class UStaticMeshComponent* rShieldComponent;
+	UPROPERTY() class UStaticMeshComponent* lEnergeComponent;
+	UPROPERTY() class UStaticMeshComponent* rEnergeComponent;
+	UPROPERTY() class UStaticMeshComponent* iShieldComponent;
+	UPROPERTY() class UStaticMeshComponent* iLeaderComponent;
 	UFUNCTION() void SetupComponent(UStaticMeshComponent* component);
-
-public:
-	virtual void Tick(float DeltaTime) override;
-
 private:
-	UPROPERTY() class ACreature* creature;
+	UPROPERTY() class ACreature* parent;
 	float width  = 0.0f;
 	float health = 0.0f, healthMax = 0.0f;
 	float shield = 0.0f, shieldMax = 0.0f;
@@ -56,6 +52,18 @@ private:
 	void SetWidth();
 	void SetGroup();
 	void SetLeader();
+private:
+	bool active = false;
 public:
-	void SetTarget(ACreature* value);
+	bool GetActive();
+	void SetActive(bool value);
+	virtual void Tick(float DeltaTime) override;
+
+
+
+
+
+	// Action
+public:
+	virtual bool OnInteract(AEntity* entity) override;
 };
