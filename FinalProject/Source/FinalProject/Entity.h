@@ -14,6 +14,7 @@ enum class Identifier : uint8 {
 	Hero			,
 	Sword			,
 	Chest			,
+	Money			,
 	Wand			,
 	Interactor		,
 	Indicator		,

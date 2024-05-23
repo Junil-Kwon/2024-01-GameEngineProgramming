@@ -39,8 +39,15 @@ bool AChest::UpdateAction(float DeltaTime) {
 	case Action::Move:
 		SetSpriteIndex(nullptr, FMath::Min( 1 + static_cast<int32>(actionDelay * 10),  5));
 		if (0.6 <= actionDelay) {
+			for (int32 i = 0; i < 36; i++) {
+				FVector vector = FVector(FMath::RandRange(-200, 200), FMath::RandRange(-200, 200), 0.0f);
+				Spawn(Identifier::Money, GetActorLocation() + vector);
+				
+
+			}
+			//Spawn(Identifier::Hero, GetActorLocation() + FVector(0.0f, 0.0f, 400.0f));
 			// drop reward
-			//SetAction(Action::Defeat);
+			SetAction(Action::Defeat);
 		}
 		break;
 	case Action::Defeat:

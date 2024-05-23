@@ -1,5 +1,6 @@
 #include "Entity.h"
 #include "Ghost.h"
+#include "Creature.h"
 #include "Interactor.h"
 #include "Particle.h"
 
@@ -139,7 +140,12 @@ AEntity* AEntity::Spawn(Identifier value, FVector location) {
 	FActorSpawnParameters parameter;
 	parameter.Instigator = NULL;
 	parameter.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	return GetWorld()->SpawnActor<AEntity>(GetBlueprint(value), location, FRotator::ZeroRotator, parameter);
+	//return GetWorld()->SpawnActor<AEntity>(uClass, location, FRotator::ZeroRotator, parameter);
+	AEntity* entity = GetWorld()->SpawnActor<AEntity>(uClass, location, FRotator::ZeroRotator, parameter);
+	entity->GetCharacterMovement()->Activate(true);
+	
+
+	return entity;
 }
 
 
@@ -158,8 +164,8 @@ AEntity::AEntity() {
 	hitboxComponent->SetCollisionProfileName(TEXT("Entity"));
 	SetRootComponent(hitboxComponent);
 
-	//uArrowComponent = GetArrowComponent();
-	uArrowComponent = CreateDefaultSubobject<UArrowComponent>(TEXT("UArrow"));
+	uArrowComponent = GetArrowComponent();
+	//uArrowComponent = CreateDefaultSubobject<UArrowComponent>(TEXT("UArrow"));
 
 	spriteComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Sprite"));
 	spriteComponent->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
@@ -177,7 +183,7 @@ AEntity::AEntity() {
 }
 void AEntity::BeginPlay() {
 	Super::BeginPlay();
-
+	GetCharacterMovement()->Activate(true);
 	FString name = GetName();
 	int64 BP = name.Find(TEXT("_"), ESearchCase::IgnoreCase, ESearchDir::FromStart, 0);
 	int64 C0 = name.Find(TEXT("_"), ESearchCase::IgnoreCase, ESearchDir::FromStart, BP + 1);

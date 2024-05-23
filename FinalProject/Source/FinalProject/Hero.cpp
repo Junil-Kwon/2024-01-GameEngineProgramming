@@ -106,7 +106,7 @@ bool AHero::UpdateAction(float DeltaTime) {
 			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() *  0.75f, 0.0f));
 			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() * -0.75f, 0.0f));
 			SetAction(Action::Idle);
-			SetActionCooldown(Action::Dash, 1.0f);
+			SetActionCooldown(Action::Dash, 0.5f);
 		}
 		break;
 	case Action::Attack:
