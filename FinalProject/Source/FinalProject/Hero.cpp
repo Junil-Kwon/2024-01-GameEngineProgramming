@@ -1,131 +1,123 @@
 #include "Hero.h"
-#include "Components/SphereComponent.h"
-#include "Components/StaticMeshComponent.h"
+#include "Weapon.h"
+
+#include "GameFramework/CharacterMovementComponent.h"
 
 
+
+
+
+// =============================================================================================================
+// Initialization
+// =============================================================================================================
 
 AHero::AHero() {
- 	PrimaryActorTick.bCanEverTick = true;
-
-	sphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
-	sphereComponent->InitSphereRadius(24.0f);
-	//sphereComponent->SetCollisionProfileName(TEXT("Player"));
-	SetRootComponent(sphereComponent);
-
-	meshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
-	meshComponent->SetWorldScale3D(FVector(1.28f, 1.28f, 1.28f));
-	meshComponent->SetupAttachment(RootComponent);
-
-
 }
-
-
-
 void AHero::BeginPlay() {
 	Super::BeginPlay();
-	
 }
 
 
 
-void AHero::Tick(float DeltaTime) {
-	Super::Tick(DeltaTime);
 
-	UpdateSprite(DeltaTime);
 
-	direction.Normalize();
-	if (direction.IsZero()) {
-		state = State::Idle;
-	}
-	else {
-		state = State::Move;
-		if (direction.Y != 0 && xflip != (direction.Y < 0.0f)) {
-			xflip = direction.Y < 0.0f;
-			meshComponent->SetScalarParameterValueOnMaterials(TEXT("XFlip"), xflip ? 1.0f : 0.0f);
-			UE_LOG(LogTemp, Log, TEXT("%d"), xflip ? 1 : 0);
+// =============================================================================================================
+// Action
+// =============================================================================================================
+
+bool AHero::VerifyAction(Action value) {
+	if (GetAction() == value || GetAction() == Action::Defeat) return false;
+	if (value == Action::Idle || value == Action::Move || value == Action::Defeat) return true;
+	switch (GetAction()) {
+	case Action::Idle: return (GetAction() != value);
+	case Action::Move: return (GetAction() != value);
+	case Action::Jump:
+		switch (value) {
+		case Action::Jump:   return false;
+		case Action::Dash:   return false;
+		case Action::Attack: return true;
+		case Action::Defend: return true;
 		}
-		FVector location = GetActorLocation() + direction * speed * DeltaTime;
-		SetActorLocation(location, true);
-	}
-}
-
-
-
-void AHero::UpdateSprite(float DeltaTime) {
-	delay += DeltaTime;
-	if (state != statePrev) {
-		statePrev = state;
-		delay = 0.0f;
-		switch (state) {
-			case State::Idle:   index =  0; break;
-			case State::Move:   index =  4; break;
-			case State::Jump:   index = 10; break;
-			case State::Dodge:  index = 14; break;
-			case State::Defeat: index = 20; break;
+		break;
+	case Action::Dash:
+		switch (value) {
+		case Action::Jump:   return false;
+		case Action::Dash:   return false;
+		case Action::Attack: return false;
+		case Action::Defend: return false;
 		}
-	}
-	else {
-		int32 i = 0;
-		switch (state) {
-			case State::Idle:   i =  0 + static_cast<int32>(delay *  2) % 4; break;
-			case State::Move:   i =  4 + static_cast<int32>(delay * 10) % 6; break;
-			case State::Jump:   i = 10 + static_cast<int32>(delay * 10); if (i < 13) i = 13; break;
-			case State::Dodge:  i = 14 + static_cast<int32>(delay * 10); if (i < 19) i = 19; break;
-			case State::Defeat: i = 20 + static_cast<int32>(delay * 10); if (i < 23) i = 23; break;
+		break;
+	case Action::Attack:
+		switch (value) {
+		case Action::Jump:   return true;
+		case Action::Dash:   return true;
+		case Action::Attack: return true;
+		case Action::Defend: return true;
 		}
-		if (index == i) return;
-		index = i;
+		break;
+	case Action::Defend:
+		switch (value) {
+		case Action::Jump:   return true;
+		case Action::Dash:   return true;
+		case Action::Attack: return true;
+		case Action::Defend: return true;
+		}
+		break;
 	}
-	meshComponent->SetScalarParameterValueOnMaterials(TEXT("Index"), index);
+	return false;
 }
-
-
-
-void AHero::SetupPlayerInputComponent(UInputComponent* PlayerInput) {
-	Super::SetupPlayerInputComponent(PlayerInput);
-
-	PlayerInput->BindAction<TBaseDelegate<void, bool>>("Up",     IE_Pressed,  this, &AHero::Up,     true );
-	PlayerInput->BindAction<TBaseDelegate<void, bool>>("Up",     IE_Released, this, &AHero::Up,     false);
-	PlayerInput->BindAction<TBaseDelegate<void, bool>>("Down",   IE_Pressed,  this, &AHero::Down,   true );
-	PlayerInput->BindAction<TBaseDelegate<void, bool>>("Down",   IE_Released, this, &AHero::Down,   false);
-	PlayerInput->BindAction<TBaseDelegate<void, bool>>("Left",   IE_Pressed,  this, &AHero::Left,   true );
-	PlayerInput->BindAction<TBaseDelegate<void, bool>>("Left",   IE_Released, this, &AHero::Left,   false);
-	PlayerInput->BindAction<TBaseDelegate<void, bool>>("Right",  IE_Pressed,  this, &AHero::Right,  true );
-	PlayerInput->BindAction<TBaseDelegate<void, bool>>("Right",  IE_Released, this, &AHero::Right,  false);
-
-	PlayerInput->BindAction<TBaseDelegate<void, bool>>("Jump",   IE_Pressed,  this, &AHero::Jump,   true );
-	PlayerInput->BindAction<TBaseDelegate<void, bool>>("Jump",   IE_Released, this, &AHero::Jump,   false);
-	PlayerInput->BindAction<TBaseDelegate<void, bool>>("Dodge",  IE_Pressed,  this, &AHero::Dodge,  true );
-	PlayerInput->BindAction<TBaseDelegate<void, bool>>("Dodge",  IE_Released, this, &AHero::Dodge,  false);
-
-	PlayerInput->BindAction<TBaseDelegate<void, bool>>("Action", IE_Pressed,  this, &AHero::Action, true );
-	PlayerInput->BindAction<TBaseDelegate<void, bool>>("Action", IE_Released, this, &AHero::Action, false);
-	PlayerInput->BindAction<TBaseDelegate<void, bool>>("Swap",   IE_Pressed,  this, &AHero::Swap,   true );
-	PlayerInput->BindAction<TBaseDelegate<void, bool>>("Swap",   IE_Released, this, &AHero::Swap,   false);
-	PlayerInput->BindAction<TBaseDelegate<void, bool>>("Menu",   IE_Pressed,  this, &AHero::Menu,   true );
-	PlayerInput->BindAction<TBaseDelegate<void, bool>>("Menu",   IE_Released, this, &AHero::Menu,   false);
+bool AHero::UpdateInputs(float DeltaTime) {
+	if (!Super::UpdateInputs(DeltaTime)) return false;
+	// Default AI
+	return true;
 }
-
-void AHero::Up    (bool pressed) {
-	input[(uint8)Input::Up    ] = pressed;
-	direction.X = pressed ?  1.0f : input[(uint8)Input::Down ] ? -1.0f : 0.0f;
+bool AHero::UpdateAction(float DeltaTime) {
+	if (!Super::UpdateAction(DeltaTime)) return false;
+	bool condition = false;
+	switch (GetAction()) {
+	case Action::Idle:
+		SetSpriteIndex(nullptr,  0 + static_cast<int32>(actionDelay *  2) % 4);
+		break;
+	case Action::Move:
+		SetSpriteIndex(nullptr,  4 + static_cast<int32>(actionDelay * 10) % 6);
+		if (direction.Y != 0 && GetSpriteXFlip() != (direction.Y < 0.0f)) {
+			SetSpriteXFlip(nullptr, direction.Y < 0.0f);
+		}
+		if (!direction.IsZero()) SetArrowDirection(direction);
+		AddMovementInput(direction);
+		break;
+	case Action::Jump:
+		SetSpriteIndex(nullptr, FMath::Min(10 + static_cast<int32>(actionDelay * 10), 13));
+		AddMovementInput(direction);
+		if (0.1f <= actionDelay && actionDelay - DeltaTime < 0.1f) Jump();
+		if (0.2f <= actionDelay && !GetCharacterMovement()->IsFalling()) {
+			SetAction(Action::Idle);
+			SetActionCooldown(Action::Jump, 0.1f);
+		}
+		break;
+	case Action::Dash:
+		SetSpriteIndex(nullptr, FMath::Min(14 + static_cast<int32>(actionDelay * 10), 19));
+		AddMovementInput(GetArrowDirection());
+		condition = int32(actionDelay * 10) != int32((actionDelay - DeltaTime) * 10);
+		condition &= !GetCharacterMovement()->IsFalling() && (actionDelay < 0.5f);
+		if (actionDelay - DeltaTime == 0.0f || condition) Spawn(Identifier::Dust, GetFootLocation());
+		if (actionDelay - DeltaTime == 0.0f) AddEffect(Effect::Speed, 1.0f, 0.3f);
+		if (0.6f <= actionDelay) {
+			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() *  0.75f, 0.0f));
+			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() * -0.75f, 0.0f));
+			SetAction(Action::Idle);
+			SetActionCooldown(Action::Dash, 0.5f);
+		}
+		break;
+	case Action::Attack:
+		SetAction(Action::Idle);
+		break;
+	case Action::Defend:
+		SetAction(Action::Idle);
+		break;
+	case Action::Defeat:
+		SetSpriteIndex(nullptr, FMath::Min(20 + static_cast<int32>(actionDelay * 10), 23));
+		break;
+	}
+	return true;
 }
-void AHero::Down  (bool pressed) {
-	input[(uint8)Input::Down  ] = pressed;
-	direction.X = pressed ? -1.0f : input[(uint8)Input::Up   ] ?  1.0f : 0.0f;
-}
-void AHero::Left  (bool pressed) {
-	input[(uint8)Input::Left  ] = pressed;
-	direction.Y = pressed ? -1.0f : input[(uint8)Input::Right] ?  1.0f : 0.0f;
-}
-void AHero::Right (bool pressed) {
-	input[(uint8)Input::Right ] = pressed;
-	direction.Y = pressed ?  1.0f : input[(uint8)Input::Left ] ? -1.0f : 0.0f;
-}
-
-void AHero::Jump  (bool pressed) { input[(uint8)Input::Jump  ] = pressed; }
-void AHero::Dodge (bool pressed) { input[(uint8)Input::Dodge ] = pressed; }
-
-void AHero::Action(bool pressed) { input[(uint8)Input::Action] = pressed; }
-void AHero::Swap  (bool pressed) { input[(uint8)Input::Swap  ] = pressed; }
-void AHero::Menu  (bool pressed) { input[(uint8)Input::Menu  ] = pressed; }
