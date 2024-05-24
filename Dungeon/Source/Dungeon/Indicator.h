@@ -65,5 +65,5 @@ public:
 
 	// Action
 public:
-	virtual bool OnInteract(AEntity* entity) override;
+	virtual void OnInteract(AEntity* entity) override;
 };

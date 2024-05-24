@@ -28,6 +28,4 @@ protected:
 	// Action
 protected:
 	virtual bool UpdateAction(float DeltaTime) override;
-public:
-	virtual bool OnInteract(AEntity* entity) override;
 };

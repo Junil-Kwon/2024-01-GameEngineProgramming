@@ -18,8 +18,8 @@ AInteractor::AInteractor() {
 	defaultTag += static_cast<uint8>(Tag::Piercing);
 
 	nameComponent = CreateDefaultSubobject<UTextRenderComponent>(TEXT("Name"));
-	nameComponent->SetRelativeRotation(FRotator(48.590382f, 180.0f, 0.0f));
-	nameComponent->SetupAttachment(RootComponent);
+	nameComponent->SetRelativeRotation(FRotator(90.0f, 90.0f, 0.0f));
+	nameComponent->SetupAttachment(GetAnchorComponent());
 
 	nameComponent->SetFont(GetFont(FontType::Galmuri7));
 	nameComponent->SetMaterial(0, GetFontMaterial(FontType::Galmuri7));
@@ -51,7 +51,7 @@ bool AInteractor::GetActive() {
 void AInteractor::SetActive(bool value) {
 	active = value;
 	SetSpriteIndex(nullptr, value ? 0 : 63);
-	nameComponent->SetText(value ? FText::FromString(ToFString(parent->GetIdentifier())) : FText::FromString(TEXT("")));
+	nameComponent->SetText(value ? FText::FromString(ToString(parent->GetIdentifier())) : FText::FromString(TEXT("")));
 	if (parent) UpdateLocation();
 }
 
@@ -77,10 +77,8 @@ void AInteractor::UpdateLocation() {
 // Action
 // =============================================================================================================
 
-bool AInteractor::OnInteract(AEntity* entity) {
-	if (!Super::OnInteract(entity)) return false;
+void AInteractor::OnInteract(AEntity* entity) {
+	if (entity == nullptr) return;
 	parent = entity;
 	UpdateLocation();
-	AttachToComponent(parent->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-	return true;
 }

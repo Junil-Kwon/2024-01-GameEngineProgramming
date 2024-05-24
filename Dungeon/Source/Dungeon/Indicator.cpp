@@ -41,11 +41,10 @@ AIndicator::AIndicator() {
 	rBorderComponent->SetRelativeScale3D(FVector(0.04f, 1.28f, 1.28f));
 }
 void AIndicator::SetupComponent(UStaticMeshComponent* component) {
-	component->SetRelativeRotation(FRotator(0.0f, 90.0f, 41.409618f));
 	component->SetRelativeScale3D(FVector(1.28f, 1.28f, 1.28f));
 	component->SetStaticMesh(GetStaticMesh(MeshType::Plane));
 	component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	component->SetupAttachment(RootComponent);
+	component->SetupAttachment(GetAnchorComponent());
 }
 void AIndicator::BeginPlay() {
 	Super::BeginPlay();
@@ -114,8 +113,8 @@ void AIndicator::SetWidth() {
 	float ratio = shieldMax ? (shield + hboost) / shieldMax : (health + hboost) / healthMax;
 	ratio = 1 + FMath::Max(0.0f, ratio - 1);
 	float Width = width * ratio;
-	lBorderComponent->SetRelativeLocation(FVector(0.0f, i + Width * -2.0f - 2.0f, 0.0f));
-	rBorderComponent->SetRelativeLocation(FVector(0.0f, i + Width *  2.0f + 2.0f, 0.0f));
+	lBorderComponent->SetRelativeLocation(FVector(i + Width * -2.0f - 2.0f, 0.0f, 0.0f));
+	rBorderComponent->SetRelativeLocation(FVector(i + Width *  2.0f + 2.0f, 0.0f, 0.0f));
 	
 	float HealthMax = (healthMax * ratio == 0.0f) ? 0.00001f : healthMax * ratio;
 	float lHealthLocation = 1 - (health) / HealthMax;
@@ -123,8 +122,8 @@ void AIndicator::SetWidth() {
 	float lHealthScale3D =     (health) / HealthMax;
 	float rHealthScale3D = 1 - (health + (!shieldMax ? hboost : 0.0f)) / HealthMax;
 
-	lHealthComponent->SetRelativeLocation(FVector(0.0f, i - lHealthLocation * Width * 2.0f, 0.0f));
-	rHealthComponent->SetRelativeLocation(FVector(0.0f, i + rHealthLocation * Width * 2.0f, 0.0f));
+	lHealthComponent->SetRelativeLocation(FVector(i - lHealthLocation * Width * 2.0f, 0.0f, 0.0f));
+	rHealthComponent->SetRelativeLocation(FVector(i + rHealthLocation * Width * 2.0f, 0.0f, 0.0f));
 	lHealthComponent->SetRelativeScale3D(FVector(lHealthScale3D * Width * 0.04f, 1.28f, 1.28f));
 	rHealthComponent->SetRelativeScale3D(FVector(rHealthScale3D * Width * 0.04f, 1.28f, 1.28f));
 	
@@ -133,14 +132,14 @@ void AIndicator::SetWidth() {
 	float rShieldLocation =     (shield + (shieldMax ? hboost : 0.0f)) / ShieldMax;
 	float lShieldScale3D =     (shield) / ShieldMax;
 	float rShieldScale3D = 1 - (shield + (shieldMax ? hboost : 0.0f)) / ShieldMax;
-	lShieldComponent->SetRelativeLocation(FVector(0.0f, i - lShieldLocation * Width * 2.0f, 0.0f));
-	rShieldComponent->SetRelativeLocation(FVector(0.0f, i + rShieldLocation * Width * 2.0f, 0.0f));
+	lShieldComponent->SetRelativeLocation(FVector(i - lShieldLocation * Width * 2.0f, 0.0f, 0.0f));
+	rShieldComponent->SetRelativeLocation(FVector(i + rShieldLocation * Width * 2.0f, 0.0f, 0.0f));
 	lShieldComponent->SetRelativeScale3D(FVector(lShieldScale3D * Width * 0.04f, 1.28f, 1.28f));
 	rShieldComponent->SetRelativeScale3D(FVector(rShieldScale3D * Width * 0.04f, 1.28f, 1.28f));
 
 	float lHBoostLocation = 1 - health / healthMax - health / HealthMax;
 	float lHBoostScale3D = hboost / HealthMax;
-	lHBoostComponent->SetRelativeLocation(FVector(0.0f, i - lHBoostLocation * Width * 2.0f, 0.0f));
+	lHBoostComponent->SetRelativeLocation(FVector(i - lHBoostLocation * Width * 2.0f, 0.0f, 0.0f));
 	lHBoostComponent->SetRelativeScale3D(FVector(lHBoostScale3D * Width * 0.04f, 1.28f, 1.28f));
 
 	float EnergeMax = (energeMax * ratio == 0.0f) ? 0.00001f : energeMax * ratio;
@@ -148,12 +147,12 @@ void AIndicator::SetWidth() {
 	float rEnergeLocation =     energe / EnergeMax;
 	float lEnergeScale3D =     energe / EnergeMax;
 	float rEnergeScale3D = 1 - energe / EnergeMax;
-	lEnergeComponent->SetRelativeLocation(FVector(0.0f, i - lEnergeLocation * Width * 2.0f, 0.0f));
-	rEnergeComponent->SetRelativeLocation(FVector(0.0f, i + rEnergeLocation * Width * 2.0f, 0.0f));
+	lEnergeComponent->SetRelativeLocation(FVector(i - lEnergeLocation * Width * 2.0f, 0.0f, 0.0f));
+	rEnergeComponent->SetRelativeLocation(FVector(i + rEnergeLocation * Width * 2.0f, 0.0f, 0.0f));
 	lEnergeComponent->SetRelativeScale3D(FVector(lEnergeScale3D * Width * 0.04f, 1.28f, 1.28f));
 	rEnergeComponent->SetRelativeScale3D(FVector(rEnergeScale3D * Width * 0.04f, 1.28f, 1.28f));
 
-	iShieldComponent->SetRelativeLocation(FVector(0.0f, Width * -2.0f - 10.0f, 0.0f));
+	iShieldComponent->SetRelativeLocation(FVector(Width * -2.0f - 10.0f, 0.0f, 0.0f));
 }
 void AIndicator::SetColor() {
 	group = parent->GetGroup();
@@ -161,7 +160,7 @@ void AIndicator::SetColor() {
 	switch (group) {
 	case Group::Friendly: color = FVector(0.031896, 0.332452, 0.152926); break;
 	case Group::Enemy:    color = FVector(0.332452, 0.044270, 0.064128); break;
-	default: color = FVector::ZeroVector; break;
+	default: color = FVector::OneVector; break;
 	}
 	SetSpriteColor(lHealthComponent, color);
 }
@@ -198,14 +197,11 @@ void AIndicator::Tick(float DeltaTime) {
 // Action
 // =============================================================================================================
 
-bool AIndicator::OnInteract(AEntity* entity) {
-	if (!Super::OnInteract(entity) || !entity->IsA(ACreature::StaticClass())) return false;
+void AIndicator::OnInteract(AEntity* entity) {
+	if (entity == nullptr || !entity->IsA(ACreature::StaticClass())) return;
 	parent = static_cast<ACreature*>(entity);
-	SetActorLocation(FVector(0.0f, 0.0f, parent->GetHitboxHeight() * 0.5f + 96.0f));
-	AttachToComponent(parent->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 	SetWidth();
 	SetColor();
 	SetLeader();
 	SetActive(true);
-	return true;
 }

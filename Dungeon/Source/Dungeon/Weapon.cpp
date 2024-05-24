@@ -21,14 +21,6 @@ void AWeapon::BeginPlay() {
 	SetCollisionProfileName(TEXT("Particle"));
 }
 
-// =============================================================================================================
-// Update
-// =============================================================================================================
-
-void AWeapon::Tick(float DeltaTime) {
-	Super::Tick(DeltaTime);
-}
-
 
 
 
@@ -45,31 +37,21 @@ bool AWeapon::UpdateAction(float DeltaTime) {
 		SetSpriteXFlip(nullptr, parent->GetSpriteXFlip());
 		SetActorLocation(parent->GetHandLocation());
 	}
-
 	return true;
 }
 
-bool AWeapon::OnInteract(AEntity* entity) {
+void AWeapon::OnInteract(AEntity* entity) {
+	if (parent == entity || (entity != nullptr && !entity->IsA(ACreature::StaticClass()))) return;
+	ACreature* creature = static_cast<ACreature*>(entity);
 	if (parent != nullptr) {
 		RemoveTag(Tag::Floating);
 		RemoveTag(Tag::Piercing);
 		AddTag(Tag::Interactability);
-
-		SetActorLocation(parent->GetActorLocation() + parent->GetLookDirection() * parent->GetHitboxRadius());
-		LaunchCharacter(parent->GetLookDirection() * 200.0f + FVector(0.0f, 0.0f, 200.0f), true, true);
-		parent = nullptr;
-		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	}
-	if (!Super::OnInteract(entity)) return false;
-	if (entity->IsA(ACreature::StaticClass())) {
+	if (creature != nullptr) {
 		AddTag(Tag::Floating);
 		AddTag(Tag::Piercing);
 		RemoveTag(Tag::Interactability);
-
-		GetCharacterMovement()->StopMovementImmediately();
-		parent = static_cast<ACreature*>(entity);
-		AttachToComponent(parent->GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform);
-		SetActorLocation(parent->GetHandLocation());
 	}
-	return true;
+	parent = creature;
 }

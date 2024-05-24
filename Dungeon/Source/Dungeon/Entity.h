@@ -101,7 +101,7 @@ class DUNGEON_API AEntity : public ACharacter {
 	GENERATED_BODY()
 
 	// =========================================================================================================
-	// Common
+	// -
 	// =========================================================================================================
 	
 	// -
@@ -112,9 +112,9 @@ public:
 	FVector  ToVector    (FRotator value);
 	FVector  RotateVector(FVector  value);
 
-	template<typename TEnum> uint8   GetIndex (TEnum   value);
-	template<typename TEnum> FString ToFString(TEnum   value);
-	template<typename TEnum> TEnum   ToEnum   (FString value);
+	template<typename TEnum> uint8   GetIndex(TEnum   value);
+	template<typename TEnum> FString ToString(TEnum   value);
+	template<typename TEnum> TEnum   ToEnum  (FString value);
 
 	UStaticMesh* GetStaticMesh(MeshType value);
 
@@ -124,6 +124,8 @@ public:
 	UMaterial* GetFontMaterial(FontType value);
 
 	AEntity* Spawn(Identifier value, FVector location = FVector::ZeroVector);
+	void Attach(AEntity* entity);
+	void Detach();
 
 
 
@@ -158,14 +160,14 @@ public:
 
 
 private:
-	FVector moveDirection;
 	FVector lookDirection;
+	FVector moveDirection;
 public:
-	FVector GetMoveDirection();
 	FVector GetLookDirection();
+	FVector GetMoveDirection();
 protected:
-	void    SetMoveDirection(FVector value);
 	void    SetLookDirection(FVector value);
+	void    SetMoveDirection(FVector value);
 
 
 
@@ -194,25 +196,30 @@ public:
 	void  SetHitboxHeight(float value);
 	void  SetHitbox(float radius, float height);
 	void  SetCollisionProfileName(FName value);
-	virtual FVector GetFootLocation();
 	virtual FVector GetHandLocation();
+	virtual FVector GetFootLocation();
 
 	// Sprite
 private:
+	UPROPERTY() class USceneComponent* anchorComponent;
 	UPROPERTY() class UStaticMeshComponent* spriteComponent;
 	int32   spriteIndex = 0;
 	bool    spriteXFlip = false;
 	FVector spriteColor = FVector::OneVector;
+	float   spriteAngle = 0.0f;
 	float   spriteIntensity = 0.0f;
 public:
 	int32   GetSpriteIndex();
 	bool    GetSpriteXFlip();
 	FVector GetSpriteColor();
+	float   GetSpriteAngle();
 	float   GetSpriteIntensity();
 protected:
+	UFUNCTION() USceneComponent* GetAnchorComponent();
 	UFUNCTION() void SetSpriteIndex(UStaticMeshComponent* comp = nullptr, int32   value = 0);
 	UFUNCTION() void SetSpriteXFlip(UStaticMeshComponent* comp = nullptr, bool    value = false);
 	UFUNCTION() void SetSpriteColor(UStaticMeshComponent* comp = nullptr, FVector value = FVector::OneVector);
+	UFUNCTION() void SetSpriteAngle(UStaticMeshComponent* comp = nullptr, float value = 0.0f);
 	UFUNCTION() void SetSpriteIntensity(UStaticMeshComponent* comp = nullptr, float   value = 0.0f);
 
 	// Shadow
@@ -259,7 +266,7 @@ protected:
 	virtual bool UpdateAction(float DeltaTime);
 
 public:
-	virtual bool OnInteract(AEntity* entity);
+	virtual void OnInteract(AEntity* entity);
 
 
 

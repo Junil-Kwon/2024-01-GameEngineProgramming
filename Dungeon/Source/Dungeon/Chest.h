@@ -31,5 +31,5 @@ protected:
 	virtual bool VerifyAction(Action value) override;
 	virtual bool UpdateAction(float DeltaTime) override;
 public:
-	virtual bool OnInteract(AEntity* value) override;
+	virtual void OnInteract(AEntity* value) override;
 };

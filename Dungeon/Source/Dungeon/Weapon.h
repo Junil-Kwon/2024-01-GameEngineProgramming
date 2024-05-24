@@ -22,9 +22,6 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	// Update
-public:
-	virtual void Tick(float DeltaTime) override;
 
 
 
@@ -34,7 +31,7 @@ private:
 	UPROPERTY() class ACreature* parent;
 public:
 	virtual bool UpdateAction(float DeltaTime) override;
-	virtual bool OnInteract(AEntity* value) override;
+	virtual void OnInteract(AEntity* value) override;
 
 
 

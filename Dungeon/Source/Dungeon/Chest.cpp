@@ -26,7 +26,7 @@ void AChest::BeginPlay() {
 // =============================================================================================================
 
 bool AChest::VerifyAction(Action value) {
-	if (GetAction() == value || GetAction() == Action::Defeat) return false;
+	if (GetAction() == value || GetAction() == Action::Defeat ) return false;
 	if (GetAction() == Action::Idle && value == Action::Move  ) return true;
 	if (GetAction() == Action::Move && value == Action::Defeat) return true;
 	return false;
@@ -42,11 +42,7 @@ bool AChest::UpdateAction(float DeltaTime) {
 			for (int32 i = 0; i < 36; i++) {
 				FVector vector = FVector(FMath::RandRange(-200, 200), FMath::RandRange(-200, 200), 0.0f);
 				Spawn(Identifier::Money, GetActorLocation() + vector);
-				
-
 			}
-			//Spawn(Identifier::Hero, GetActorLocation() + FVector(0.0f, 0.0f, 400.0f));
-			// drop reward
 			SetAction(Action::Defeat);
 		}
 		break;
@@ -56,8 +52,7 @@ bool AChest::UpdateAction(float DeltaTime) {
 	return true;
 }
 
-bool AChest::OnInteract(AEntity* entity) {
-	SetAction(Action::Move);
+void AChest::OnInteract(AEntity* entity) {
 	RemoveTag(Tag::Interactability);
-	return true;
+	SetAction(Action::Move);
 }

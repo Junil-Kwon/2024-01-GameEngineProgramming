@@ -27,10 +27,6 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	// Update
-public:
-	virtual void Tick(float DeltaTime) override;
-
 
 
 
@@ -55,11 +51,11 @@ protected:
 public:
 	float GetSensorRange();
 	void  SetSensorRange(float value);
-	UFUNCTION() virtual void OnSensorBeginOverlap(
+	UFUNCTION() void OnSensorBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 		bool bFromSweep, const FHitResult& SweepResult);
-	UFUNCTION() virtual void OnSensorEndOverlap(
+	UFUNCTION() void OnSensorEndOverlap(
 		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
@@ -70,16 +66,16 @@ private:
 	UPROPERTY() class UCapsuleComponent* magnetComponent;
 	float magnetRange;
 protected:
-	TArray<AEntity*> interactability, collectable;
+	TArray<AEntity*> magnetArray;
 	virtual bool UpdateMagnet(float DeltaTime);
 public:
 	float GetMagnetRange();
 	void  SetMagnetRange(float value);
-	UFUNCTION() virtual void OnMagnetBeginOverlap(
+	UFUNCTION() void OnMagnetBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 		bool bFromSweep, const FHitResult& SweepResult);
-	UFUNCTION() virtual void OnMagnetEndOverlap(
+	UFUNCTION() void OnMagnetEndOverlap(
 		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
