@@ -25,7 +25,11 @@ public:
 	ACreature();
 protected:
 	virtual void BeginPlay() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	// Object Pool
+protected:
+	virtual void OnSpawn  () override;
+	virtual void OnDespawn() override;
 
 
 
@@ -38,6 +42,7 @@ protected:
 	// Hitbox
 protected:
 	virtual void OnHitboxChanged() override;
+	virtual void OnCollision(AEntity* entity) override;
 	
 	// Sensor
 protected:

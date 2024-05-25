@@ -73,10 +73,12 @@ public:
 
 
 
-	// Player
+	// Entity
 private:
+	TArray<AEntity*> objectPool[static_cast<uint8>(Identifier::Length)];
 	UPROPERTY() class AEntity* player;
 public:
+	TArray<AEntity*>* GetObjectPool(Identifier value);
 	AEntity* GetPlayer();
 	void SetPlayer(AEntity* value);
 

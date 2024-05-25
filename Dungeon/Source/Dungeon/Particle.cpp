@@ -11,9 +11,6 @@
 AParticle::AParticle() {
 	defaultTag += static_cast<uint8>(Tag::Floating);
 	defaultTag += static_cast<uint8>(Tag::Piercing);
-}
-void AParticle::BeginPlay() {
-	Super::BeginPlay();
 	SetCollisionProfileName(TEXT("Particle"));
 }
 
@@ -34,10 +31,14 @@ bool AParticle::UpdateAction(float DeltaTime) {
 	case Identifier::Dust:
 	case Identifier::Flame:
 		SetSpriteIndex(nullptr, FMath::Min(0 + static_cast<int32>(actionDelay * 10), 4));
-		if (0.5f <= actionDelay) Destroy();
+		if (0.5f <= actionDelay) Despawn();
 		break;
 
-
+	case Identifier::Twinkle:
+		SetSpriteIndex(nullptr, FMath::Min(0 + static_cast<int32>(actionDelay * 10), 4));
+		if (actionDelay - DeltaTime == 0.0) SetSpriteIntensity(nullptr, 0.2f);
+		if (0.5f <= actionDelay) Despawn();
+		break;
 
 	}
 	return true;

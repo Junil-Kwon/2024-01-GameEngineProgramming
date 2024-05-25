@@ -19,8 +19,18 @@ class DUNGEON_API AWeapon : public AEntity {
 	// Initialization
 public:
 	AWeapon();
+
+	// Object Pool
 protected:
-	virtual void BeginPlay() override;
+	virtual void OnDespawn() override;
+
+
+
+
+
+	// Hitbox
+public:
+	virtual void OnInteract(AEntity* value) override;
 
 
 
@@ -31,7 +41,6 @@ private:
 	UPROPERTY() class ACreature* parent;
 public:
 	virtual bool UpdateAction(float DeltaTime) override;
-	virtual void OnInteract(AEntity* value) override;
 
 
 

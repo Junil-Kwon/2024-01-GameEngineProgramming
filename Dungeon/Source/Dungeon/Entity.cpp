@@ -1,8 +1,6 @@
 #include "Entity.h"
 #include "Ghost.h"
-#include "Creature.h"
 #include "Interactor.h"
-#include "Particle.h"
 
 #include "Components/CapsuleComponent.h"
 #include "Components/SceneComponent.h"
@@ -64,7 +62,6 @@ UStaticMesh* AEntity::GetStaticMesh(MeshType value) {
 	}
 	return uStaticMesh[index];
 }
-
 UMaterialInstanceDynamic* AEntity::GetMaterialInstanceDynamic(Identifier value) {
 	static UTexture* uTexture[static_cast<uint8>(Identifier::Length)] = { nullptr, };
 	uint8 index = static_cast<uint8>(value);
@@ -82,7 +79,6 @@ UMaterialInstanceDynamic* AEntity::GetMaterialInstanceDynamic(Identifier value) 
 	material->SetTextureParameterValue(TEXT("Texture"), uTexture[index]);
 	return material;
 }
-
 UFont* AEntity::GetFont(FontType value) {
 	static UFont* uFont[static_cast<uint8>(FontType::Length)] = { nullptr, };
 	uint8 index = static_cast<uint8>(value);
@@ -105,21 +101,57 @@ UMaterial* AEntity::GetFontMaterial(FontType value) {
 }
 
 AEntity* AEntity::Spawn(Identifier value, FVector location) {
-	static UClass* uClass[static_cast<uint8>(Identifier::Length)] = { nullptr, };
-	uint8 index = static_cast<uint8>(value);
-	if (uClass[index] == nullptr) {
-		FString name = ToString(value);
-		FString path = "/Game/Blueprints/BP_" + name + ".BP_" + name + "_C";
-		uClass[index] = LoadObject<UClass>(nullptr, *path);
+	AEntity* entity = nullptr;
+	if (GetGhost()->GetObjectPool(value)->Num() == 0) {
+		static UClass* uClass[static_cast<uint8>(Identifier::Length)] = { nullptr, };
+		uint8 index = static_cast<uint8>(value);
+		if (uClass[index] == nullptr) {
+			FString name = ToString(value);
+			FString path = "/Game/Blueprints/BP_" + name + ".BP_" + name + "_C";
+			uClass[index] = LoadObject<UClass>(nullptr, *path);
+		}
+		FActorSpawnParameters parameter;
+		parameter.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		entity = GetWorld()->SpawnActor<AEntity>(uClass[index], location, FRotator::ZeroRotator, parameter);
 	}
-	FActorSpawnParameters parameter;
-	parameter.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	return GetWorld()->SpawnActor<AEntity>(uClass[index], location, FRotator::ZeroRotator, parameter);
+	else {
+		entity = GetGhost()->GetObjectPool(value)->Pop();
+
+		entity->SetActorLocation(location);
+		entity->SetActorTickEnabled(true);
+		entity->SetActorHiddenInGame(false);
+		
+		entity->hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		
+		entity->GetCharacterMovement()->StopMovementImmediately();
+
+		entity->OnSpawn();
+	}
+	return entity;
+}
+void AEntity::Despawn() {
+	GetGhost()->GetObjectPool(GetIdentifier())->Push(this);
+
+	SetActorLocation(FVector(0.0f, 0.0f, 0.0f));
+	SetActorTickEnabled(false);
+	SetActorHiddenInGame(true);
+
+	hitboxComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	
+	GetCharacterMovement()->StopMovementImmediately();
+	GetCharacterMovement()->GravityScale = 0;
+	if (IsAttached()) Detach();
+
+	OnDespawn();
+}
+
+bool AEntity::IsAttached() {
+	return GetAttachParentActor() != nullptr;
 }
 void AEntity::Attach(AEntity* entity) {
 	if (entity == nullptr) return;
 	GetCharacterMovement()->StopMovementImmediately();
-	AttachToComponent(entity->GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform);
+	AttachToActor(entity, FAttachmentTransformRules::KeepWorldTransform);
 }
 void AEntity::Detach() {
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
@@ -134,11 +166,23 @@ void AEntity::Detach() {
 // =============================================================================================================
 
 AEntity::AEntity() {
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
  	PrimaryActorTick.bCanEverTick = true;
+
+	defaultSpeed = 300.0f;
+
+	defaultHitboxRadius = 0.0f;
+	defaultHitboxHeight = 0.0f;
+	defaultHandLocation = FVector2D::ZeroVector;
+
+	defaultGroup = Group::None;
+	defaultEffect         = 0;
+	defaultEffectImmunity = 0;
 
 	hitboxComponent = GetCapsuleComponent();
 	hitboxComponent->InitCapsuleSize(defaultHitboxRadius, defaultHitboxHeight * 0.5f);
 	hitboxComponent->SetCollisionProfileName(TEXT("Entity"));
+	hitboxComponent->SetNotifyRigidBodyCollision(true);
 	SetRootComponent(hitboxComponent);
 
 	anchorComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Anchor"));
@@ -156,8 +200,6 @@ AEntity::AEntity() {
 	shadowComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	shadowComponent->SetVisibility(false);
 	shadowComponent->SetupAttachment(RootComponent);
-
-	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 }
 void AEntity::BeginPlay() {
 	Super::BeginPlay();
@@ -169,8 +211,8 @@ void AEntity::BeginPlay() {
 	for (int64 i = edit.Len() - 1; -1 < i; i--) if ('0' <= edit[i] && edit[i] <= '9') edit.RemoveAt(i, 1);
 	identifier = ToEnum<Identifier>(edit);
 
-	SetHitbox(defaultHitboxRadius, defaultHitboxHeight);
-	handLocation = FVector(0.0f, defaultHandLocation.X, defaultHandLocation.Y);
+	hitboxComponent->OnComponentHit.AddDynamic(this, &AEntity::OnHit);
+	hitboxComponent->OnComponentBeginOverlap.AddDynamic(this, &AEntity::OnHitboxBeginOverlap);
 
 	spriteComponent->SetMaterial(0, GetMaterialInstanceDynamic(GetIdentifier()));
 
@@ -178,14 +220,40 @@ void AEntity::BeginPlay() {
 	shadowComponent->bCastHiddenShadow = true;
 	shadowComponent->bHiddenInGame = true;
 
+	OnSpawn();
+}
+
+// =============================================================================================================
+// Object Pool
+// =============================================================================================================
+
+void AEntity::OnSpawn() {
 	speed = defaultSpeed;
-	GetCharacterMovement()->MaxWalkSpeed    = speed;
+	isFalling = false;
+	fallSpeed = 0.0f;
+	GetCharacterMovement()->MaxWalkSpeed = speed;
 	GetCharacterMovement()->MaxAcceleration = speed * 100;
-	GetCharacterMovement()->JumpZVelocity   = 800.0f;
-	GetCharacterMovement()->GravityScale    = DefaultGravityScale;
+	GetCharacterMovement()->JumpZVelocity = 800.0f;
+	GetCharacterMovement()->GravityScale = DefaultGravityScale;
+
 	SetLookDirection(FVector(0.0f, 1.0f, 0.0f));
+	SetMoveDirection(FVector(0.0f, 0.0f, 0.0f));
+
+	SetHitbox(defaultHitboxRadius, defaultHitboxHeight);
+	handLocation = FVector(0.0f, defaultHandLocation.X, defaultHandLocation.Y);
+
+	SetSpriteIndex    (nullptr);
+	SetSpriteXFlip    (nullptr);
+	SetSpriteColor    (nullptr);
+	SetSpriteAngle    (nullptr);
+	SetSpriteIntensity(nullptr);
+
+	action = Action::Idle;
+	for (uint8 i = 0; i < static_cast<uint8>(Action::Length); i++) actionCooldown[i] = 0.0f;
+	actionDelay = 0.0f;
 
 	SetGroup(defaultGroup);
+
 	for (uint8 i = 0; i < static_cast<uint8>(Tag::Length); i++) {
 		if (defaultTag & (1 << i)) AddTag(static_cast<Tag>(1 << i));
 	}
@@ -196,10 +264,16 @@ void AEntity::BeginPlay() {
 		if (defaultEffect & (1 << i)) AddEffect(static_cast<Effect>(1 << i));
 	}
 }
-void AEntity::EndPlay(const EEndPlayReason::Type EndPlayReason) {
-	Super::EndPlay(EndPlayReason);
-	if (HasTag(Tag::Interactability)) RemoveInteractor();
-	if (HasTag(Tag::Player)) GetGhost()->OnPlayerDestroyed();
+void AEntity::OnDespawn() {
+	for (uint8 i = 0; i < static_cast<uint8>(Tag::Length); i++) {
+		Tag value = static_cast<Tag>(1 << i);
+		if (HasTag(value)) RemoveTag(value);
+		if (HasTag(value) && value == Tag::Player) GetGhost()->SetPlayer(nullptr);
+	}
+	for (uint8 i = 0; i < static_cast<uint8>(Effect::Length); i++) {
+		Effect value = static_cast<Effect>(1 << i);
+		if (HasEffect(value)) RemoveEffect(value);
+	}
 }
 
 // =============================================================================================================
@@ -213,7 +287,7 @@ void AEntity::Tick(float DeltaTime) {
 		if (!isFalling) isFalling = true;
 		fallSpeed = GetCharacterMovement()->Velocity.Z;
 		if (fallSpeed < FallSpeedMax) GetCharacterMovement()->Velocity.Z = FallSpeedMax;
-		if (GetFootLocation().Z < VoidZAxis) Destroy();
+		if (GetFootLocation().Z < VoidZAxis) Despawn();
 	}
 	else if (isFalling) {
 		if (fallSpeed < DustThreshold) {
@@ -279,11 +353,30 @@ void  AEntity::SetCollisionProfileName(FName value) {
 	hitboxComponent->SetCollisionProfileName(value);
 }
 FVector AEntity::GetHandLocation() {
-	FVector hand = FVector(-0.01f, handLocation.Y * (!GetSpriteXFlip() ? 1.0f : -1.0f), handLocation.Z);
+	FVector hand = FVector(-4.0f, handLocation.Y * (!GetSpriteXFlip() ? 1.0f : -1.0f), handLocation.Z);
 	return GetActorLocation() + RotateVector(hand);
 }
 FVector AEntity::GetFootLocation() {
-	return GetActorLocation() + RotateVector(FVector(-0.01f, 0.0f, -hitboxHeight * 0.5f + 8.0f));
+	return GetActorLocation() + RotateVector(FVector(-4.0f, 0.0f, -hitboxHeight * 0.5f + 8.0f));
+}
+
+void AEntity::OnHit(
+	UPrimitiveComponent* HitComponent, AActor* OtherActor, 
+	UPrimitiveComponent* OtherComponent, FVector NormalImpulse,
+	const FHitResult& Hit) {
+	AEntity* entity = static_cast<AEntity*>(OtherActor);
+	if (OtherActor->IsA(AEntity::StaticClass())) OnCollision(entity);
+}
+void AEntity::OnHitboxBeginOverlap(
+	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+	bool bFromSweep, const FHitResult& SweepResult) {
+	AEntity* entity = static_cast<AEntity*>(OtherActor);
+	if (OtherActor->IsA(AEntity::StaticClass())) OnCollision(entity);
+}
+void AEntity::OnCollision(AEntity* entity) {
+}
+void AEntity::OnInteract (AEntity* entity) {
 }
 
 // =============================================================================================================
@@ -293,6 +386,7 @@ FVector AEntity::GetFootLocation() {
 USceneComponent* AEntity::GetAnchorComponent() { return anchorComponent; }
 
 int32   AEntity::GetSpriteIndex() { return spriteIndex; }
+float   AEntity::GetSpriteAngle() { return spriteAngle; }
 bool    AEntity::GetSpriteXFlip() { return spriteXFlip; }
 FVector AEntity::GetSpriteColor() { return spriteColor; }
 float   AEntity::GetSpriteIntensity() { return spriteIntensity; }
@@ -304,6 +398,14 @@ void AEntity::SetSpriteIndex(UStaticMeshComponent* component, int32 value) {
 		spriteIndex = value;
 	}
 	component->SetScalarParameterValueOnMaterials(TEXT("Index"), value);
+}
+void AEntity::SetSpriteAngle(UStaticMeshComponent* component, float value) {
+	if (component == nullptr) {
+		if (value == spriteAngle) return;
+		component = spriteComponent;
+		spriteAngle = value;
+	}
+	component->SetRelativeRotation(FRotator(0.0f, value, 0.0f));
 }
 void AEntity::SetSpriteXFlip(UStaticMeshComponent* component, bool value) {
 	if (component == nullptr) {
@@ -320,14 +422,6 @@ void AEntity::SetSpriteColor(UStaticMeshComponent* component, FVector value) {
 		spriteColor = value;
 	}
 	component->SetVectorParameterValueOnMaterials(TEXT("Color"), value);
-}
-void AEntity::SetSpriteAngle(UStaticMeshComponent* component, float value) {
-	if (component == nullptr) {
-		if (value == spriteAngle) return;
-		component = spriteComponent;
-		spriteAngle = value;
-	}
-	component->SetRelativeRotation(FRotator(0.0f, value, 0.0f));
 }
 void AEntity::SetSpriteIntensity(UStaticMeshComponent* component, float value) {
 	if (component == nullptr) {
@@ -350,7 +444,7 @@ void AEntity::CreateInteractor() {
 }
 void AEntity::RemoveInteractor() {
 	if (interactor == nullptr) return;
-	interactor->Destroy();
+	interactor->Despawn();
 	interactor = nullptr;
 }
 
@@ -422,9 +516,6 @@ bool AEntity::UpdateAction(float DeltaTime) {
 	return true;
 }
 
-void AEntity::OnInteract(AEntity* entity) {
-}
-
 
 
 
@@ -440,7 +531,7 @@ Identifier AEntity::GetIdentifier() { return identifier; }
 // =============================================================================================================
 
 Group AEntity::GetGroup() { return group; }
-void AEntity::SetGroup(Group value) { group = value; }
+void  AEntity::SetGroup(Group value) { group = value; }
 
 // =============================================================================================================
 // Tag
@@ -491,14 +582,12 @@ bool AEntity::UpdateEffect(float DeltaTime) {
 		switch (value) {
 		case Effect::Burn:
 			if (int32(duration * 4) != int32((duration - DeltaTime) * 4)) {
-				AParticle* particle = static_cast<AParticle*>(Spawn(Identifier::Flame));
 				FVector location = FVector::ZeroVector;
 				float angle = FMath::RandRange(-0.2f * PI, 1.2f * PI);
-				location.X = -24.0f;
+				location.X = -4.0f;
 				location.Y = hitboxRadius * FMath::Cos(angle) * FMath::RandRange(0.6f, 0.8f);
 				location.Z = hitboxHeight * FMath::Sin(angle) * FMath::RandRange(0.3f, 0.4f);
-				particle->SetActorLocation(GetActorLocation() + RotateVector(location));
-				particle->Attach(this);
+				Spawn(Identifier::Flame, GetActorLocation() + RotateVector(location))->Attach(this);
 			}
 			break;
 		}

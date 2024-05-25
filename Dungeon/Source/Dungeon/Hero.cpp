@@ -13,9 +13,6 @@
 
 AHero::AHero() {
 }
-void AHero::BeginPlay() {
-	Super::BeginPlay();
-}
 
 
 
@@ -68,11 +65,13 @@ bool AHero::VerifyAction(Action value) {
 }
 bool AHero::UpdateInputs(float DeltaTime) {
 	if (!Super::UpdateInputs(DeltaTime)) return false;
+
 	// Default AI
 	return true;
 }
 bool AHero::UpdateAction(float DeltaTime) {
 	if (!Super::UpdateAction(DeltaTime)) return false;
+
 	bool condition = false;
 	switch (GetAction()) {
 	case Action::Idle:

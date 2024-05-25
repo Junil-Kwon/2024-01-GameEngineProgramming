@@ -31,6 +31,8 @@ AGhost::AGhost() {
 }
 void AGhost::BeginPlay() {
 	Super::BeginPlay();
+
+	//for (uint8 i = 0; i < static_cast<uint8>(Identifier::Length); i++) objectPool[i] = TArray<AEntity*>();
 }
 
 // =============================================================================================================
@@ -107,8 +109,15 @@ AEntity* AGhost::GetPlayer() {
 	return player;
 }
 void AGhost::SetPlayer(AEntity* value) {
-	if (player != nullptr) player->RemoveTag(Tag::Player);
-	else if (value != nullptr) OnPlayerSpawned();
+	if (player == value) return;
+	if (player != nullptr) {
+		if (player->HasTag(Tag::Player)) player->RemoveTag(Tag::Player);
+	}
+	if (value != nullptr) {
+		if (!value->HasTag(Tag::Player)) value->AddTag(Tag::Player);
+	}
+	if (player == nullptr && value != nullptr) OnPlayerSpawned();
+	if (player != nullptr && value == nullptr) OnPlayerDestroyed();
 	player = value;
 }
 
@@ -117,4 +126,8 @@ void AGhost::OnPlayerSpawned() {
 }
 void AGhost::OnPlayerDestroyed() {
 	UE_LOG(LogTemp, Warning, TEXT("Player Destroyed."));
+}
+
+TArray<AEntity*>* AGhost::GetObjectPool(Identifier value) {
+	return &objectPool[static_cast<uint8>(value)];
 }

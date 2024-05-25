@@ -19,8 +19,7 @@ class DUNGEON_API AParticle : public AEntity {
 	// Initialization
 public:
 	AParticle();
-protected:
-	virtual	void BeginPlay() override;
+
 
 
 

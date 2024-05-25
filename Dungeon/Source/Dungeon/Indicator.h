@@ -22,6 +22,19 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	// Object Pool
+protected:
+	virtual void OnSpawn  () override;
+	virtual void OnDespawn() override;
+
+
+
+
+
+	// Hitbox
+public:
+	virtual void OnInteract(AEntity* entity) override;
+
 
 
 
@@ -42,13 +55,13 @@ private:
 	UFUNCTION() void SetupComponent(UStaticMeshComponent* component);
 private:
 	UPROPERTY() class ACreature* parent;
-	float width  = 0.0f;
-	float health = 0.0f, healthMax = 0.0f;
-	float shield = 0.0f, shieldMax = 0.0f;
-	float energe = 0.0f, energeMax = 0.0f;
-	float hboost = 0.0f;
-	Group group = Group::None;
-	bool  leader = false;
+	float width;
+	float health, healthMax;
+	float shield, shieldMax;
+	float energe, energeMax;
+	float hboost;
+	Group group;
+	bool  leader;
 	void SetWidth();
 	void SetColor();
 	void SetLeader();
@@ -58,12 +71,4 @@ public:
 	bool GetActive();
 	void SetActive(bool value);
 	virtual void Tick(float DeltaTime) override;
-
-
-
-
-
-	// Action
-public:
-	virtual void OnInteract(AEntity* entity) override;
 };

@@ -20,40 +20,49 @@ ACreature::ACreature() {
 	defaultHandLocation = FVector2D(24.0f, -4.0f);
 	
 	sensorComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Sensor"));
-	sensorComponent->InitCapsuleSize(defaultSensorRange, defaultHitboxHeight * 0.5f);
+	sensorComponent->InitCapsuleSize(0.5f, 0.5f);
 	sensorComponent->SetCollisionProfileName(TEXT("Sensor"));
 	sensorComponent->SetupAttachment(RootComponent);
 
 	magnetComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Magnet"));
-	magnetComponent->InitCapsuleSize(defaultMagnetRange, defaultHitboxHeight * 0.5f);
+	magnetComponent->InitCapsuleSize(0.5f, 0.5f);
 	magnetComponent->SetCollisionProfileName(TEXT("Sensor"));
 	magnetComponent->SetupAttachment(RootComponent);
 }
 void ACreature::BeginPlay() {
-	SetSensorRange(defaultSensorRange);
-	SetMagnetRange(defaultMagnetRange);
+	Super::BeginPlay();
+
 	sensorComponent->OnComponentBeginOverlap.AddDynamic(this, &ACreature::OnSensorBeginOverlap);
 	sensorComponent->OnComponentEndOverlap  .AddDynamic(this, &ACreature::OnSensorEndOverlap  );
 	magnetComponent->OnComponentBeginOverlap.AddDynamic(this, &ACreature::OnMagnetBeginOverlap);
 	magnetComponent->OnComponentEndOverlap  .AddDynamic(this, &ACreature::OnMagnetEndOverlap  );
-	
-	indicatorWidth = defaultIndicatorWidth;
-	indicator = static_cast<AIndicator*>(Spawn(Identifier::Indicator));
+}
+
+// =============================================================================================================
+// Object Pool
+// =============================================================================================================
+
+void ACreature::OnSpawn() {
+	Super::OnSpawn();
+
+	SetSensorRange(defaultSensorRange);
+	SetMagnetRange(defaultMagnetRange);
 
 	healthMax = health;
 	shieldMax = shield;
 	energeMax = energe;
 
-	Super::BeginPlay();
-
+	SetIndicatorWidth(defaultIndicatorWidth);
+	indicator = static_cast<AIndicator*>(Spawn(Identifier::Indicator));
 	indicator->SetActorLocation(GetActorLocation() + FVector(0.0f, 0.0f, GetHitboxHeight() * 0.5f + 96.0f));
 	indicator->OnInteract(this);
 	indicator->Attach(this);
 }
-void ACreature::EndPlay(const EEndPlayReason::Type EndPlayReason) {
-	Super::EndPlay(EndPlayReason);
-	if (HasWeapon()) weapon->Destroy();
-	indicator->Destroy();
+void ACreature::OnDespawn() {
+	Super::OnDespawn();
+
+	if (HasWeapon()) weapon->Despawn();
+	indicator->Despawn();
 }
 
 
@@ -68,6 +77,12 @@ void ACreature::OnHitboxChanged() {
 	Super::OnHitboxChanged();
 	sensorComponent->SetCapsuleHalfHeight(sensorRange + GetHitboxHeight() * 0.5f - GetHitboxRadius());
 	magnetComponent->SetCapsuleHalfHeight(magnetRange + GetHitboxHeight() * 0.5f - GetHitboxRadius());
+}
+void ACreature::OnCollision(AEntity* entity) {
+	Super::OnCollision(entity);
+	if (GetGhost()->GetPlayer() == nullptr) return;
+	if (GetGroup() != GetGhost()->GetPlayer()->GetGroup()) return;
+	if (entity->HasTag(Tag::Collectable)) entity->OnInteract(this);
 }
 
 // =============================================================================================================
@@ -89,13 +104,13 @@ void ACreature::OnSensorBeginOverlap(
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 	bool bFromSweep, const FHitResult& SweepResult) {
 	AEntity* entity = static_cast<AEntity*>(OtherActor);
-	if (!sensorArray.Contains(entity)) sensorArray.Add(entity);
+	if (OtherActor->IsA(AEntity::StaticClass()) && !sensorArray.Contains(entity)) sensorArray.Add(entity);
 }
 void ACreature::OnSensorEndOverlap(
 	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
 	AEntity* entity = static_cast<AEntity*>(OtherActor);
-	if (sensorArray.Contains(entity)) sensorArray.Remove(entity);
+	if (OtherActor->IsA(AEntity::StaticClass()) && sensorArray.Contains(entity)) sensorArray.Remove(entity);
 }
 
 // =============================================================================================================
@@ -104,6 +119,7 @@ void ACreature::OnSensorEndOverlap(
 
 bool ACreature::UpdateMagnet(float DeltaTime) {
 	if (magnetArray.Num() == 0) return false;
+	if (GetGhost()->GetPlayer() == nullptr) return false;
 	if (GetGroup() != GetGhost()->GetPlayer()->GetGroup()) return false;
 
 	AEntity* entity = nullptr;
@@ -114,7 +130,7 @@ bool ACreature::UpdateMagnet(float DeltaTime) {
 			continue;
 		}
 		if (magnetArray[i]->HasTag(Tag::Collectable)) {
-			// pull other actor to this actor
+			magnetArray[i]->AddMovementInput(GetActorLocation() - magnetArray[i]->GetActorLocation(), 1.0f);
 		}
 		float distance = FVector::Distance(magnetArray[i]->GetActorLocation(), GetActorLocation());
 		if (magnetArray[i]->HasTag(Tag::Interactability) && distance < nearest) {
@@ -136,13 +152,13 @@ void ACreature::OnMagnetBeginOverlap(
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 	bool bFromSweep, const FHitResult& SweepResult) {
 	AEntity* entity = static_cast<AEntity*>(OtherActor);
-	if (!magnetArray.Contains(entity)) magnetArray.Add(entity);
+	if (OtherActor->IsA(AEntity::StaticClass()) && !magnetArray.Contains(entity)) magnetArray.Add(entity);
 }
 void ACreature::OnMagnetEndOverlap(
 	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
 	AEntity* entity = static_cast<AEntity*>(OtherActor);
-	if (magnetArray.Contains(entity)) {
+	if (OtherActor->IsA(AEntity::StaticClass()) && magnetArray.Contains(entity)) {
 		magnetArray.Remove(entity);
 		if (GetSelected() == entity) SetSelected(nullptr);
 	}
@@ -252,7 +268,6 @@ void  ACreature::OnDamaged(float value) {
 	else        health = FMath::Clamp(health - value, 0.0f, healthMax);
 	if (shield == 0.0f && shieldTemp) OnShieldBroken();
 	if (health == 0.0f) OnDie();
-	// refresh indicator
 }
 void  ACreature::OnShieldBroken() {
 	shieldMax = 0.0f;
@@ -275,18 +290,15 @@ void ACreature::AdjustMaxHealth(float value) {
 	healthMax += FMath::Min(healthMax + value, 0.0f);
 	health    += FMath::Min(health    + value, 0.0f);
 	if (health == 0.0f) OnDie();
-	// refresh indicator
 }
 void ACreature::AdjustMaxShield(float value) {
 	shieldMax += FMath::Min(shieldMax + value, 0.0f);
 	shield    += FMath::Min(shield    + value, 0.0f);
 	if (shield == 0.0f) OnShieldBroken();
-	// refresh indicator
 }
 void ACreature::AdjustMaxEnerge(float value) {
 	energeMax += FMath::Min(energeMax + value, 0.0f);
 	energe    += FMath::Min(energe    + value, 0.0f);
-	// refresh indicator
 }
 void ACreature::AdjustMaxDamage(float value) {
 	damage = FMath::Min(damage + value, 0.0f);

@@ -16,6 +16,7 @@
 AInteractor::AInteractor() {
 	defaultTag += static_cast<uint8>(Tag::Floating);
 	defaultTag += static_cast<uint8>(Tag::Piercing);
+	SetCollisionProfileName(TEXT("Particle"));
 
 	nameComponent = CreateDefaultSubobject<UTextRenderComponent>(TEXT("Name"));
 	nameComponent->SetRelativeRotation(FRotator(90.0f, 90.0f, 0.0f));
@@ -31,10 +32,33 @@ AInteractor::AInteractor() {
 void AInteractor::BeginPlay() {
 	Super::BeginPlay();
 
-	SetCollisionProfileName(TEXT("Particle"));
 	SetSpriteIndex(nullptr, 63);
+}
+
+// =============================================================================================================
+// Object Pool
+// =============================================================================================================
+
+void AInteractor::OnSpawn() {
+	Super::OnSpawn();
+
 	SetActive(false);
-	
+}
+
+
+
+
+
+// =============================================================================================================
+// Hitbox
+// =============================================================================================================
+
+void AInteractor::OnInteract(AEntity* entity) {
+	Super::OnInteract(entity);
+
+	if (entity == nullptr) return;
+	parent = entity;
+	UpdateLocation();
 }
 
 
@@ -67,18 +91,4 @@ void AInteractor::UpdateLocation() {
 		}
 	}
 	SetActorLocation(parent->GetActorLocation() + FVector(0.0f, 0.0f, height));
-}
-
-
-
-
-
-// =============================================================================================================
-// Action
-// =============================================================================================================
-
-void AInteractor::OnInteract(AEntity* entity) {
-	if (entity == nullptr) return;
-	parent = entity;
-	UpdateLocation();
 }

@@ -40,6 +40,7 @@ enum class Identifier : uint8 {
 	Indicator		,
 	Dust			,
 	Flame			,
+	Twinkle			,
 	Length			UMETA(Hidden),
 };
 
@@ -117,13 +118,14 @@ public:
 	template<typename TEnum> TEnum   ToEnum  (FString value);
 
 	UStaticMesh* GetStaticMesh(MeshType value);
-
 	UMaterialInstanceDynamic* GetMaterialInstanceDynamic(Identifier value);
-
 	UFont*     GetFont        (FontType value);
 	UMaterial* GetFontMaterial(FontType value);
 
 	AEntity* Spawn(Identifier value, FVector location = FVector::ZeroVector);
+	void     Despawn();
+
+	bool IsAttached();
 	void Attach(AEntity* entity);
 	void Detach();
 
@@ -140,7 +142,11 @@ public:
 	AEntity();
 protected:
 	virtual void BeginPlay() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	// Object Pool
+protected:
+	virtual void OnSpawn  ();
+	virtual void OnDespawn();
 
 	// Update
 	#define DefaultGravityScale     3.0f
@@ -148,12 +154,12 @@ protected:
 	#define VoidZAxis           -1024.0f
 	#define DustThreshold        -500.0f
 protected:
-	UPROPERTY(EditAnywhere) float defaultSpeed = 300.0f;
+	UPROPERTY(EditAnywhere) float defaultSpeed;
 private:
 	float speed;
 protected:
-	bool  isFalling = false;
-	float fallSpeed = 0.0f;
+	bool  isFalling;
+	float fallSpeed;
 public:
 	virtual void Tick(float DeltaTime) override;
 
@@ -179,9 +185,9 @@ protected:
 	
 	// Hitbox
 protected:
-	UPROPERTY(EditAnywhere) float defaultHitboxRadius = 0.0f;
-	UPROPERTY(EditAnywhere) float defaultHitboxHeight = 0.0f;
-	UPROPERTY(EditAnywhere) FVector2D defaultHandLocation = FVector2D::ZeroVector;
+	UPROPERTY(EditAnywhere) float     defaultHitboxRadius;
+	UPROPERTY(EditAnywhere) float     defaultHitboxHeight;
+	UPROPERTY(EditAnywhere) FVector2D defaultHandLocation;
 private:
 	UPROPERTY() class UCapsuleComponent* hitboxComponent;
 	float hitboxRadius;
@@ -199,15 +205,26 @@ public:
 	virtual FVector GetHandLocation();
 	virtual FVector GetFootLocation();
 
+	UFUNCTION() void OnHit(
+		UPrimitiveComponent* HitComp, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, FVector NormalImpulse,
+		const FHitResult& Hit);
+	UFUNCTION() void OnHitboxBeginOverlap(
+		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+		bool bFromSweep, const FHitResult& SweepResult);
+	virtual void OnCollision(AEntity* entity);
+	virtual void OnInteract (AEntity* entity);
+
 	// Sprite
 private:
-	UPROPERTY() class USceneComponent* anchorComponent;
+	UPROPERTY() class USceneComponent*      anchorComponent;
 	UPROPERTY() class UStaticMeshComponent* spriteComponent;
-	int32   spriteIndex = 0;
-	bool    spriteXFlip = false;
-	FVector spriteColor = FVector::OneVector;
-	float   spriteAngle = 0.0f;
-	float   spriteIntensity = 0.0f;
+	int32   spriteIndex;
+	bool    spriteXFlip;
+	FVector spriteColor;
+	float   spriteAngle;
+	float   spriteIntensity;
 public:
 	int32   GetSpriteIndex();
 	bool    GetSpriteXFlip();
@@ -216,11 +233,11 @@ public:
 	float   GetSpriteIntensity();
 protected:
 	UFUNCTION() USceneComponent* GetAnchorComponent();
-	UFUNCTION() void SetSpriteIndex(UStaticMeshComponent* comp = nullptr, int32   value = 0);
-	UFUNCTION() void SetSpriteXFlip(UStaticMeshComponent* comp = nullptr, bool    value = false);
-	UFUNCTION() void SetSpriteColor(UStaticMeshComponent* comp = nullptr, FVector value = FVector::OneVector);
-	UFUNCTION() void SetSpriteAngle(UStaticMeshComponent* comp = nullptr, float value = 0.0f);
-	UFUNCTION() void SetSpriteIntensity(UStaticMeshComponent* comp = nullptr, float   value = 0.0f);
+	UFUNCTION() void SetSpriteIndex    (UStaticMeshComponent* comp, int32   value = 0);
+	UFUNCTION() void SetSpriteXFlip    (UStaticMeshComponent* comp, bool    value = false);
+	UFUNCTION() void SetSpriteColor    (UStaticMeshComponent* comp, FVector value = FVector(0, 0, 0));
+	UFUNCTION() void SetSpriteAngle    (UStaticMeshComponent* comp, float   value = 0);
+	UFUNCTION() void SetSpriteIntensity(UStaticMeshComponent* comp, float   value = 0);
 
 	// Shadow
 private:
@@ -253,20 +270,17 @@ protected:
 
 	// Action
 private:
-	Action action = Action::Idle;
-	float  actionCooldown[static_cast<uint8>(Action::Length)] = { 0.0f, };
+	Action action;
+	float  actionCooldown[static_cast<uint8>(Action::Length)];
 protected:
-	float  actionDelay = 0.0f;
+	float  actionDelay;
 	Action GetAction();
 	bool   SetAction(Action value);
 	float  GetActionCooldown(Action value);
-	void   SetActionCooldown(Action value, float cooldown = 0.0f);
+	void   SetActionCooldown(Action value, float cooldown);
 	virtual bool VerifyAction(Action value);
 	virtual bool UpdateInputs(float DeltaTime);
 	virtual bool UpdateAction(float DeltaTime);
-
-public:
-	virtual void OnInteract(AEntity* entity);
 
 
 
@@ -278,13 +292,13 @@ public:
 	
 	// Identifier
 private:
-	Identifier identifier = Identifier::Default;
+	Identifier identifier;
 public:
 	Identifier GetIdentifier();
 
 	// Group
 protected:
-	UPROPERTY(EditAnywhere) Group defaultGroup = Group::None;
+	UPROPERTY(EditAnywhere) Group defaultGroup;
 private:
 	Group group;
 public:
@@ -293,7 +307,7 @@ public:
 
 	// Tag
 protected:
-	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = Tag)) uint8 defaultTag = 0;
+	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = Tag)) uint8 defaultTag;
 private:
 	uint8 tag;
 public:
@@ -305,14 +319,14 @@ public:
 	#define EffectStrengthMax 9999.0f
 	#define EffectDurationMax 9999.0f
 protected:
-	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = Effect)) uint8 defaultEffect         = 0;
-	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = Effect)) uint8 defaultEffectImmunity = 0;
+	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = Effect)) uint8 defaultEffect;
+	UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = Effect)) uint8 defaultEffectImmunity;
 private:
 	uint8 effect;
 	uint8 effectImmunity;
-	float effectStrength[static_cast<uint8>(Effect::Length)] = { 0.0f, };
-	float effectDuration[static_cast<uint8>(Effect::Length)] = { 0.0f, };
-	float hit = 0.0f;
+	float effectStrength[static_cast<uint8>(Effect::Length)];
+	float effectDuration[static_cast<uint8>(Effect::Length)];
+	float hit;
 	bool  updateColor = false;
 	bool  updateSpeed = false;
 protected:
