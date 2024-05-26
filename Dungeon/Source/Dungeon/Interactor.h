@@ -11,7 +11,7 @@
 UCLASS()
 class DUNGEON_API AInteractor : public AEntity {
 	GENERATED_BODY()
-	
+
 
 
 
@@ -22,9 +22,10 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	// Object Pool
+	// Spawn
 protected:
 	virtual void OnSpawn() override;
+	virtual void OnDespawn() override;
 
 
 
@@ -38,15 +39,23 @@ public:
 
 
 
+	// Action
+private:
+	bool hide;
+public:
+	bool IsHiding();
+	void Hide(bool value = true);
+protected:
+	virtual bool UpdateAction(float DeltaTime) override;
+
+
+
+
+
 	// Interactor
 private:
-	UPROPERTY(EditAnywhere) class UTextRenderComponent* nameComponent;
-	UPROPERTY() class AEntity* parent;
-	bool active = false;
-public:
-	bool GetActive();
-	void SetActive(bool value);
-	virtual void Tick(float DeltaTime) override;
+	class UTextRenderComponent* nameComponent;
+	AEntity* parent;
 private:
-	void UpdateLocation();
+	void RefreshLocation();
 };

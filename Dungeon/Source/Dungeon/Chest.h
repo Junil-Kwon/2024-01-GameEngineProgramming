@@ -19,8 +19,10 @@ class DUNGEON_API AChest : public AEntity {
 	// Initialization
 public:
 	AChest();
+protected:
+	virtual void BeginPlay() override;
 
-	// Object Pool
+	// Spawn
 protected:
 	virtual void OnSpawn  () override;
 	virtual void OnDespawn() override;
@@ -49,6 +51,7 @@ protected:
 	// Chest
 private:
 	UPROPERTY(EditAnywhere) TArray<Identifier> lootArray;
+	int32 loot;
 public:
 	void AddLoot(Identifier value, int32 num = 1);
 };

@@ -13,6 +13,20 @@ AParticle::AParticle() {
 	defaultTag += static_cast<uint8>(Tag::Piercing);
 	SetCollisionProfileName(TEXT("Particle"));
 }
+void AParticle::BeginPlay() {
+	Super::BeginPlay();
+}
+
+// =============================================================================================================
+// Spawn
+// =============================================================================================================
+
+void AParticle::OnSpawn() {
+	Super::OnSpawn();
+}
+void AParticle::OnDespawn() {
+	Super::OnDespawn();
+}
 
 
 

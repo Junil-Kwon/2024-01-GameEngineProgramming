@@ -143,7 +143,11 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	// Object Pool
+	// Spawn
+private:
+	bool active;
+public:
+	bool IsActive();
 protected:
 	virtual void OnSpawn  ();
 	virtual void OnDespawn();
@@ -189,7 +193,7 @@ protected:
 	UPROPERTY(EditAnywhere) float     defaultHitboxHeight;
 	UPROPERTY(EditAnywhere) FVector2D defaultHandLocation;
 private:
-	UPROPERTY() class UCapsuleComponent* hitboxComponent;
+	UCapsuleComponent* hitboxComponent;
 	float hitboxRadius;
 	float hitboxHeight;
 	FVector handLocation;
@@ -218,8 +222,8 @@ public:
 
 	// Sprite
 private:
-	UPROPERTY() class USceneComponent*      anchorComponent;
-	UPROPERTY() class UStaticMeshComponent* spriteComponent;
+	class USceneComponent*      anchorComponent;
+	class UStaticMeshComponent* spriteComponent;
 	int32   spriteIndex;
 	bool    spriteXFlip;
 	FVector spriteColor;
@@ -232,7 +236,7 @@ public:
 	float   GetSpriteAngle();
 	float   GetSpriteIntensity();
 protected:
-	UFUNCTION() USceneComponent* GetAnchorComponent();
+	class USceneComponent* GetAnchorComponent();
 	UFUNCTION() void SetSpriteIndex    (UStaticMeshComponent* comp, int32   value = 0);
 	UFUNCTION() void SetSpriteXFlip    (UStaticMeshComponent* comp, bool    value = false);
 	UFUNCTION() void SetSpriteColor    (UStaticMeshComponent* comp, FVector value = FVector(0, 0, 0));
@@ -241,29 +245,29 @@ protected:
 
 	// Shadow
 private:
-	UPROPERTY() class UStaticMeshComponent* shadowComponent;
+	class UStaticMeshComponent* shadowComponent;
 
 	// Interactor
 private:
-	UPROPERTY() class AInteractor* interactor;
+	class AInteractor* interactor;
 	void CreateInteractor();
 	void RemoveInteractor();
 public:
-	UFUNCTION() AInteractor* GetInteractor();
+	AInteractor* GetInteractor();
 
 
 
 
 
 	// =========================================================================================================
-	// AI
+	// Action
 	// =========================================================================================================
 	
 	// Input
 private:
-	UPROPERTY() class AGhost* ghost;
+	class AGhost* ghost;
 public:
-	UFUNCTION() AGhost* GetGhost();
+	AGhost* GetGhost();
 protected:
 	bool GetInput(Action value);
 	FVector GetInputDirection();
@@ -330,7 +334,7 @@ private:
 	bool  updateColor = false;
 	bool  updateSpeed = false;
 protected:
-	void Hit(float value);
+	void Hit();
 	virtual bool UpdateEffect(float DeltaTime);
 public:
 	bool  HasEffect(Effect value);

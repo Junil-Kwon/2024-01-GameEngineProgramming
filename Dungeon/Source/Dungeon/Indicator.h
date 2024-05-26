@@ -22,7 +22,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	// Object Pool
+	// Spawn
 protected:
 	virtual void OnSpawn  () override;
 	virtual void OnDespawn() override;
@@ -39,22 +39,34 @@ public:
 
 
 
+	// Action
+private:
+	bool hide;
+public:
+	bool IsHiding();
+	void Hide(bool value = true);
+	virtual bool UpdateAction(float DeltaTime) override;
+
+
+
+
+
 	// Indicator
 private:
-	UPROPERTY() class UStaticMeshComponent* lBorderComponent;
-	UPROPERTY() class UStaticMeshComponent* rBorderComponent;
-	UPROPERTY() class UStaticMeshComponent* lHealthComponent;
-	UPROPERTY() class UStaticMeshComponent* lHBoostComponent;
-	UPROPERTY() class UStaticMeshComponent* rHealthComponent;
-	UPROPERTY() class UStaticMeshComponent* lShieldComponent;
-	UPROPERTY() class UStaticMeshComponent* rShieldComponent;
-	UPROPERTY() class UStaticMeshComponent* lEnergeComponent;
-	UPROPERTY() class UStaticMeshComponent* rEnergeComponent;
-	UPROPERTY() class UStaticMeshComponent* iShieldComponent;
-	UPROPERTY() class UStaticMeshComponent* iLeaderComponent;
-	UFUNCTION() void SetupComponent(UStaticMeshComponent* component);
+	class UStaticMeshComponent* lBorderComponent;
+	class UStaticMeshComponent* rBorderComponent;
+	class UStaticMeshComponent* lHealthComponent;
+	class UStaticMeshComponent* lHBoostComponent;
+	class UStaticMeshComponent* rHealthComponent;
+	class UStaticMeshComponent* lShieldComponent;
+	class UStaticMeshComponent* rShieldComponent;
+	class UStaticMeshComponent* lEnergeComponent;
+	class UStaticMeshComponent* rEnergeComponent;
+	class UStaticMeshComponent* iShieldComponent;
+	class UStaticMeshComponent* iLeaderComponent;
+	void SetupComponent(UStaticMeshComponent* component);
 private:
-	UPROPERTY() class ACreature* parent;
+	class ACreature* parent;
 	float width;
 	float health, healthMax;
 	float shield, shieldMax;
@@ -62,13 +74,7 @@ private:
 	float hboost;
 	Group group;
 	bool  leader;
-	void SetWidth();
-	void SetColor();
+	void SetWidth ();
+	void SetColor ();
 	void SetLeader();
-private:
-	bool active = false;
-public:
-	bool GetActive();
-	void SetActive(bool value);
-	virtual void Tick(float DeltaTime) override;
 };

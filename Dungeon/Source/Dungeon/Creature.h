@@ -26,7 +26,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	// Object Pool
+	// Spawn
 protected:
 	virtual void OnSpawn  () override;
 	virtual void OnDespawn() override;
@@ -46,9 +46,9 @@ protected:
 	
 	// Sensor
 protected:
-	UPROPERTY(EditAnywhere) float defaultSensorRange = 480.0f;
+	UPROPERTY(EditAnywhere) float defaultSensorRange;
 private:
-	UPROPERTY() class UCapsuleComponent* sensorComponent;
+	class UCapsuleComponent* sensorComponent;
 	float sensorRange;
 protected:
 	TArray<AEntity*> sensorArray;
@@ -66,9 +66,9 @@ public:
 
 	// Magnet
 protected:
-	UPROPERTY(EditAnywhere) float defaultMagnetRange = 120.0f;
+	UPROPERTY(EditAnywhere) float defaultMagnetRange;
 private:
-	UPROPERTY() class UCapsuleComponent* magnetComponent;
+	class UCapsuleComponent* magnetComponent;
 	float magnetRange;
 protected:
 	TArray<AEntity*> magnetArray;
@@ -94,7 +94,7 @@ protected:
 	
 	// Weapon
 private:
-	UPROPERTY() class AWeapon* weapon;
+	class AWeapon* weapon;
 protected:
 	bool     HasWeapon();
 	AWeapon* GetWeapon();
@@ -102,9 +102,9 @@ protected:
 
 	// Indicator
 protected:
-	UPROPERTY(EditAnywhere) float defaultIndicatorWidth = 24.0f;
+	UPROPERTY(EditAnywhere) float defaultIndicatorWidth;
 private:
-	UPROPERTY() class AIndicator* indicator;
+	class AIndicator* indicator;
 	float indicatorWidth;
 public:
 	AIndicator* GetIndicator();
@@ -136,27 +136,29 @@ protected:
 	#define MendCooldown 4.0f
 	#define HurtCooldown 0.2f
 private:
-	UPROPERTY(EditAnywhere) float health = 1.0f;
-	UPROPERTY(EditAnywhere) float shield = 0.0f;
-	UPROPERTY(EditAnywhere) float energe = 0.0f;
-	UPROPERTY(EditAnywhere) float damage = 0.0f;
-	float healthMax;
-	float shieldMax;
-	float energeMax;
-	float hurtCooldown = 0.0f;
-	float mendCooldown = 0.0f;
+	UPROPERTY(EditAnywhere) float defaultHealth;
+	UPROPERTY(EditAnywhere) float defaultShield;
+	UPROPERTY(EditAnywhere) float defaultEnerge;
+	UPROPERTY(EditAnywhere) float defaultDamage;
+	float health, healthMax;
+	float shield, shieldMax;
+	float energe, energeMax;
+	float damage;
+	float hurtCooldown;
+	float mendCooldown;
 	
 protected:
 	virtual void OnDamaged(float value);
 	virtual void OnShieldBroken();
 	virtual void OnDie();
 public:
-	float GetHealth();
-	float GetShield();
-	float GetEnerge();
 	float GetHealthMax();
 	float GetShieldMax();
 	float GetEnergeMax();
+	float GetHealth();
+	float GetShield();
+	float GetEnerge();
+	float GetDamage();
 	void AdjustMaxHealth(float value);
 	void AdjustMaxShield(float value);
 	void AdjustMaxEnerge(float value);

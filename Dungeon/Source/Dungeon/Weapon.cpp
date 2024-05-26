@@ -17,11 +17,17 @@ AWeapon::AWeapon() {
 	defaultTag += static_cast<uint8>(Tag::Interactability);
 	SetCollisionProfileName(TEXT("Particle"));
 }
+void AWeapon::BeginPlay() {
+	Super::BeginPlay();
+}
 
 // =============================================================================================================
-// Object Pool
+// Spawn
 // =============================================================================================================
 
+void AWeapon::OnSpawn() {
+	Super::OnSpawn();
+}
 void AWeapon::OnDespawn() {
 	Super::OnDespawn();
 

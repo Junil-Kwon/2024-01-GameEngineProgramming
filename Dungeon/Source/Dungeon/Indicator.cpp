@@ -69,7 +69,7 @@ void AIndicator::BeginPlay() {
 }
 
 // =============================================================================================================
-// Hitbox
+// Spawn
 // =============================================================================================================
 
 void AIndicator::OnSpawn() {
@@ -94,11 +94,11 @@ void AIndicator::OnSpawn() {
 	hboost = 0.0f;
 	group  = Group::None;
 	leader = false;
+
+	Hide(false);
 }
 void AIndicator::OnDespawn() {
 	Super::OnDespawn();
-
-
 }
 
 
@@ -111,13 +111,49 @@ void AIndicator::OnDespawn() {
 
 void AIndicator::OnInteract(AEntity* entity) {
 	Super::OnInteract(entity);
-
 	if (entity == nullptr || !entity->IsA(ACreature::StaticClass())) return;
+
 	parent = static_cast<ACreature*>(entity);
-	SetWidth();
-	SetColor();
+	SetWidth ();
+	SetColor ();
 	SetLeader();
-	SetActive(true);
+}
+
+
+
+
+
+// =============================================================================================================
+// Action
+// =============================================================================================================
+
+bool AIndicator::IsHiding() { return hide; }
+void AIndicator::Hide(bool value) {
+	hide = value;
+	int32 index = (shieldMax != 0.0f) + (energeMax != 0.0f);
+	SetSpriteIndex(lBorderComponent, value ? 63 : index);
+	SetSpriteIndex(rBorderComponent, value ? 63 : index);
+	SetSpriteIndex(lHealthComponent, value ? 63 : shieldMax ? 4 + 1 : 4);
+	SetSpriteIndex(rHealthComponent, value ? 63 : shieldMax ? 8 + 1 : 8);
+	SetSpriteIndex(lShieldComponent, value ? 63 : shieldMax ? 4 : 63);
+	SetSpriteIndex(rShieldComponent, value ? 63 : shieldMax ? 8 : 63);
+	SetSpriteIndex(lHBoostComponent, value ? 63 : 4);
+	SetSpriteIndex(lEnergeComponent, value ? 63 : energeMax ? 4 + index : 63);
+	SetSpriteIndex(rEnergeComponent, value ? 63 : energeMax ? 8 + index : 63);
+	SetSpriteIndex(iShieldComponent, value ? 63 : shieldMax ? 12 : 63);
+}
+
+bool AIndicator::UpdateAction(float DeltaTime) {
+	if (!Super::UpdateAction(DeltaTime) || !parent) return false;
+
+	if (width  != parent->GetIndicatorWidth()) SetWidth();
+	else if (health != parent->GetHealth() || shieldMax != parent->GetShieldMax()) SetWidth();
+	else if (shield != parent->GetShield() || shieldMax != parent->GetShieldMax()) SetWidth();
+	else if (energe != parent->GetEnerge() || energeMax != parent->GetEnergeMax()) SetWidth();
+	else if (hboost != parent->GetEffectStrength(Effect::HealthBoost)) SetWidth();
+	if (group  != parent->GetGroup()) SetColor();
+	if (leader != parent->HasTag(Tag::Leader)) SetLeader();
+	return true;
 }
 
 
@@ -129,7 +165,7 @@ void AIndicator::OnInteract(AEntity* entity) {
 // =============================================================================================================
 
 void AIndicator::SetWidth() {
-	width = parent->GetIndicatorWidth();
+	width  = parent->GetIndicatorWidth();
 	health = parent->GetHealth();
 	shield = parent->GetShield();
 	energe = parent->GetEnerge();
@@ -208,24 +244,4 @@ void AIndicator::SetColor() {
 void AIndicator::SetLeader() {
 	leader = parent->HasTag(Tag::Leader);
 	SetSpriteIndex(iLeaderComponent, leader ? 13 : 63);
-}
-
-bool AIndicator::GetActive() {
-	return active;
-}
-void AIndicator::SetActive(bool value) {
-	active = value;
-	//-
-}
-void AIndicator::Tick(float DeltaTime) {
-	Super::Tick(DeltaTime);
-	if (!parent) return;
-
-	if (width  != parent->GetIndicatorWidth()) SetWidth();
-	else if (health != parent->GetHealth() || shieldMax != parent->GetShieldMax()) SetWidth();
-	else if (shield != parent->GetShield() || shieldMax != parent->GetShieldMax()) SetWidth();
-	else if (energe != parent->GetEnerge() || energeMax != parent->GetEnergeMax()) SetWidth();
-	else if (hboost != parent->GetEffectStrength(Effect::HealthBoost)) SetWidth();
-	if (group  != parent->GetGroup()) SetColor();
-	if (leader != parent->HasTag(Tag::Leader)) SetLeader();
 }

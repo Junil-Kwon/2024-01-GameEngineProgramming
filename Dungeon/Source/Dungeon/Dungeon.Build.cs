@@ -1,15 +1,9 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 using UnrealBuildTool;
 
-public class Dungeon : ModuleRules
-{
-	public Dungeon(ReadOnlyTargetRules Target) : base(Target)
-	{
+public class Dungeon : ModuleRules {
+	public Dungeon(ReadOnlyTargetRules Target) : base(Target) {
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
-
+		PublicDependencyModuleNames .AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG" });
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
 		// Uncomment if you are using Slate UI

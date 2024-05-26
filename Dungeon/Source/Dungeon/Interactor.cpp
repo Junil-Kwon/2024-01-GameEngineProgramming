@@ -36,13 +36,16 @@ void AInteractor::BeginPlay() {
 }
 
 // =============================================================================================================
-// Object Pool
+// Spawn
 // =============================================================================================================
 
 void AInteractor::OnSpawn() {
 	Super::OnSpawn();
 
-	SetActive(false);
+	Hide();
+}
+void AInteractor::OnDespawn() {
+	Super::OnDespawn();
 }
 
 
@@ -55,10 +58,34 @@ void AInteractor::OnSpawn() {
 
 void AInteractor::OnInteract(AEntity* entity) {
 	Super::OnInteract(entity);
-
 	if (entity == nullptr) return;
+
 	parent = entity;
-	UpdateLocation();
+	RefreshLocation();
+}
+
+
+
+
+
+// =============================================================================================================
+// Action
+// =============================================================================================================
+
+bool AInteractor::IsHiding() { return hide; }
+void AInteractor::Hide(bool value) {
+	hide = value;
+	SetSpriteIndex(nullptr, hide ? 63 : 0);
+	if (hide) nameComponent->SetText(FText::FromString(TEXT("")));
+	else      nameComponent->SetText(FText::FromString(ToString(parent->GetIdentifier())));
+	if (parent) RefreshLocation();
+}
+
+bool AInteractor::UpdateAction(float DeltaTime) {
+	if (!Super::UpdateAction(DeltaTime)) return false;
+
+	if (!IsHiding()) RefreshLocation();
+	return true;
 }
 
 
@@ -69,24 +96,10 @@ void AInteractor::OnInteract(AEntity* entity) {
 // Interactor
 // =============================================================================================================
 
-bool AInteractor::GetActive() {
-	return active;
-}
-void AInteractor::SetActive(bool value) {
-	active = value;
-	SetSpriteIndex(nullptr, value ? 0 : 63);
-	nameComponent->SetText(value ? FText::FromString(ToString(parent->GetIdentifier())) : FText::FromString(TEXT("")));
-	if (parent) UpdateLocation();
-}
-
-void AInteractor::Tick(float DeltaTime) {
-	Super::Tick(DeltaTime);
-	if (active) UpdateLocation();
-}
-void AInteractor::UpdateLocation() {
+void AInteractor::RefreshLocation() {
 	float height = parent->GetHitboxHeight() * 0.5f + 64.0f;
 	if (parent->IsA(ACreature::StaticClass())) {
-		if (static_cast<ACreature*>(parent)->GetIndicator()->GetActive()) {
+		if (static_cast<ACreature*>(parent)->GetIndicator()->IsHiding()) {
 			height += !parent->HasTag(Tag::Leader) ? 96.0f : 152.0f;
 		}
 	}

@@ -19,9 +19,12 @@ class DUNGEON_API AWeapon : public AEntity {
 	// Initialization
 public:
 	AWeapon();
-
-	// Object Pool
 protected:
+	virtual void BeginPlay() override;
+
+	// Spawn
+protected:
+	virtual void OnSpawn  () override;
 	virtual void OnDespawn() override;
 
 

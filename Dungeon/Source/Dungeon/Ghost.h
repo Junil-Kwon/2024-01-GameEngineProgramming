@@ -17,6 +17,15 @@ class DUNGEON_API AGhost : public APawn {
 
 
 
+	// -
+public:
+	UTexture2D* GetTexture(FString name);
+	UClass*     GetWidget (FString name);
+
+
+
+
+
 	// Initialization
 public:
 	AGhost();
@@ -33,9 +42,43 @@ public:
 
 	// Camera
 private:
-	UPROPERTY(EditAnywhere) class USphereComponent*    sphereComponent;
-	UPROPERTY(EditAnywhere) class USpringArmComponent* springComponent;
-	UPROPERTY(EditAnywhere) class UCameraComponent*    cameraComponent;
+	class USphereComponent*    sphereComponent;
+	class USpringArmComponent* springComponent;
+	class UCameraComponent*    cameraComponent;
+
+
+
+
+
+	// UI
+private:
+	class UIngameUI* ingameUI;
+	int32 money;
+	float moneyTemp;
+	int32 moneyIcon;
+	int32 moneySize;
+	float moneyBackgroundXPos;
+public:
+	int32 GetMoney();
+	void  AdjustMoney(int32 value);
+protected:
+	void UpdateMoney(float DeltaTime);
+
+
+
+
+
+	// Entity
+private:
+	TArray<class AEntity*> objectPool[static_cast<uint8>(Identifier::Length)];
+	class AEntity* player;
+public:
+	TArray<class AEntity*>* GetObjectPool(Identifier value);
+	AEntity* GetPlayer();
+	void     SetPlayer(AEntity* value);
+
+	void OnPlayerSpawned();
+	void OnPlayerDestroyed();
 
 
 
@@ -65,23 +108,7 @@ private:
 	void PMenu  ();
 	void RMenu  ();
 public:
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	bool GetInput(Action value);
 	FVector GetInputDirection();
-
-
-
-
-
-	// Entity
-private:
-	TArray<AEntity*> objectPool[static_cast<uint8>(Identifier::Length)];
-	UPROPERTY() class AEntity* player;
-public:
-	TArray<AEntity*>* GetObjectPool(Identifier value);
-	AEntity* GetPlayer();
-	void SetPlayer(AEntity* value);
-
-	void OnPlayerSpawned  ();
-	void OnPlayerDestroyed();
 };

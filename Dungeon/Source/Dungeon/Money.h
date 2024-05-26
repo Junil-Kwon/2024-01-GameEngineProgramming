@@ -19,10 +19,13 @@ class DUNGEON_API AMoney : public AEntity {
 	// Initialization
 public:
 	AMoney();
-
-	// Object Pool
 protected:
-	virtual void OnSpawn() override;
+	virtual void BeginPlay() override;
+
+	// Spawn
+protected:
+	virtual void OnSpawn  () override;
+	virtual void OnDespawn() override;
 
 
 
@@ -46,11 +49,12 @@ protected:
 
 
 	// Money
-	#define ValueMax 5
+	#define MoneyValueMin 1
+	#define MoneyValueMax 5
 private:
-	int32 moneyValue = 1;
-	int32 mergeUpper = 1;
-	bool  merged = false;
+	int32 moneyValue;
+	int32 mergeUpper;
+	bool  merged;
 public:
 	void SetValue(int32 value);
 };

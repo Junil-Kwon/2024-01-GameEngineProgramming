@@ -18,6 +18,16 @@ ACreature::ACreature() {
 	defaultHitboxRadius = 36.0f;
 	defaultHitboxHeight = 96.0f;
 	defaultHandLocation = FVector2D(24.0f, -4.0f);
+
+	defaultSensorRange = 480.0f;
+	defaultMagnetRange = 120.0f;
+
+	defaultIndicatorWidth = 24.0f;
+
+	defaultHealth = 1.0f;
+	defaultShield = 0.0f;
+	defaultEnerge = 0.0f;
+	defaultDamage = 0.0f;
 	
 	sensorComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Sensor"));
 	sensorComponent->InitCapsuleSize(0.5f, 0.5f);
@@ -47,10 +57,15 @@ void ACreature::OnSpawn() {
 
 	SetSensorRange(defaultSensorRange);
 	SetMagnetRange(defaultMagnetRange);
+	sensorArray.Empty();
+	magnetArray.Empty();
 
-	healthMax = health;
-	shieldMax = shield;
-	energeMax = energe;
+	health = defaultHealth, healthMax = defaultHealth;
+	shield = defaultShield, shieldMax = defaultShield;
+	energe = defaultEnerge, energeMax = defaultEnerge;
+	damage = defaultDamage;
+	hurtCooldown = 0.0f;
+	mendCooldown = 0.0f;
 
 	SetIndicatorWidth(defaultIndicatorWidth);
 	indicator = static_cast<AIndicator*>(Spawn(Identifier::Indicator));
@@ -61,7 +76,8 @@ void ACreature::OnSpawn() {
 void ACreature::OnDespawn() {
 	Super::OnDespawn();
 
-	if (HasWeapon()) weapon->Despawn();
+	SetSelected(nullptr);
+	SetWeapon  (nullptr);
 	indicator->Despawn();
 }
 
@@ -75,13 +91,14 @@ void ACreature::OnDespawn() {
 
 void ACreature::OnHitboxChanged() {
 	Super::OnHitboxChanged();
+
 	sensorComponent->SetCapsuleHalfHeight(sensorRange + GetHitboxHeight() * 0.5f - GetHitboxRadius());
 	magnetComponent->SetCapsuleHalfHeight(magnetRange + GetHitboxHeight() * 0.5f - GetHitboxRadius());
 }
 void ACreature::OnCollision(AEntity* entity) {
 	Super::OnCollision(entity);
-	if (GetGhost()->GetPlayer() == nullptr) return;
-	if (GetGroup() != GetGhost()->GetPlayer()->GetGroup()) return;
+
+	if (GetGhost()->GetPlayer() == nullptr || GetGroup() != GetGhost()->GetPlayer()->GetGroup()) return;
 	if (entity->HasTag(Tag::Collectable)) entity->OnInteract(this);
 }
 
@@ -94,7 +111,9 @@ bool ACreature::UpdateSensor(float DeltaTime) {
 	return true;
 }
 
-float ACreature::GetSensorRange() { return sensorRange; }
+float ACreature::GetSensorRange() {
+	return sensorRange;
+}
 void  ACreature::SetSensorRange(float value) {
 	sensorRange = value;
 	sensorComponent->SetCapsuleRadius(sensorRange);
@@ -119,8 +138,7 @@ void ACreature::OnSensorEndOverlap(
 
 bool ACreature::UpdateMagnet(float DeltaTime) {
 	if (magnetArray.Num() == 0) return false;
-	if (GetGhost()->GetPlayer() == nullptr) return false;
-	if (GetGroup() != GetGhost()->GetPlayer()->GetGroup()) return false;
+	if (GetGhost()->GetPlayer() == nullptr || GetGroup() != GetGhost()->GetPlayer()->GetGroup()) return false;
 
 	AEntity* entity = nullptr;
 	float nearest = magnetRange;
@@ -142,7 +160,9 @@ bool ACreature::UpdateMagnet(float DeltaTime) {
 	return true;
 }
 
-float ACreature::GetMagnetRange() { return magnetRange; }
+float ACreature::GetMagnetRange() {
+	return magnetRange;
+}
 void  ACreature::SetMagnetRange(float value) {
 	magnetRange = value;
 	magnetComponent->SetCapsuleRadius(magnetRange);
@@ -173,10 +193,10 @@ AEntity* ACreature::GetSelected() { return selected; }
 void ACreature::SetSelected(AEntity* entity) {
 	if (selected == entity) return;
 	if (selected != nullptr) {
-		if (selected->HasTag(Tag::Interactability)) selected->GetInteractor()->SetActive(false);
+		if (selected->HasTag(Tag::Interactability)) selected->GetInteractor()->Hide();
 	}
 	if (entity != nullptr) {
-		if (entity->HasTag(Tag::Interactability)) entity->GetInteractor()->SetActive(true);
+		if (entity->HasTag(Tag::Interactability)) entity->GetInteractor()->Hide(false);
 	}
 	selected = entity;
 }
@@ -221,8 +241,6 @@ void  ACreature::SetIndicatorWidth(float value) { indicatorWidth = value; }
 
 bool ACreature::UpdateAction(float DeltaTime) {
 	if (!Super::UpdateAction(DeltaTime)) return false;
-	UpdateSensor(DeltaTime);
-	UpdateMagnet(DeltaTime);
 
 	switch (GetAction()) {
 	case Action::Attack:
@@ -238,6 +256,8 @@ bool ACreature::UpdateAction(float DeltaTime) {
 
 		break;
 	}
+	UpdateSensor(DeltaTime);
+	UpdateMagnet(DeltaTime);
 	return true;
 }
 
@@ -260,6 +280,7 @@ void  ACreature::OnDamaged(float value) {
 			AdjustEffectStrength(Effect::HealthBoost, -absorption);
 			value -= absorption;
 		}
+		Hit();
 		hurtCooldown = HurtCooldown;
 		mendCooldown = MendCooldown;
 	}
@@ -275,20 +296,22 @@ void  ACreature::OnShieldBroken() {
 void  ACreature::OnDie() {
 	SetAction(Action::Defeat);
 
-	if (HasWeapon()) SetWeapon(nullptr);
+	SetWeapon(nullptr);
 	// if (HasEffect(Effect::Burn)) smoke effect, if enough strength, ashed effect
 }
 
-float ACreature::GetHealth() { return health; }
-float ACreature::GetShield() { return shield; }
-float ACreature::GetEnerge() { return energe; }
 float ACreature::GetHealthMax() { return healthMax; }
 float ACreature::GetShieldMax() { return shieldMax; }
 float ACreature::GetEnergeMax() { return energeMax; }
+float ACreature::GetHealth() { return health; }
+float ACreature::GetShield() { return shield; }
+float ACreature::GetEnerge() { return energe; }
+float ACreature::GetDamage() { return damage; }
 
 void ACreature::AdjustMaxHealth(float value) {
 	healthMax += FMath::Min(healthMax + value, 0.0f);
 	health    += FMath::Min(health    + value, 0.0f);
+	SetIndicatorWidth(GetIndicatorWidth() * (healthMax + value) / healthMax);
 	if (health == 0.0f) OnDie();
 }
 void ACreature::AdjustMaxShield(float value) {

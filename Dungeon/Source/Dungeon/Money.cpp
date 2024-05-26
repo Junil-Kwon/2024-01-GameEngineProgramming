@@ -1,4 +1,5 @@
 #include "Money.h"
+#include "Ghost.h"
 
 
 
@@ -12,11 +13,14 @@ AMoney::AMoney() {
 	defaultHitboxRadius = 24.0f;
 	defaultHitboxHeight = 48.0f;
 	defaultTag += static_cast<uint8>(Tag::Collectable);
-	SetCollisionProfileName(TEXT("Money"));
+	SetCollisionProfileName(TEXT("Particle"));
+}
+void AMoney::BeginPlay() {
+	Super::BeginPlay();
 }
 
 // =============================================================================================================
-// Object Pool
+// Spawn
 // =============================================================================================================
 
 void AMoney::OnSpawn() {
@@ -25,9 +29,12 @@ void AMoney::OnSpawn() {
 	SetSpriteIndex(nullptr, FMath::RandRange(0, 3));
 	SetSpriteIntensity(nullptr, 0.1f);
 
-	moneyValue = 1;
-	mergeUpper = FMath::RandRange(1, ValueMax);
+	moneyValue = MoneyValueMin;
+	mergeUpper = FMath::RandRange(MoneyValueMin, MoneyValueMax);
 	merged = false;
+}
+void AMoney::OnDespawn() {
+	Super::OnDespawn();
 }
 
 
@@ -55,17 +62,17 @@ void AMoney::OnCollision(AEntity* entity) {
 void AMoney::OnInteract(AEntity* entity) {
 	Super::OnInteract(entity);
 
+	if (merged) return;
 	int32 num = FMath::RandRange(1, 2);
 	if (entity != nullptr) for (uint8 i = 0; i < num; i++) {
 		FVector location = FVector::ZeroVector;
 		float angle = FMath::RandRange(0.0f * PI, 2.0f * PI);
 		location.X = -4.0f;
-		location.Y = entity->GetHitboxRadius() * FMath::Cos(angle) * FMath::RandRange(0.6f, 0.8f);
-		location.Z = entity->GetHitboxHeight() * FMath::Sin(angle) * FMath::RandRange(0.3f, 0.4f);
+		location.Y = entity->GetHitboxRadius() * FMath::Cos(angle) * FMath::RandRange(0.0f, 0.8f);
+		location.Z = entity->GetHitboxHeight() * FMath::Sin(angle) * FMath::RandRange(0.0f, 0.4f);
 		Spawn(Identifier::Twinkle, entity->GetActorLocation() + RotateVector(location))->Attach(entity);
 	}
-	// add money to player
-	// GetGhost()->AddMoney(moneyValue);
+	GetGhost()->AdjustMoney(moneyValue);
 	Despawn();
 }
 
@@ -74,7 +81,7 @@ void AMoney::OnInteract(AEntity* entity) {
 
 
 // =============================================================================================================
-// Hitbox
+// Action
 // =============================================================================================================
 
 bool AMoney::UpdateAction(float DeltaTime) {
@@ -93,7 +100,7 @@ bool AMoney::UpdateAction(float DeltaTime) {
 // =============================================================================================================
 
 void AMoney::SetValue(int32 value) {
-	moneyValue = FMath::Clamp(value, 1, ValueMax);
+	moneyValue = FMath::Clamp(value, MoneyValueMin, MoneyValueMax);
 	SetSpriteIndex(nullptr, (moneyValue - 1) * 4 + FMath::RandRange(0, 3));
-	if (moneyValue == ValueMax) SetHitbox(GetHitboxRadius() * 1.5f, GetHitboxHeight() * 1.5f);
+	if (moneyValue == MoneyValueMax) SetHitbox(GetHitboxRadius() * 1.5f, GetHitboxHeight() * 1.5f);
 }

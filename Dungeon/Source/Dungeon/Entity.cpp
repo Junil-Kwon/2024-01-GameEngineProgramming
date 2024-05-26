@@ -116,33 +116,32 @@ AEntity* AEntity::Spawn(Identifier value, FVector location) {
 	}
 	else {
 		entity = GetGhost()->GetObjectPool(value)->Pop();
-
 		entity->SetActorLocation(location);
 		entity->SetActorTickEnabled(true);
 		entity->SetActorHiddenInGame(false);
-		
 		entity->hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-		
 		entity->GetCharacterMovement()->StopMovementImmediately();
-
+		entity->active = true;
 		entity->OnSpawn();
 	}
 	return entity;
 }
 void AEntity::Despawn() {
+	OnDespawn();
+	Destroy();
+	//Remove AI Controller
+	/*
 	GetGhost()->GetObjectPool(GetIdentifier())->Push(this);
-
 	SetActorLocation(FVector(0.0f, 0.0f, 0.0f));
 	SetActorTickEnabled(false);
 	SetActorHiddenInGame(true);
-
 	hitboxComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	
 	GetCharacterMovement()->StopMovementImmediately();
 	GetCharacterMovement()->GravityScale = 0;
 	if (IsAttached()) Detach();
-
+	active = false;
 	OnDespawn();
+	*/
 }
 
 bool AEntity::IsAttached() {
@@ -166,9 +165,6 @@ void AEntity::Detach() {
 // =============================================================================================================
 
 AEntity::AEntity() {
-	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
- 	PrimaryActorTick.bCanEverTick = true;
-
 	defaultSpeed = 300.0f;
 
 	defaultHitboxRadius = 0.0f;
@@ -178,6 +174,9 @@ AEntity::AEntity() {
 	defaultGroup = Group::None;
 	defaultEffect         = 0;
 	defaultEffectImmunity = 0;
+	
+	PrimaryActorTick.bCanEverTick = true;
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
 	hitboxComponent = GetCapsuleComponent();
 	hitboxComponent->InitCapsuleSize(defaultHitboxRadius, defaultHitboxHeight * 0.5f);
@@ -220,13 +219,17 @@ void AEntity::BeginPlay() {
 	shadowComponent->bCastHiddenShadow = true;
 	shadowComponent->bHiddenInGame = true;
 
+	active = true;
 	OnSpawn();
 }
 
 // =============================================================================================================
-// Object Pool
+// Spawn
 // =============================================================================================================
 
+bool AEntity::IsActive() {
+	return active;
+}
 void AEntity::OnSpawn() {
 	speed = defaultSpeed;
 	isFalling = false;
@@ -282,6 +285,7 @@ void AEntity::OnDespawn() {
 
 void AEntity::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
+	if (!active) return;
 
 	if (GetCharacterMovement()->IsFalling()) {
 		if (!isFalling) isFalling = true;
@@ -385,10 +389,10 @@ void AEntity::OnInteract (AEntity* entity) {
 
 USceneComponent* AEntity::GetAnchorComponent() { return anchorComponent; }
 
-int32   AEntity::GetSpriteIndex() { return spriteIndex; }
-float   AEntity::GetSpriteAngle() { return spriteAngle; }
-bool    AEntity::GetSpriteXFlip() { return spriteXFlip; }
-FVector AEntity::GetSpriteColor() { return spriteColor; }
+int32   AEntity::GetSpriteIndex    () { return spriteIndex;     }
+float   AEntity::GetSpriteAngle    () { return spriteAngle;     }
+bool    AEntity::GetSpriteXFlip    () { return spriteXFlip;     }
+FVector AEntity::GetSpriteColor    () { return spriteColor;     }
 float   AEntity::GetSpriteIntensity() { return spriteIntensity; }
 
 void AEntity::SetSpriteIndex(UStaticMeshComponent* component, int32 value) {
@@ -489,13 +493,13 @@ bool AEntity::SetAction(Action value) {
 float AEntity::GetActionCooldown(Action value) {
 	return actionCooldown[static_cast<uint8>(value)];
 }
-void AEntity::SetActionCooldown(Action value, float cooldown) {
+void  AEntity::SetActionCooldown(Action value, float cooldown) {
 	actionCooldown[static_cast<uint8>(value)] = FMath::Max(cooldown, 0.0f);
 }
-bool AEntity::VerifyAction(Action value) {
+bool  AEntity::VerifyAction(Action value) {
 	return false;
 }
-bool AEntity::UpdateInputs(float DeltaTime) {
+bool  AEntity::UpdateInputs(float DeltaTime) {
 	if (HasTag(Tag::Player)) {
 		SetMoveDirection(GetInputDirection());
 		if (action == Action::Idle && !GetMoveDirection().IsZero()) SetAction(Action::Move);
@@ -508,7 +512,7 @@ bool AEntity::UpdateInputs(float DeltaTime) {
 	}
 	return true;
 }
-bool AEntity::UpdateAction(float DeltaTime) {
+bool  AEntity::UpdateAction(float DeltaTime) {
 	actionDelay += DeltaTime;
 	for (uint8 i = 0; i < static_cast<uint8>(Action::Length); i++) {
 		actionCooldown[i] = FMath::Max(actionCooldown[i] - DeltaTime, 0.0f);
@@ -573,7 +577,7 @@ bool AEntity::RemoveTag(Tag value) {
 // Effect
 // =============================================================================================================
 
-void AEntity::Hit(float value) { hit = value; }
+void AEntity::Hit() { hit = 1.0f; }
 bool AEntity::UpdateEffect(float DeltaTime) {
 	for (uint8 i = 0; i < static_cast<uint8>(Effect::Length); i++) {
 		Effect value = static_cast<Effect>(1 << i);

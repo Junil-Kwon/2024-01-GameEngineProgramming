@@ -4,6 +4,27 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 
+#include "IngameUI.h"
+#include "Components/TextBlock.h"
+#include "Components/Image.h"
+
+
+
+
+
+// =============================================================================================================
+// -
+// =============================================================================================================
+
+UTexture2D* AGhost::GetTexture(FString name) {
+	FString path = "/Game/UI/" + name + "." + name;
+	return LoadObject<UTexture2D>(nullptr, *path);
+}
+UClass* AGhost::GetWidget(FString name) {
+	FString path = "/Game/Blueprints/BP_" + name + ".BP_" + name + "_C";
+	return LoadClass<UUserWidget>(nullptr, *path);
+}
+
 
 
 
@@ -32,7 +53,15 @@ AGhost::AGhost() {
 void AGhost::BeginPlay() {
 	Super::BeginPlay();
 
-	//for (uint8 i = 0; i < static_cast<uint8>(Identifier::Length); i++) objectPool[i] = TArray<AEntity*>();
+	money = 0;
+	moneyTemp = 0;
+	moneyIcon = 0;
+	moneySize = 0;
+
+	ingameUI = static_cast<UIngameUI*>(CreateWidget<UUserWidget>(GetWorld(), GetWidget("IngameUI")));
+	ingameUI->AddToViewport();
+
+	moneyBackgroundXPos = ingameUI->moneyBackground->RenderTransform.Translation.X;
 }
 
 // =============================================================================================================
@@ -41,7 +70,87 @@ void AGhost::BeginPlay() {
 
 void AGhost::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
+
+	UpdateMoney(DeltaTime);
 	if (GetPlayer() != nullptr) SetActorLocation(player->GetActorLocation());
+}
+
+
+
+
+
+// =============================================================================================================
+// UI
+// =============================================================================================================
+
+int32 AGhost::GetMoney() {
+	return money;
+}
+void  AGhost::AdjustMoney(int32 value) {
+	money += value;
+}
+void AGhost::UpdateMoney(float DeltaTime) {
+	if (moneyTemp != money) {
+		moneyTemp += (moneyTemp < money ? 1 : -1) * DeltaTime * 30.0f;
+		moneyTemp = FMath::Clamp(moneyTemp, 0.0f, float(money));
+		ingameUI->moneyText->SetText(FText::FromString(FString::FromInt(moneyTemp)));
+
+		int32 moneyIconTemp = 0;
+		if      (money <   5) moneyIconTemp = 1;
+		else if (money <  20) moneyIconTemp = 2;
+		else if (money <  50) moneyIconTemp = 3;
+		else if (money < 200) moneyIconTemp = 4;
+		else if (money < 500) moneyIconTemp = 5;
+		else                  moneyIconTemp = 6;
+		if (moneyIcon != moneyIconTemp) {
+			ingameUI->moneyIcon->SetBrushFromTexture(GetTexture("MoneyIcon" + FString::FromInt(moneyIconTemp)));
+		}
+
+		int32 moneySizeTemp = 0;
+		for (int32 i = 1; i < 10000000; i *= 10) {
+			if (int32(moneyTemp / i) == 0) break;
+			moneySizeTemp++;
+		}
+		if (moneySize != moneySizeTemp) {
+			moneySize = moneySizeTemp;
+			ingameUI->moneyBackground->SetRenderTranslation(FVector2D(moneyBackgroundXPos - 36 * (moneySize - 1), 0.0f));
+		}
+	}
+}
+
+
+
+
+
+// =============================================================================================================
+// Entity
+// =============================================================================================================
+
+TArray<AEntity*>* AGhost::GetObjectPool(Identifier value) {
+	return &objectPool[static_cast<uint8>(value)];
+}
+
+AEntity* AGhost::GetPlayer() {
+	return player;
+}
+void AGhost::SetPlayer(AEntity* value) {
+	if (player == value) return;
+	if (player != nullptr) {
+		if (player->HasTag(Tag::Player)) player->RemoveTag(Tag::Player);
+	}
+	if (value  != nullptr) {
+		if (!value->HasTag(Tag::Player)) value->AddTag(Tag::Player);
+	}
+	if (player == nullptr && value != nullptr) OnPlayerSpawned  ();
+	if (player != nullptr && value == nullptr) OnPlayerDestroyed();
+	player = value;
+}
+
+void AGhost::OnPlayerSpawned() {
+	UE_LOG(LogTemp, Warning, TEXT("Player Spawned."));
+}
+void AGhost::OnPlayerDestroyed() {
+	UE_LOG(LogTemp, Warning, TEXT("Player Destroyed."));
 }
 
 
@@ -96,38 +205,3 @@ void AGhost::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 }
 bool AGhost::GetInput(Action value) { return inputAction[static_cast<uint8>(value)]; }
 FVector AGhost::GetInputDirection() { return direction; }
-
-
-
-
-
-// =============================================================================================================
-// Player
-// =============================================================================================================
-
-AEntity* AGhost::GetPlayer() {
-	return player;
-}
-void AGhost::SetPlayer(AEntity* value) {
-	if (player == value) return;
-	if (player != nullptr) {
-		if (player->HasTag(Tag::Player)) player->RemoveTag(Tag::Player);
-	}
-	if (value != nullptr) {
-		if (!value->HasTag(Tag::Player)) value->AddTag(Tag::Player);
-	}
-	if (player == nullptr && value != nullptr) OnPlayerSpawned();
-	if (player != nullptr && value == nullptr) OnPlayerDestroyed();
-	player = value;
-}
-
-void AGhost::OnPlayerSpawned() {
-	UE_LOG(LogTemp, Warning, TEXT("Player Spawned."));
-}
-void AGhost::OnPlayerDestroyed() {
-	UE_LOG(LogTemp, Warning, TEXT("Player Destroyed."));
-}
-
-TArray<AEntity*>* AGhost::GetObjectPool(Identifier value) {
-	return &objectPool[static_cast<uint8>(value)];
-}
