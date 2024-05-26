@@ -38,11 +38,8 @@ AIndicator::AIndicator() {
 	SetupComponent(rEnergeComponent);
 	SetupComponent(iShieldComponent);
 	SetupComponent(iLeaderComponent);
-	lBorderComponent->SetRelativeScale3D(FVector(0.04f, 1.28f, 1.28f));
-	rBorderComponent->SetRelativeScale3D(FVector(0.04f, 1.28f, 1.28f));
 }
 void AIndicator::SetupComponent(UStaticMeshComponent* component) {
-	component->SetRelativeScale3D(FVector(1.28f, 1.28f, 1.28f));
 	component->SetStaticMesh(GetStaticMesh(MeshType::Plane));
 	component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	component->SetupAttachment(GetAnchorComponent());
@@ -51,17 +48,29 @@ void AIndicator::BeginPlay() {
 	Super::BeginPlay();
 
 	SetSpriteIndex(nullptr, 63);
-	lBorderComponent->SetMaterial(0, GetMaterialInstanceDynamic(Identifier::Indicator));
-	rBorderComponent->SetMaterial(0, GetMaterialInstanceDynamic(Identifier::Indicator));
-	lHealthComponent->SetMaterial(0, GetMaterialInstanceDynamic(Identifier::Indicator));
-	rHealthComponent->SetMaterial(0, GetMaterialInstanceDynamic(Identifier::Indicator));
-	lShieldComponent->SetMaterial(0, GetMaterialInstanceDynamic(Identifier::Indicator));
-	rShieldComponent->SetMaterial(0, GetMaterialInstanceDynamic(Identifier::Indicator));
-	lHBoostComponent->SetMaterial(0, GetMaterialInstanceDynamic(Identifier::Indicator));
-	lEnergeComponent->SetMaterial(0, GetMaterialInstanceDynamic(Identifier::Indicator));
-	rEnergeComponent->SetMaterial(0, GetMaterialInstanceDynamic(Identifier::Indicator));
-	iShieldComponent->SetMaterial(0, GetMaterialInstanceDynamic(Identifier::Indicator));
-	iLeaderComponent->SetMaterial(0, GetMaterialInstanceDynamic(Identifier::Indicator));
+	FVector scale = FVector::OneVector * GetTexture2D(GetIdentifier())->GetSizeX() * 0.005f;
+	lBorderComponent->SetMaterial(0, GetMaterialInstanceDynamic(GetIdentifier()));
+	rBorderComponent->SetMaterial(0, GetMaterialInstanceDynamic(GetIdentifier()));
+	lHealthComponent->SetMaterial(0, GetMaterialInstanceDynamic(GetIdentifier()));
+	rHealthComponent->SetMaterial(0, GetMaterialInstanceDynamic(GetIdentifier()));
+	lShieldComponent->SetMaterial(0, GetMaterialInstanceDynamic(GetIdentifier()));
+	rShieldComponent->SetMaterial(0, GetMaterialInstanceDynamic(GetIdentifier()));
+	lHBoostComponent->SetMaterial(0, GetMaterialInstanceDynamic(GetIdentifier()));
+	lEnergeComponent->SetMaterial(0, GetMaterialInstanceDynamic(GetIdentifier()));
+	rEnergeComponent->SetMaterial(0, GetMaterialInstanceDynamic(GetIdentifier()));
+	iShieldComponent->SetMaterial(0, GetMaterialInstanceDynamic(GetIdentifier()));
+	iLeaderComponent->SetMaterial(0, GetMaterialInstanceDynamic(GetIdentifier()));
+	lBorderComponent->SetRelativeScale3D(FVector(scale.X / 32, scale.Y, scale.Z));
+	rBorderComponent->SetRelativeScale3D(FVector(scale.X / 32, scale.Y, scale.Z));
+	lHealthComponent->SetRelativeScale3D(scale);
+	rHealthComponent->SetRelativeScale3D(scale);
+	lShieldComponent->SetRelativeScale3D(scale);
+	rShieldComponent->SetRelativeScale3D(scale);
+	lHBoostComponent->SetRelativeScale3D(scale);
+	lEnergeComponent->SetRelativeScale3D(scale);
+	rEnergeComponent->SetRelativeScale3D(scale);
+	iShieldComponent->SetRelativeScale3D(scale);
+	iLeaderComponent->SetRelativeScale3D(scale);
 	SetSpriteColor(lHBoostComponent, FVector(1.0f, 1.0f, 1.0f));
 	SetSpriteColor(lShieldComponent, FVector(0.2f, 0.2f, 0.2f));
 	SetSpriteColor(iShieldComponent, FVector(0.2f, 0.2f, 0.2f));

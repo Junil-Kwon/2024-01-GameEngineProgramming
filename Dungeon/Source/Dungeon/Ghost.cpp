@@ -73,6 +73,17 @@ void AGhost::Tick(float DeltaTime) {
 
 	UpdateMoney(DeltaTime);
 	if (GetPlayer() != nullptr) SetActorLocation(player->GetActorLocation());
+
+	ingameUI->keyboardUp   ->SetBrushFromTexture(GetTexture("KeyboardUp"    + FString(inputDirection[0] ? "2" : "1")));
+	ingameUI->keyboardDown ->SetBrushFromTexture(GetTexture("KeyboardDown"  + FString(inputDirection[1] ? "2" : "1")));
+	ingameUI->keyboardLeft ->SetBrushFromTexture(GetTexture("KeyboardLeft"  + FString(inputDirection[2] ? "2" : "1")));
+	ingameUI->keyboardRight->SetBrushFromTexture(GetTexture("KeyboardRight" + FString(inputDirection[3] ? "2" : "1")));
+
+	ingameUI->keyboardSpace->SetBrushFromTexture(GetTexture("KeyboardSpace" + FString(inputAction[(uint8)Action::Jump  ] ? "2" : "1")));
+	ingameUI->keyboardShift->SetBrushFromTexture(GetTexture("KeyboardShift" + FString(inputAction[(uint8)Action::Dash  ] ? "2" : "1")));
+	ingameUI->keyboardZ    ->SetBrushFromTexture(GetTexture("KeyboardZ"     + FString(inputAction[(uint8)Action::Attack] ? "2" : "1")));
+	ingameUI->keyboardX    ->SetBrushFromTexture(GetTexture("KeyboardX"     + FString(inputAction[(uint8)Action::Defend] ? "2" : "1")));
+	//ingameUI->keyboardC    ->SetBrushFromTexture(GetTexture("KeyboardC"     + FString(inputDirection[2] ? "2" : "1")));
 }
 
 
@@ -96,12 +107,12 @@ void AGhost::UpdateMoney(float DeltaTime) {
 		ingameUI->moneyText->SetText(FText::FromString(FString::FromInt(moneyTemp)));
 
 		int32 moneyIconTemp = 0;
-		if      (money <   5) moneyIconTemp = 1;
-		else if (money <  20) moneyIconTemp = 2;
-		else if (money <  50) moneyIconTemp = 3;
-		else if (money < 200) moneyIconTemp = 4;
-		else if (money < 500) moneyIconTemp = 5;
-		else                  moneyIconTemp = 6;
+		if      (moneyTemp <   5) moneyIconTemp = 1;
+		else if (moneyTemp <  20) moneyIconTemp = 2;
+		else if (moneyTemp <  50) moneyIconTemp = 3;
+		else if (moneyTemp < 200) moneyIconTemp = 4;
+		else if (moneyTemp < 500) moneyIconTemp = 5;
+		else                      moneyIconTemp = 6;
 		if (moneyIcon != moneyIconTemp) {
 			ingameUI->moneyIcon->SetBrushFromTexture(GetTexture("MoneyIcon" + FString::FromInt(moneyIconTemp)));
 		}

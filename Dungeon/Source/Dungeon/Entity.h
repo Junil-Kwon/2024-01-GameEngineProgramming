@@ -117,8 +117,10 @@ public:
 	template<typename TEnum> FString ToString(TEnum   value);
 	template<typename TEnum> TEnum   ToEnum  (FString value);
 
-	UStaticMesh* GetStaticMesh(MeshType value);
+	UStaticMesh*              GetStaticMesh             (MeshType   value);
+	UTexture2D*               GetTexture2D              (Identifier value);
 	UMaterialInstanceDynamic* GetMaterialInstanceDynamic(Identifier value);
+
 	UFont*     GetFont        (FontType value);
 	UMaterial* GetFontMaterial(FontType value);
 

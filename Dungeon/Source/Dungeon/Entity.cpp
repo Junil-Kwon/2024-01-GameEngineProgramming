@@ -33,8 +33,6 @@ FVector AEntity::RotateVector(FVector value) {
 	return FRotator(-48.590382f, 0.0f, 0.0f).RotateVector(value);
 }
 
-
-
 template<typename TEnum> uint8 AEntity::GetIndex(TEnum value) {
 	static uint8 list[255] = { 0, };
 	uint8 index = static_cast<uint8>(value);
@@ -50,8 +48,6 @@ template<typename TEnum> TEnum AEntity::ToEnum(FString value) {
 	return static_cast<TEnum>(index == INDEX_NONE ? 0 : index);
 }
 
-
-
 UStaticMesh* AEntity::GetStaticMesh(MeshType value) {
 	static UStaticMesh* uStaticMesh[static_cast<uint8>(MeshType::Length)] = { nullptr, };
 	uint8 index = static_cast<uint8>(value);
@@ -62,23 +58,27 @@ UStaticMesh* AEntity::GetStaticMesh(MeshType value) {
 	}
 	return uStaticMesh[index];
 }
-UMaterialInstanceDynamic* AEntity::GetMaterialInstanceDynamic(Identifier value) {
-	static UTexture* uTexture[static_cast<uint8>(Identifier::Length)] = { nullptr, };
+UTexture2D* AEntity::GetTexture2D(Identifier value) {
+	static UTexture2D* uTexture2D[static_cast<uint8>(Identifier::Length)] = { nullptr, };
 	uint8 index = static_cast<uint8>(value);
-	if (uTexture[index] == nullptr) {
+	if (uTexture2D[index] == nullptr) {
 		FString name = ToString(value);
 		FString path = "/Game/Textures/" + name + "." + name;
-		uTexture[index] = LoadObject<UTexture>(nullptr, *path);
+		uTexture2D[index] = LoadObject<UTexture2D>(nullptr, *path);
 	}
+	return uTexture2D[index];
+}
+UMaterialInstanceDynamic* AEntity::GetMaterialInstanceDynamic(Identifier value) {
 	static UMaterialInstance* uInstance = nullptr;
 	if (uInstance == nullptr) {
 		FString path = "/Game/Textures/MaterialInstance.MaterialInstance";
 		uInstance = LoadObject<UMaterialInstance>(nullptr, *path);
 	}
 	UMaterialInstanceDynamic* material = UMaterialInstanceDynamic::Create(uInstance, this);
-	material->SetTextureParameterValue(TEXT("Texture"), uTexture[index]);
+	material->SetTextureParameterValue(TEXT("Texture"), GetTexture2D(value));
 	return material;
 }
+
 UFont* AEntity::GetFont(FontType value) {
 	static UFont* uFont[static_cast<uint8>(FontType::Length)] = { nullptr, };
 	uint8 index = static_cast<uint8>(value);
@@ -189,7 +189,6 @@ AEntity::AEntity() {
 	anchorComponent->SetupAttachment(RootComponent);
 
 	spriteComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Sprite"));
-	spriteComponent->SetRelativeScale3D(FVector(1.28f, 1.28f, 1.28f));
 	spriteComponent->SetStaticMesh(GetStaticMesh(MeshType::Plane));
 	spriteComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	spriteComponent->SetupAttachment(anchorComponent);
@@ -213,7 +212,9 @@ void AEntity::BeginPlay() {
 	hitboxComponent->OnComponentHit.AddDynamic(this, &AEntity::OnHit);
 	hitboxComponent->OnComponentBeginOverlap.AddDynamic(this, &AEntity::OnHitboxBeginOverlap);
 
+	FVector scale = FVector::OneVector * GetTexture2D(GetIdentifier())->GetSizeX() * 0.005f;
 	spriteComponent->SetMaterial(0, GetMaterialInstanceDynamic(GetIdentifier()));
+	spriteComponent->SetRelativeScale3D(scale);
 
 	shadowComponent->SetVisibility(true);
 	shadowComponent->bCastHiddenShadow = true;
