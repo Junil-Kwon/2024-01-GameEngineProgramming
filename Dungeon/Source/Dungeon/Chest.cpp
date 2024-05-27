@@ -24,7 +24,7 @@ void AChest::BeginPlay() {
 void AChest::OnSpawn() {
 	Super::OnSpawn();
 
-	for (int32 i = 0; i < 100; i++) lootArray.Add(Identifier::Money);
+	for (int32 i = 0; i < 20; i++) lootArray.Add(Identifier::Money);
 }
 void AChest::OnDespawn() {
 	Super::OnDespawn();

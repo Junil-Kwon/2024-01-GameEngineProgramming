@@ -18,12 +18,9 @@ ACreature::ACreature() {
 	defaultHitboxRadius = 36.0f;
 	defaultHitboxHeight = 96.0f;
 	defaultHandLocation = FVector2D(24.0f, -4.0f);
-
 	defaultSensorRange = 480.0f;
 	defaultMagnetRange = 120.0f;
-
 	defaultIndicatorWidth = 24.0f;
-
 	defaultHealth = 1.0f;
 	defaultShield = 0.0f;
 	defaultEnerge = 0.0f;
@@ -49,7 +46,7 @@ void ACreature::BeginPlay() {
 }
 
 // =============================================================================================================
-// Object Pool
+// Spawn
 // =============================================================================================================
 
 void ACreature::OnSpawn() {
@@ -244,12 +241,12 @@ bool ACreature::UpdateAction(float DeltaTime) {
 
 	switch (GetAction()) {
 	case Action::Attack:
-		if (HasSelected()) {
+		if (actionDelay - DeltaTime == 0 && HasSelected()) {
 			if (GetSelected()->IsA(AWeapon::StaticClass())) SetWeapon(static_cast<AWeapon*>(GetSelected()));
 			else GetSelected()->OnInteract(this);
 			SetAction(Action::Idle);
 			SetActionCooldown(Action::Attack, 0.25f);
-			return false;
+			
 		}
 		break;
 	case Action::Defend:
@@ -265,6 +262,15 @@ bool ACreature::UpdateAction(float DeltaTime) {
 
 
 
+// =============================================================================================================
+// Properties
+// =============================================================================================================
+
+void ACreature::Damage(float value) {
+	Super::Damage(value);
+
+	OnDamaged(value);
+}
 
 // =============================================================================================================
 // Stats
@@ -280,7 +286,6 @@ void  ACreature::OnDamaged(float value) {
 			AdjustEffectStrength(Effect::HealthBoost, -absorption);
 			value -= absorption;
 		}
-		Hit();
 		hurtCooldown = HurtCooldown;
 		mendCooldown = MendCooldown;
 	}
@@ -295,7 +300,6 @@ void  ACreature::OnShieldBroken() {
 }
 void  ACreature::OnDie() {
 	SetAction(Action::Defeat);
-
 	SetWeapon(nullptr);
 	// if (HasEffect(Effect::Burn)) smoke effect, if enough strength, ashed effect
 }
@@ -307,6 +311,18 @@ float ACreature::GetHealth() { return health; }
 float ACreature::GetShield() { return shield; }
 float ACreature::GetEnerge() { return energe; }
 float ACreature::GetDamage() { return damage; }
+
+void ACreature::AdjustHealth(float value) {
+	health = FMath::Clamp(health + value, 0.0f, healthMax);
+	if (health == 0.0f) OnDie();
+}
+void ACreature::AdjustShield(float value) {
+	shield = FMath::Clamp(shield + value, 0.0f, shieldMax);
+	if (shield == 0.0f) OnShieldBroken();
+}
+void ACreature::AdjustEnerge(float value) {
+	energe = FMath::Clamp(energe + value, 0.0f, energeMax);
+}
 
 void ACreature::AdjustMaxHealth(float value) {
 	healthMax += FMath::Min(healthMax + value, 0.0f);

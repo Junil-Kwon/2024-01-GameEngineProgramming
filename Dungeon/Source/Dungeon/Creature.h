@@ -129,6 +129,14 @@ protected:
 
 
 	// =========================================================================================================
+	// Properties
+	// =========================================================================================================
+
+	// Properties
+public:
+	virtual void Damage(float value) override;
+
+	// =========================================================================================================
 	// Stats
 	// =========================================================================================================
 	
@@ -159,6 +167,9 @@ public:
 	float GetShield();
 	float GetEnerge();
 	float GetDamage();
+	void AdjustHealth(float value);
+	void AdjustShield(float value);
+	void AdjustEnerge(float value);
 	void AdjustMaxHealth(float value);
 	void AdjustMaxShield(float value);
 	void AdjustMaxEnerge(float value);

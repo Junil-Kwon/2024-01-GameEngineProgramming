@@ -53,6 +53,8 @@ AGhost::AGhost() {
 void AGhost::BeginPlay() {
 	Super::BeginPlay();
 
+	tutorialTime = 10.0f;
+
 	money = 0;
 	moneyTemp = 0;
 	moneyIcon = 0;
@@ -74,16 +76,31 @@ void AGhost::Tick(float DeltaTime) {
 	UpdateMoney(DeltaTime);
 	if (GetPlayer() != nullptr) SetActorLocation(player->GetActorLocation());
 
-	ingameUI->keyboardUp   ->SetBrushFromTexture(GetTexture("KeyboardUp"    + FString(inputDirection[0] ? "2" : "1")));
-	ingameUI->keyboardDown ->SetBrushFromTexture(GetTexture("KeyboardDown"  + FString(inputDirection[1] ? "2" : "1")));
-	ingameUI->keyboardLeft ->SetBrushFromTexture(GetTexture("KeyboardLeft"  + FString(inputDirection[2] ? "2" : "1")));
-	ingameUI->keyboardRight->SetBrushFromTexture(GetTexture("KeyboardRight" + FString(inputDirection[3] ? "2" : "1")));
+	if (tutorialTime) {
+		tutorialTime = FMath::Max(tutorialTime - DeltaTime, 0.0f);
+		if (tutorialTime < 1.0f) {
+			ingameUI->keyboardUp   ->SetOpacity(tutorialTime);
+			ingameUI->keyboardDown ->SetOpacity(tutorialTime);
+			ingameUI->keyboardLeft ->SetOpacity(tutorialTime);
+			ingameUI->keyboardRight->SetOpacity(tutorialTime);
 
-	ingameUI->keyboardSpace->SetBrushFromTexture(GetTexture("KeyboardSpace" + FString(inputAction[(uint8)Action::Jump  ] ? "2" : "1")));
-	ingameUI->keyboardShift->SetBrushFromTexture(GetTexture("KeyboardShift" + FString(inputAction[(uint8)Action::Dash  ] ? "2" : "1")));
-	ingameUI->keyboardZ    ->SetBrushFromTexture(GetTexture("KeyboardZ"     + FString(inputAction[(uint8)Action::Attack] ? "2" : "1")));
-	ingameUI->keyboardX    ->SetBrushFromTexture(GetTexture("KeyboardX"     + FString(inputAction[(uint8)Action::Defend] ? "2" : "1")));
-	//ingameUI->keyboardC    ->SetBrushFromTexture(GetTexture("KeyboardC"     + FString(inputDirection[2] ? "2" : "1")));
+			ingameUI->keyboardSpace->SetOpacity(tutorialTime);
+			ingameUI->keyboardShift->SetOpacity(tutorialTime);
+			ingameUI->keyboardZ    ->SetOpacity(tutorialTime);
+			ingameUI->keyboardX    ->SetOpacity(tutorialTime);
+			ingameUI->keyboardC    ->SetOpacity(tutorialTime);
+		}
+		ingameUI->keyboardUp   ->SetBrushFromTexture(GetTexture("KeyboardUp"    + FString(inputDirection[0] ? "2" : "1")));
+		ingameUI->keyboardDown ->SetBrushFromTexture(GetTexture("KeyboardDown"  + FString(inputDirection[1] ? "2" : "1")));
+		ingameUI->keyboardLeft ->SetBrushFromTexture(GetTexture("KeyboardLeft"  + FString(inputDirection[2] ? "2" : "1")));
+		ingameUI->keyboardRight->SetBrushFromTexture(GetTexture("KeyboardRight" + FString(inputDirection[3] ? "2" : "1")));
+
+		ingameUI->keyboardSpace->SetBrushFromTexture(GetTexture("KeyboardSpace" + FString(inputAction[(uint8)Action::Jump  ] ? "2" : "1")));
+		ingameUI->keyboardShift->SetBrushFromTexture(GetTexture("KeyboardShift" + FString(inputAction[(uint8)Action::Dash  ] ? "2" : "1")));
+		ingameUI->keyboardZ    ->SetBrushFromTexture(GetTexture("KeyboardZ"     + FString(inputAction[(uint8)Action::Attack] ? "2" : "1")));
+		ingameUI->keyboardX    ->SetBrushFromTexture(GetTexture("KeyboardX"     + FString(inputAction[(uint8)Action::Defend] ? "2" : "1")));
+		//ingameUI->keyboardC    ->SetBrushFromTexture(GetTexture("KeyboardC"     + FString(inputDirection[2] ? "2" : "1")));
+	}
 }
 
 
@@ -102,7 +119,7 @@ void  AGhost::AdjustMoney(int32 value) {
 }
 void AGhost::UpdateMoney(float DeltaTime) {
 	if (moneyTemp != money) {
-		moneyTemp += (moneyTemp < money ? 1 : -1) * DeltaTime * 30.0f;
+		moneyTemp += (moneyTemp < money ? 1 : -1) * DeltaTime * 20.0f;
 		moneyTemp = FMath::Clamp(moneyTemp, 0.0f, float(money));
 		ingameUI->moneyText->SetText(FText::FromString(FString::FromInt(moneyTemp)));
 

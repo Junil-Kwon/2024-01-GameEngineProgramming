@@ -1,4 +1,5 @@
-#include "Particle.h"
+#include "Item.h"
+#include "Creature.h"
 
 
 
@@ -8,12 +9,13 @@
 // Initialization
 // =============================================================================================================
 
-AParticle::AParticle() {
-	defaultTag += static_cast<uint8>(Tag::Floating);
-	defaultTag += static_cast<uint8>(Tag::Piercing);
+AItem::AItem() {
+	defaultHitboxRadius = 24.0f;
+	defaultHitboxHeight = 72.0f;
+	defaultTag += static_cast<uint8>(Tag::Interactability);
 	SetCollisionProfileName(TEXT("Particle"));
 }
-void AParticle::BeginPlay() {
+void AItem::BeginPlay() {
 	Super::BeginPlay();
 }
 
@@ -21,10 +23,16 @@ void AParticle::BeginPlay() {
 // Spawn
 // =============================================================================================================
 
-void AParticle::OnSpawn() {
+void AItem::OnSpawn() {
 	Super::OnSpawn();
+
+	switch (GetIdentifier()) {
+	case Identifier::Shield:
+		SetSpriteIndex(nullptr, FMath::RandRange(0, 7));
+		break;
+	}
 }
-void AParticle::OnDespawn() {
+void AItem::OnDespawn() {
 	Super::OnDespawn();
 }
 
@@ -33,26 +41,29 @@ void AParticle::OnDespawn() {
 
 
 // =============================================================================================================
-// Action
+// Hitbox
 // =============================================================================================================
 
-bool AParticle::UpdateAction(float DeltaTime) {
-	if (!Super::UpdateAction(DeltaTime)) return false;
-	
-	switch (GetIdentifier()) {
-	case Identifier::Dust:
-	case Identifier::Flame:
-		if (actionDelay - DeltaTime == 0.0f) SetSpriteXFlip(nullptr, FMath::RandBool());
-		SetSpriteIndex(nullptr, FMath::Min(0 + static_cast<int32>(actionDelay * 10), 4));
-		if (0.5f <= actionDelay) Despawn();
-		break;
+void AItem::OnInteract(AEntity* entity) {
+	Super::OnInteract(entity);
 
-	case Identifier::Twinkle:
-		SetSpriteIndex(nullptr, FMath::Min(0 + static_cast<int32>(actionDelay * 10), 4));
-		if (actionDelay - DeltaTime == 0.0) SetSpriteIntensity(nullptr, 0.2f);
-		if (0.5f <= actionDelay) Despawn();
+	if (entity->IsA(ACreature::StaticClass())) return;
+	ACreature* creature = static_cast<ACreature*>(entity);
+	switch (GetIdentifier()) {
+	case Identifier::HealthPotion:
+		// health effect
+		creature->AdjustHealth(10.0f);
+		Despawn();
+		break;
+	case Identifier::EnergePotion:
+		// energe effect
+		creature->AdjustEnerge(10.0f);
+		Despawn();
+		break;
+	case Identifier::Shield:
+		// shield effect
+		creature->AdjustMaxShield(10.0f);
+		Despawn();
 		break;
 	}
-	return true;
 }
-

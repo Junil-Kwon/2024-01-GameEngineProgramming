@@ -19,6 +19,13 @@ class DUNGEON_API AHero : public ACreature {
 	// Initialization
 public:
 	AHero();
+protected:
+	virtual void BeginPlay() override;
+
+	// Spawn
+protected:
+	virtual void OnSpawn  () override;
+	virtual void OnDespawn() override;
 
 
 

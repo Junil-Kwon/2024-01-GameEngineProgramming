@@ -166,15 +166,13 @@ void AEntity::Detach() {
 
 AEntity::AEntity() {
 	defaultSpeed = 300.0f;
-
 	defaultHitboxRadius = 0.0f;
 	defaultHitboxHeight = 0.0f;
 	defaultHandLocation = FVector2D::ZeroVector;
-
 	defaultGroup = Group::None;
 	defaultEffect         = 0;
 	defaultEffectImmunity = 0;
-	
+
 	PrimaryActorTick.bCanEverTick = true;
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
@@ -235,10 +233,10 @@ void AEntity::OnSpawn() {
 	speed = defaultSpeed;
 	isFalling = false;
 	fallSpeed = 0.0f;
-	GetCharacterMovement()->MaxWalkSpeed = speed;
+	GetCharacterMovement()->MaxWalkSpeed    = speed;
 	GetCharacterMovement()->MaxAcceleration = speed * 100;
-	GetCharacterMovement()->JumpZVelocity = 800.0f;
-	GetCharacterMovement()->GravityScale = DefaultGravityScale;
+	GetCharacterMovement()->JumpZVelocity   = 800.0f;
+	GetCharacterMovement()->GravityScale    = DefaultGravityScale;
 
 	SetLookDirection(FVector(0.0f, 1.0f, 0.0f));
 	SetMoveDirection(FVector(0.0f, 0.0f, 0.0f));
@@ -269,10 +267,10 @@ void AEntity::OnSpawn() {
 	}
 }
 void AEntity::OnDespawn() {
+	if (HasTag(Tag::Player)) GetGhost()->SetPlayer(nullptr);
 	for (uint8 i = 0; i < static_cast<uint8>(Tag::Length); i++) {
 		Tag value = static_cast<Tag>(1 << i);
 		if (HasTag(value)) RemoveTag(value);
-		if (HasTag(value) && value == Tag::Player) GetGhost()->SetPlayer(nullptr);
 	}
 	for (uint8 i = 0; i < static_cast<uint8>(Effect::Length); i++) {
 		Effect value = static_cast<Effect>(1 << i);
@@ -485,11 +483,10 @@ FVector AEntity::GetInputDirection() {
 Action AEntity::GetAction() {
 	return action;
 }
-bool AEntity::SetAction(Action value) {
-	if (!VerifyAction(value) || actionCooldown[static_cast<uint8>(value)]) return false;
+void AEntity::SetAction(Action value) {
+	if (actionCooldown[static_cast<uint8>(value)] || !VerifyAction(value)) return;
 	action = value;
 	actionDelay = 0.0f;
-	return true;
 }
 float AEntity::GetActionCooldown(Action value) {
 	return actionCooldown[static_cast<uint8>(value)];
@@ -497,8 +494,9 @@ float AEntity::GetActionCooldown(Action value) {
 void  AEntity::SetActionCooldown(Action value, float cooldown) {
 	actionCooldown[static_cast<uint8>(value)] = FMath::Max(cooldown, 0.0f);
 }
+
 bool  AEntity::VerifyAction(Action value) {
-	return false;
+	return (GetAction() != value);
 }
 bool  AEntity::UpdateInputs(float DeltaTime) {
 	if (HasTag(Tag::Player)) {
@@ -515,6 +513,7 @@ bool  AEntity::UpdateInputs(float DeltaTime) {
 }
 bool  AEntity::UpdateAction(float DeltaTime) {
 	actionDelay += DeltaTime;
+	actionFrame += DeltaTime;
 	for (uint8 i = 0; i < static_cast<uint8>(Action::Length); i++) {
 		actionCooldown[i] = FMath::Max(actionCooldown[i] - DeltaTime, 0.0f);
 	}
@@ -578,7 +577,9 @@ bool AEntity::RemoveTag(Tag value) {
 // Effect
 // =============================================================================================================
 
-void AEntity::Hit() { hit = 1.0f; }
+void AEntity::Damage(float value) {
+	effectHit = 0.2f;
+}
 bool AEntity::UpdateEffect(float DeltaTime) {
 	for (uint8 i = 0; i < static_cast<uint8>(Effect::Length); i++) {
 		Effect value = static_cast<Effect>(1 << i);
@@ -615,10 +616,12 @@ bool AEntity::UpdateEffect(float DeltaTime) {
 			}
 		}
 	}
-	if (updateColor || FMath::Max(0.0f, hit -= DeltaTime)) {
-		updateColor = false;
-		FVector color = FVector(1.0f, 1.0f, 1.0f);
-		float intensity = FMath::Clamp(hit * 5.0f, 0.0f, 1.0f);
+	if (refreshColor || FMath::Max(0.0f, effectHit -= DeltaTime)) {
+		refreshColor = false;
+		FVector color     = GetSpriteColor    ();
+		float   intensity = GetSpriteIntensity();
+
+		intensity += FMath::Clamp(effectHit * 5.0f, 0.0f, 1.0f);
 		if (HasEffect(Effect::Burn)) {
 			color += FVector(1.0f, 0.0f, 0.0f) * GetEffectStrength(Effect::Burn) * 8.0f;
 			intensity += GetEffectStrength(Effect::Burn);
@@ -629,10 +632,11 @@ bool AEntity::UpdateEffect(float DeltaTime) {
 		if (HasEffect(Effect::Freeze)) {
 			color += FVector(0.0f, 0.3f, 1.0f) * GetEffectStrength(Effect::Freeze) * 8.0f;
 		}
-		SetSpriteColor(nullptr, color / color.GetMax());
-		SetSpriteIntensity(nullptr, intensity);
+		color = (color - GetSpriteColor() != FVector::ZeroVector) ? color / color.GetMax() : color;
+		SetSpriteColor    (spriteComponent, color    );
+		SetSpriteIntensity(spriteComponent, intensity);
 	}
-	if (updateSpeed) {
+	if (refreshSpeed) {
 		float i = 1.0f;
 		if (HasEffect(Effect::Speed )) i *= 1.0f + GetEffectStrength(Effect::Speed);
 		if (HasEffect(Effect::Burn  )) i *= 1.0f + FMath::Max(GetEffectStrength(Effect::Burn) * 0.3f, 0.3f);
@@ -678,10 +682,10 @@ float AEntity::AdjustEffectStrength(Effect value, float strength) {
 	case Effect::HealthBoost: break;
 	case Effect::DamageBoost: break;
 	case Effect::Resistance:  break;
-	case Effect::Speed:       updateSpeed = true; break;
-	case Effect::Burn:        updateColor = true; updateSpeed = true; break;
-	case Effect::Stun:        updateColor = true; break;
-	case Effect::Freeze:      updateColor = true; updateSpeed = true; break;
+	case Effect::Speed:       refreshSpeed = true; break;
+	case Effect::Burn:        refreshColor = true; refreshSpeed = true; break;
+	case Effect::Stun:        refreshColor = true; break;
+	case Effect::Freeze:      refreshColor = true; refreshSpeed = true; break;
 	}
 	effectStrength[GetIndex(value)] = strength;
 	return strength;

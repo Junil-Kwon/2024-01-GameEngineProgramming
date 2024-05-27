@@ -53,6 +53,7 @@ private:
 	// UI
 private:
 	class UIngameUI* ingameUI;
+	float tutorialTime;
 	int32 money;
 	float moneyTemp;
 	int32 moneyIcon;

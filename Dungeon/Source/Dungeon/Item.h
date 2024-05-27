@@ -2,23 +2,23 @@
 
 #include "CoreMinimal.h"
 #include "Entity.h"
-#include "Weapon.generated.h"
+#include "Item.generated.h"
 
 
 
 
 
 UCLASS()
-class DUNGEON_API AWeapon : public AEntity {
+class DUNGEON_API AItem : public AEntity {
 	GENERATED_BODY()
-
+	
 
 
 
 
 	// Initialization
 public:
-	AWeapon();
+	AItem();
 protected:
 	virtual void BeginPlay() override;
 
@@ -32,16 +32,7 @@ protected:
 
 
 	// Hitbox
-protected:
-	class ACreature* parent;
 public:
 	virtual void OnInteract(AEntity* value) override;
 
-
-
-
-
-	// Action
-public:
-	virtual bool VerifyAction(Action value) override;
 };

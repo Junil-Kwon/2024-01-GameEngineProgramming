@@ -99,9 +99,8 @@ bool AInteractor::UpdateAction(float DeltaTime) {
 void AInteractor::RefreshLocation() {
 	float height = parent->GetHitboxHeight() * 0.5f + 64.0f;
 	if (parent->IsA(ACreature::StaticClass())) {
-		if (static_cast<ACreature*>(parent)->GetIndicator()->IsHiding()) {
-			height += !parent->HasTag(Tag::Leader) ? 96.0f : 152.0f;
-		}
+		AIndicator* indicator = static_cast<ACreature*>(parent)->GetIndicator();
+		if (indicator && !indicator->IsHiding()) height += !parent->HasTag(Tag::Leader) ? 96.0f : 152.0f;
 	}
 	SetActorLocation(parent->GetActorLocation() + FVector(0.0f, 0.0f, height));
 }

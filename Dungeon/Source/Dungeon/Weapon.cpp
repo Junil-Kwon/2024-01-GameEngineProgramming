@@ -1,8 +1,6 @@
 #include "Weapon.h"
 #include "Creature.h"
 
-#include "GameFramework/CharacterMovementComponent.h"
-
 
 
 
@@ -48,11 +46,14 @@ void AWeapon::OnInteract(AEntity* entity) {
 	if (parent == entity || (entity != nullptr && !entity->IsA(ACreature::StaticClass()))) return;
 	ACreature* creature = static_cast<ACreature*>(entity);
 	if (parent != nullptr) {
+		SetHitbox(defaultHitboxRadius, defaultHitboxHeight);
 		RemoveTag(Tag::Floating);
 		RemoveTag(Tag::Piercing);
 		AddTag(Tag::Interactability);
+		SetAction(Action::Idle);
 	}
 	if (creature != nullptr) {
+		SetHitbox(0, 0);
 		AddTag(Tag::Floating);
 		AddTag(Tag::Piercing);
 		RemoveTag(Tag::Interactability);
@@ -68,13 +69,9 @@ void AWeapon::OnInteract(AEntity* entity) {
 // Action
 // =============================================================================================================
 
-bool AWeapon::UpdateAction(float DeltaTime) {
-	if (!Super::UpdateAction(DeltaTime)) return false;
-	if (parent == nullptr) return false;
+bool AWeapon::VerifyAction(Action value) {
+	if (!Super::VerifyAction(value)) return false;
 
-	if (GetSpriteXFlip() != parent->GetSpriteXFlip()) {
-		SetSpriteXFlip(nullptr, parent->GetSpriteXFlip());
-		SetActorLocation(parent->GetHandLocation());
-	}
-	return true;
+	if (value == Action::Idle || value == Action::Attack || value == Action::Defend) return true;
+	return false;
 }

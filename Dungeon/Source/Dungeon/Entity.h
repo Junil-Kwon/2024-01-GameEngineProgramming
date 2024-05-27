@@ -32,12 +32,18 @@ UENUM(BlueprintType)
 enum class Identifier : uint8 {
 	Default			= 0,
 	Hero			,
-	Sword			,
+
 	Chest			,
 	Money			,
+	HealthPotion	,
+	EnergePotion	,
+	Shield			,
+	Sword			,
 	Wand			,
+
 	Interactor		,
 	Indicator		,
+
 	Dust			,
 	Flame			,
 	Twinkle			,
@@ -241,7 +247,7 @@ protected:
 	class USceneComponent* GetAnchorComponent();
 	UFUNCTION() void SetSpriteIndex    (UStaticMeshComponent* comp, int32   value = 0);
 	UFUNCTION() void SetSpriteXFlip    (UStaticMeshComponent* comp, bool    value = false);
-	UFUNCTION() void SetSpriteColor    (UStaticMeshComponent* comp, FVector value = FVector(0, 0, 0));
+	UFUNCTION() void SetSpriteColor    (UStaticMeshComponent* comp, FVector value = FVector::OneVector);
 	UFUNCTION() void SetSpriteAngle    (UStaticMeshComponent* comp, float   value = 0);
 	UFUNCTION() void SetSpriteIntensity(UStaticMeshComponent* comp, float   value = 0);
 
@@ -280,10 +286,13 @@ private:
 	float  actionCooldown[static_cast<uint8>(Action::Length)];
 protected:
 	float  actionDelay;
+	float  actionFrame;
+public:
 	Action GetAction();
-	bool   SetAction(Action value);
-	float  GetActionCooldown(Action value);
-	void   SetActionCooldown(Action value, float cooldown);
+	void   SetAction(Action value);
+	float GetActionCooldown(Action value);
+	void  SetActionCooldown(Action value, float cooldown);
+protected:
 	virtual bool VerifyAction(Action value);
 	virtual bool UpdateInputs(float DeltaTime);
 	virtual bool UpdateAction(float DeltaTime);
@@ -317,7 +326,7 @@ protected:
 private:
 	uint8 tag;
 public:
-	bool  HasTag(Tag value);
+	bool         HasTag   (Tag value);
 	virtual bool AddTag   (Tag value);
 	virtual bool RemoveTag(Tag value);
 
@@ -332,14 +341,14 @@ private:
 	uint8 effectImmunity;
 	float effectStrength[static_cast<uint8>(Effect::Length)];
 	float effectDuration[static_cast<uint8>(Effect::Length)];
-	float hit;
-	bool  updateColor = false;
-	bool  updateSpeed = false;
+	float effectHit;
+	bool  refreshColor = false;
+	bool  refreshSpeed = false;
 protected:
-	void Hit();
 	virtual bool UpdateEffect(float DeltaTime);
 public:
-	bool  HasEffect(Effect value);
+	virtual void Damage(float value = 0.0f);
+	bool         HasEffect   (Effect value);
 	virtual bool AddEffect   (Effect value, float strength = 1.0f, float duration = EffectDurationMax);
 	virtual bool RemoveEffect(Effect value);
 

@@ -13,6 +13,20 @@
 
 AHero::AHero() {
 }
+void AHero::BeginPlay() {
+	Super::BeginPlay();
+}
+
+// =============================================================================================================
+// Spawn
+// =============================================================================================================
+
+void AHero::OnSpawn() {
+	Super::OnSpawn();
+}
+void AHero::OnDespawn() {
+	Super::OnDespawn();
+}
 
 
 
@@ -23,14 +37,14 @@ AHero::AHero() {
 // =============================================================================================================
 
 bool AHero::VerifyAction(Action value) {
-	if (GetAction() == value || GetAction() == Action::Defeat) return false;
+	if (!Super::VerifyAction(value)) return false;
+
 	if (value == Action::Idle || value == Action::Move || value == Action::Defeat) return true;
 	switch (GetAction()) {
-	case Action::Idle: return (GetAction() != value);
-	case Action::Move: return (GetAction() != value);
+	case Action::Idle: return true;
+	case Action::Move: return true;
 	case Action::Jump:
 		switch (value) {
-		case Action::Jump:   return false;
 		case Action::Dash:   return false;
 		case Action::Attack: return true;
 		case Action::Defend: return true;
@@ -39,7 +53,6 @@ bool AHero::VerifyAction(Action value) {
 	case Action::Dash:
 		switch (value) {
 		case Action::Jump:   return false;
-		case Action::Dash:   return false;
 		case Action::Attack: return false;
 		case Action::Defend: return false;
 		}
@@ -48,16 +61,14 @@ bool AHero::VerifyAction(Action value) {
 		switch (value) {
 		case Action::Jump:   return true;
 		case Action::Dash:   return true;
-		case Action::Attack: return true;
-		case Action::Defend: return true;
+		case Action::Defend: return false;
 		}
 		break;
 	case Action::Defend:
 		switch (value) {
 		case Action::Jump:   return true;
 		case Action::Dash:   return true;
-		case Action::Attack: return true;
-		case Action::Defend: return true;
+		case Action::Attack: return false;
 		}
 		break;
 	}
@@ -72,18 +83,18 @@ bool AHero::UpdateInputs(float DeltaTime) {
 bool AHero::UpdateAction(float DeltaTime) {
 	if (!Super::UpdateAction(DeltaTime)) return false;
 
-	bool condition = false;
+	bool condition;
 	switch (GetAction()) {
 	case Action::Idle:
-		SetSpriteIndex(nullptr,  0 + static_cast<int32>(actionDelay *  2) % 4);
+		SetSpriteIndex(nullptr, 0 + int32(actionDelay * 2) % 4);
 		break;
 	case Action::Move:
-		SetSpriteIndex(nullptr,  4 + static_cast<int32>(actionDelay * 10) % 6);
-		SetLookDirection(GetMoveDirection());
+		SetSpriteIndex(nullptr, 4 + int32(actionFrame * 10) % 6);
 		AddMovementInput(GetMoveDirection());
+		if (!HasWeapon() || GetWeapon()->GetAction() == Action::Idle) SetLookDirection(GetMoveDirection());
 		break;
 	case Action::Jump:
-		SetSpriteIndex(nullptr, FMath::Min(10 + static_cast<int32>(actionDelay * 10), 13));
+		SetSpriteIndex(nullptr, FMath::Min(10 + int32(actionDelay * 10), 13));
 		AddMovementInput(GetMoveDirection());
 		if (0.1f <= actionDelay && actionDelay - DeltaTime < 0.1f) Jump();
 		if (0.2f <= actionDelay && !GetCharacterMovement()->IsFalling()) {
@@ -97,22 +108,58 @@ bool AHero::UpdateAction(float DeltaTime) {
 		condition = int32(actionDelay * 10) != int32((actionDelay - DeltaTime) * 10);
 		condition &= !GetCharacterMovement()->IsFalling() && (actionDelay < 0.5f);
 		if (actionDelay - DeltaTime == 0.0f || condition) Spawn(Identifier::Dust, GetFootLocation());
-		if (actionDelay - DeltaTime == 0.0f) AddEffect(Effect::Speed, 1.0f, 0.3f);
+		if (actionDelay - DeltaTime == 0.0f) {
+			AddEffect(Effect::Speed, 1.0f, 0.3f);
+			if (HasWeapon()) GetWeapon()->SetAction(Action::Idle);
+		}
 		if (0.6f <= actionDelay) {
-			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() *  0.75f, 0.0f));
+			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() * 0.75f, 0.0f));
 			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() * -0.75f, 0.0f));
 			SetAction(Action::Idle);
 			SetActionCooldown(Action::Dash, 0.5f);
 		}
 		break;
+		/*
+		UE_LOG(LogTemp, Warning, TEXT("%f"), actionDelay);
+		SetSpriteIndex(nullptr, FMath::Min(14 + int32(actionDelay * 10), 19)); break;
+		AddMovementInput(GetLookDirection());
+		if (actionDelay - DeltaTime == 0.0f) {
+			if (HasWeapon()) GetWeapon()->SetAction(Action::Idle);
+			AddEffect(Effect::Speed, 1.0f, 0.3f);
+		}
+		if (0.6f <= actionDelay) {
+			SetAction(Action::Idle);
+			SetActionCooldown(Action::Dash, 0.5f);
+		}
+		condition = int32(actionDelay * 10) != int32((actionDelay - DeltaTime) * 10);
+		condition &= !GetCharacterMovement()->IsFalling() && (actionDelay < 0.5f);
+		if (actionDelay - DeltaTime == 0.0f || condition) Spawn(Identifier::Dust, GetFootLocation());
+		if (0.5f <= actionDelay && actionDelay - DeltaTime < 0.5f) {
+			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() *  0.75f, 0.0f));
+			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() * -0.75f, 0.0f));
+		}
+		break;
+		*/
 	case Action::Attack:
-		SetAction(Action::Idle);
+		if (HasWeapon()) {
+			if (actionDelay - DeltaTime == 0) GetWeapon()->SetAction(Action::Attack);
+		}
+		else {
+			SetAction(Action::Idle);
+			SetActionCooldown(Action::Attack, 0.25f);
+		}
 		break;
 	case Action::Defend:
-		SetAction(Action::Idle);
+		if (HasWeapon()) {
+			if (actionDelay - DeltaTime == 0) GetWeapon()->SetAction(Action::Defend);
+		}
+		else {
+			SetAction(Action::Idle);
+			SetActionCooldown(Action::Defend, 0.25f);
+		}
 		break;
 	case Action::Defeat:
-		SetSpriteIndex(nullptr, FMath::Min(20 + static_cast<int32>(actionDelay * 10), 23));
+		 SetSpriteIndex(nullptr, FMath::Min(20 + int32(actionDelay * 10), 23));
 		break;
 	}
 	return true;
