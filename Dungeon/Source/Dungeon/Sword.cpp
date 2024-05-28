@@ -32,7 +32,7 @@ bool ASword::UpdateAction(float DeltaTime) {
 		break;
 	case Action::Attack:
 		if (actionDelay - DeltaTime == 0) {
-			if (FMath::Rand() < 0.75f) pattern == 0 ? 1 : 0;
+			if (FMath::Rand() < 0.75f) pattern = (pattern == 0) ? 1 : 0;
 			else pattern = FMath::RandRange(0, 1);
 		}
 		switch (pattern) {

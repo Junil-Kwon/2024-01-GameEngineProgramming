@@ -58,18 +58,18 @@ private:
 	class UStaticMeshComponent* lHealthComponent;
 	class UStaticMeshComponent* lHBoostComponent;
 	class UStaticMeshComponent* rHealthComponent;
-	class UStaticMeshComponent* lShieldComponent;
-	class UStaticMeshComponent* rShieldComponent;
+	class UStaticMeshComponent* lArmourComponent;
+	class UStaticMeshComponent* rArmourComponent;
 	class UStaticMeshComponent* lEnergeComponent;
 	class UStaticMeshComponent* rEnergeComponent;
-	class UStaticMeshComponent* iShieldComponent;
+	class UStaticMeshComponent* iArmourComponent;
 	class UStaticMeshComponent* iLeaderComponent;
 	void SetupComponent(UStaticMeshComponent* component);
 private:
 	class ACreature* parent;
 	float width;
 	float health, healthMax;
-	float shield, shieldMax;
+	float armour, armourMax;
 	float energe, energeMax;
 	float hboost;
 	Group group;

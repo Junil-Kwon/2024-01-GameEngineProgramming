@@ -22,7 +22,7 @@ ACreature::ACreature() {
 	defaultMagnetRange = 120.0f;
 	defaultIndicatorWidth = 24.0f;
 	defaultHealth = 1.0f;
-	defaultShield = 0.0f;
+	defaultArmour = 0.0f;
 	defaultEnerge = 0.0f;
 	defaultDamage = 0.0f;
 	
@@ -58,7 +58,7 @@ void ACreature::OnSpawn() {
 	magnetArray.Empty();
 
 	health = defaultHealth, healthMax = defaultHealth;
-	shield = defaultShield, shieldMax = defaultShield;
+	armour = defaultArmour, armourMax = defaultArmour;
 	energe = defaultEnerge, energeMax = defaultEnerge;
 	damage = defaultDamage;
 	hurtCooldown = 0.0f;
@@ -289,14 +289,14 @@ void  ACreature::OnDamaged(float value) {
 		hurtCooldown = HurtCooldown;
 		mendCooldown = MendCooldown;
 	}
-	float shieldTemp = shield;
-	if (shield) shield = FMath::Clamp(shield - value, 0.0f, shieldMax);
-	else        health = FMath::Clamp(health - value, 0.0f, healthMax);
-	if (shield == 0.0f && shieldTemp) OnShieldBroken();
+	float armourTemp = armour;
+	if (armour) armour = FMath::Clamp(armour - value, 0.0f, armourMax);
+	else        health = FMath::Clamp(health - value, 0.0f, armourMax);
+	if (armour == 0.0f && armourTemp) OnArmourBroken();
 	if (health == 0.0f) OnDie();
 }
-void  ACreature::OnShieldBroken() {
-	shieldMax = 0.0f;
+void  ACreature::OnArmourBroken() {
+	armourMax = 0.0f;
 }
 void  ACreature::OnDie() {
 	SetAction(Action::Defeat);
@@ -305,10 +305,10 @@ void  ACreature::OnDie() {
 }
 
 float ACreature::GetHealthMax() { return healthMax; }
-float ACreature::GetShieldMax() { return shieldMax; }
+float ACreature::GetArmourMax() { return armourMax; }
 float ACreature::GetEnergeMax() { return energeMax; }
 float ACreature::GetHealth() { return health; }
-float ACreature::GetShield() { return shield; }
+float ACreature::GetArmour() { return armour; }
 float ACreature::GetEnerge() { return energe; }
 float ACreature::GetDamage() { return damage; }
 
@@ -316,29 +316,29 @@ void ACreature::AdjustHealth(float value) {
 	health = FMath::Clamp(health + value, 0.0f, healthMax);
 	if (health == 0.0f) OnDie();
 }
-void ACreature::AdjustShield(float value) {
-	shield = FMath::Clamp(shield + value, 0.0f, shieldMax);
-	if (shield == 0.0f) OnShieldBroken();
+void ACreature::AdjustArmour(float value) {
+	armour = FMath::Clamp(armour + value, 0.0f, armourMax);
+	if (armour == 0.0f) OnArmourBroken();
 }
 void ACreature::AdjustEnerge(float value) {
 	energe = FMath::Clamp(energe + value, 0.0f, energeMax);
 }
 
 void ACreature::AdjustMaxHealth(float value) {
-	healthMax += FMath::Min(healthMax + value, 0.0f);
-	health    += FMath::Min(health    + value, 0.0f);
+	healthMax += FMath::Max(healthMax + value, 0.0f);
+	health    += FMath::Max(health    + value, 0.0f);
 	SetIndicatorWidth(GetIndicatorWidth() * (healthMax + value) / healthMax);
 	if (health == 0.0f) OnDie();
 }
-void ACreature::AdjustMaxShield(float value) {
-	shieldMax += FMath::Min(shieldMax + value, 0.0f);
-	shield    += FMath::Min(shield    + value, 0.0f);
-	if (shield == 0.0f) OnShieldBroken();
+void ACreature::AdjustMaxArmour(float value) {
+	armourMax += FMath::Max(armourMax + value, 0.0f);
+	armour    += FMath::Max(armour    + value, 0.0f);
+	if (armour == 0.0f) OnArmourBroken();
 }
 void ACreature::AdjustMaxEnerge(float value) {
-	energeMax += FMath::Min(energeMax + value, 0.0f);
-	energe    += FMath::Min(energe    + value, 0.0f);
+	energeMax += FMath::Max(energeMax + value, 0.0f);
+	energe    += FMath::Max(energe    + value, 0.0f);
 }
 void ACreature::AdjustMaxDamage(float value) {
-	damage = FMath::Min(damage + value, 0.0f);
+	damage = FMath::Max(damage + value, 0.0f);
 }

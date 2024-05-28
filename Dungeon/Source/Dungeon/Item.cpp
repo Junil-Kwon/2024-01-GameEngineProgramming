@@ -11,7 +11,7 @@
 
 AItem::AItem() {
 	defaultHitboxRadius = 24.0f;
-	defaultHitboxHeight = 72.0f;
+	defaultHitboxHeight = 48.0f;
 	defaultTag += static_cast<uint8>(Tag::Interactability);
 	SetCollisionProfileName(TEXT("Particle"));
 }
@@ -27,7 +27,7 @@ void AItem::OnSpawn() {
 	Super::OnSpawn();
 
 	switch (GetIdentifier()) {
-	case Identifier::Shield:
+	case Identifier::Armour:
 		SetSpriteIndex(nullptr, FMath::RandRange(0, 7));
 		break;
 	}
@@ -47,7 +47,7 @@ void AItem::OnDespawn() {
 void AItem::OnInteract(AEntity* entity) {
 	Super::OnInteract(entity);
 
-	if (entity->IsA(ACreature::StaticClass())) return;
+	if (!entity->IsA(ACreature::StaticClass())) return;
 	ACreature* creature = static_cast<ACreature*>(entity);
 	switch (GetIdentifier()) {
 	case Identifier::HealthPotion:
@@ -56,13 +56,14 @@ void AItem::OnInteract(AEntity* entity) {
 		Despawn();
 		break;
 	case Identifier::EnergePotion:
+		if (!creature->GetEnergeMax()) break;
 		// energe effect
 		creature->AdjustEnerge(10.0f);
 		Despawn();
 		break;
-	case Identifier::Shield:
+	case Identifier::Armour:
 		// shield effect
-		creature->AdjustMaxShield(10.0f);
+		creature->AdjustMaxArmour(10.0f);
 		Despawn();
 		break;
 	}

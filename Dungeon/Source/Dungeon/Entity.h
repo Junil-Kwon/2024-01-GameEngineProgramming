@@ -37,7 +37,7 @@ enum class Identifier : uint8 {
 	Money			,
 	HealthPotion	,
 	EnergePotion	,
-	Shield			,
+	Armour			,
 	Sword			,
 	Wand			,
 

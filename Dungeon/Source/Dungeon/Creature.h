@@ -145,11 +145,11 @@ public:
 	#define HurtCooldown 0.2f
 private:
 	UPROPERTY(EditAnywhere) float defaultHealth;
-	UPROPERTY(EditAnywhere) float defaultShield;
+	UPROPERTY(EditAnywhere) float defaultArmour;
 	UPROPERTY(EditAnywhere) float defaultEnerge;
 	UPROPERTY(EditAnywhere) float defaultDamage;
 	float health, healthMax;
-	float shield, shieldMax;
+	float armour, armourMax;
 	float energe, energeMax;
 	float damage;
 	float hurtCooldown;
@@ -157,21 +157,21 @@ private:
 	
 protected:
 	virtual void OnDamaged(float value);
-	virtual void OnShieldBroken();
+	virtual void OnArmourBroken();
 	virtual void OnDie();
 public:
 	float GetHealthMax();
-	float GetShieldMax();
+	float GetArmourMax();
 	float GetEnergeMax();
 	float GetHealth();
-	float GetShield();
+	float GetArmour();
 	float GetEnerge();
 	float GetDamage();
 	void AdjustHealth(float value);
-	void AdjustShield(float value);
+	void AdjustArmour(float value);
 	void AdjustEnerge(float value);
 	void AdjustMaxHealth(float value);
-	void AdjustMaxShield(float value);
+	void AdjustMaxArmour(float value);
 	void AdjustMaxEnerge(float value);
 	void AdjustMaxDamage(float value);
 };
