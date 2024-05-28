@@ -1,13 +1,14 @@
 # 2024-01-GameEngineProgramming
  Unreal Engine Final Assignment
 
-### 2024.05.26.
-Add UI
+### 2024.05.28.
+Add UI : __Keyboard, Money__ <br/>
+Update Sword Motion
 
-![Honeycam 2024-05-26 22-15-29](https://github.com/areasplash/2024-01-GameEngineProgramming/assets/50064865/450fcf6d-4929-4270-bca8-73de30dc1ad6)
+![Honeycam 2024-05-28 22-49-06](https://github.com/areasplash/2024-01-GameEngineProgramming/assets/50064865/0d1f885d-16f4-43f2-8d63-8bfbb9fa6357)
 
 ### 2024.05.25.
-Implement __Object Pooling__<br/>
+Implement __Object Pooling__ <br/>
 Add Money Merge Algorithm
 
 ![Honeycam 2024-05-25 20-08-05](https://github.com/areasplash/2024-01-GameEngineProgramming/assets/50064865/673f3775-9160-4f3b-b4a8-f79dcb5bc472)
