@@ -17,6 +17,8 @@ class DUNGEON_API ASword : public AWeapon {
 
 
 	// Action
+private:
+	int32 pattern;
 public:
 	virtual bool UpdateAction(float DeltaTime) override;
 };

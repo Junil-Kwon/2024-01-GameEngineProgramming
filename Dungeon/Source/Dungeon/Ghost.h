@@ -41,29 +41,70 @@ public:
 
 
 	// Camera
+	#define CameraSpeed 600.0f
 private:
 	class USphereComponent*    sphereComponent;
 	class USpringArmComponent* springComponent;
 	class UCameraComponent*    cameraComponent;
+	bool     focusing;
+	FVector  focusLocation;
+	AEntity* focusEntity;
+	bool  shakeVertical;
+	float shakeStrength;
+	float shakeDuration;
+protected:
+	void UpdateCamera(float DeltaTime);
+public:
+	void FocusCameraOn(AEntity* entity  );
+	void FocusCameraOn(FVector  location);
+	void UnfocusCamera();
+	void ShakeCamera(float strength = 4.0f, float duration = 0.25f, bool vertical = true);
 
 
 
 
 
-	// UI
+	// Money
 private:
-	class UIngameUI* ingameUI;
-	float tutorialTime;
 	int32 money;
-	float moneyTemp;
-	int32 moneyIcon;
-	int32 moneySize;
-	float moneyBackgroundXPos;
 public:
 	int32 GetMoney();
 	void  AdjustMoney(int32 value);
+
+	// =========================================================================================================
+	// UI
+	// =========================================================================================================
+
+private:
+	class UIngameUI* ingameUI;
+
+	// Money
+private:
+	float moneyTemp;
+	int32 moneyIcon;
+	int32 moneySize;
+	float moneyXPos;
+	float moneyOpacity;
+	float moneyDuration;
 protected:
 	void UpdateMoney(float DeltaTime);
+
+	// Keyboard
+	#define KeyboardShowDuration 30.0f
+private:
+	bool  keyboardUp;
+	bool  keyboardDown;
+	bool  keyboardLeft;
+	bool  keyboardRight;
+	bool  keyboardSpace;
+	bool  keyboardShift;
+	bool  keyboardZ;
+	bool  keyboardX;
+	bool  keyboardC;
+	float keyboardOpacity;
+	float keyboardDuration;
+protected:
+	void UpdateKeyboard(float DeltaTime);
 
 
 

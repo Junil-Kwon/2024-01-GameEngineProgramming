@@ -1,6 +1,8 @@
 #include "Sword.h"
 #include "Creature.h"
 
+#include "GameFramework/CharacterMovementComponent.h"
+
 
 
 
@@ -14,7 +16,6 @@ bool ASword::UpdateAction(float DeltaTime) {
 
 	FRotator rotation;
 	FVector  location;
-	const float attackDuration = 0.25f;
 	switch (GetAction()) {
 	case Action::Idle:
 		SetSpriteIndex(nullptr, 0);
@@ -30,35 +31,37 @@ bool ASword::UpdateAction(float DeltaTime) {
 		}
 		break;
 	case Action::Attack:
-		SetSpriteIndex(nullptr, FMath::Min(1 + int32(actionDelay * 4 / attackDuration), 4));
+		if (actionDelay - DeltaTime == 0) {
+			if (FMath::Rand() < 0.75f) pattern == 0 ? 1 : 0;
+			else pattern = FMath::RandRange(0, 1);
+		}
+		switch (pattern) {
+		case 0: SetSpriteIndex(nullptr, FMath::Min( 1 + int32(actionDelay * 10),  4)); break;
+		case 1: SetSpriteIndex(nullptr, FMath::Min( 5 + int32(actionDelay * 10),  8)); break;
+		}
 		if (actionDelay - DeltaTime == 0.0f) {
+			rotation = ToRotator(parent->GetLookDirection());
+			location = parent->GetActorLocation();
+			location = location + ToVector(rotation) * (parent->GetHitboxRadius() * 0.5f);
+			location += RotateVector(FVector(FMath::Abs(rotation.Yaw) < 90.0f ? 1.0f : -24.0f, 0.0f, 0.0f));
+			SetActorLocation(location);
+			SetSpriteAngle(nullptr, rotation.Yaw - 45.0f);
 			SetSpriteXFlip(nullptr, false);
 			parent->SetAction(Action::Idle);
 			parent->SetActionCooldown(Action::Attack, 0.5f);
+			if (!parent->GetCharacterMovement()->IsFalling()) parent->AddEffect(Effect::Speed, 0.75f, 0.1f);
 		}
-
-		// NEED TO FIX THIS
-		// =====================================================================================================
-		rotation = ToRotator(parent->GetLookDirection());
-		rotation.Yaw += -60.0f + 120.0f * (actionDelay - DeltaTime) / attackDuration;
-		location = parent->GetActorLocation() + ToVector(rotation) * (parent->GetHitboxRadius() + 0.0f);
-		location.Z += parent->GetHandLocation().Z - parent->GetActorLocation().Z;
-		SetActorLocation(location);
-		SetSpriteAngle(nullptr, rotation.Yaw - 45.0f);
-		// =====================================================================================================
-
-		if (attackDuration <= actionDelay) {
+		if (0.40f <= actionDelay) {
+			SetSpriteAngle(nullptr, 0);
 			SetSpriteXFlip(nullptr, parent->GetSpriteXFlip());
 			SetActorLocation(parent->GetHandLocation());
 			SetAction(Action::Idle);
 		}
 		break;
 	case Action::Defend:
-		SetSpriteIndex(nullptr, FMath::Min(1 + int32(actionDelay * 20), 4));
 		if (actionDelay - DeltaTime == 0.0f) {
-			SetSpriteXFlip(nullptr, false);
 			parent->SetAction(Action::Idle);
-			parent->SetActionCooldown(Action::Defend, 1.0f);
+			parent->SetActionCooldown(Action::Defend, 0.25f);
 		}
 		if (0.25f <= actionDelay) {
 			SetAction(Action::Idle);

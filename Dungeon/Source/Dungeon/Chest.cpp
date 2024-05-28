@@ -24,7 +24,9 @@ void AChest::BeginPlay() {
 void AChest::OnSpawn() {
 	Super::OnSpawn();
 
-	for (int32 i = 0; i < 20; i++) lootArray.Add(Identifier::Money);
+	//for (int32 i = 0; i < 20; i++) lootArray.Add(Identifier::Money);
+	lootArray.Add(Identifier::Hero);
+	lootArray.Add(Identifier::Sword);
 }
 void AChest::OnDespawn() {
 	Super::OnDespawn();
@@ -70,7 +72,7 @@ bool AChest::UpdateAction(float DeltaTime) {
 	case Action::Move:
 		SetSpriteIndex(nullptr, FMath::Min( 1 + static_cast<int32>(actionDelay * 10),  7));
 		if (actionDelay - DeltaTime == 0.0f) loot = 0;
-		if (0.7f + float(loot) / 30.0f <= actionDelay) {
+		if (0.7f + (float(loot) / 30.0f) <= actionDelay && loot < lootArray.Num()) {
 			FVector location  = GetActorLocation() + FVector(0.0f, 0.0f, GetHitboxHeight() * 0.2f);
 			FVector direction = FVector::ZeroVector;
 			float angle = FMath::RandRange(0.4f * PI, 1.6f * PI);
@@ -80,7 +82,7 @@ bool AChest::UpdateAction(float DeltaTime) {
 			Spawn(lootArray[loot], location)->LaunchCharacter(direction, true, true);
 			loot++;
 		}
-		if (lootArray.Num() <= loot) SetAction(Action::Defeat);
+		if (0.7f <= actionDelay && lootArray.Num() <= loot) SetAction(Action::Defeat);
 		break;
 	case Action::Defeat:
 		break;

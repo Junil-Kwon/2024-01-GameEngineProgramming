@@ -53,17 +53,38 @@ AGhost::AGhost() {
 void AGhost::BeginPlay() {
 	Super::BeginPlay();
 
-	tutorialTime = 10.0f;
-
 	money = 0;
-	moneyTemp = 0;
-	moneyIcon = 0;
-	moneySize = 0;
 
 	ingameUI = static_cast<UIngameUI*>(CreateWidget<UUserWidget>(GetWorld(), GetWidget("IngameUI")));
 	ingameUI->AddToViewport();
 
-	moneyBackgroundXPos = ingameUI->moneyBackground->RenderTransform.Translation.X;
+	focusing      = false;
+	focusLocation = FVector::ZeroVector;
+	focusEntity   = nullptr;
+	shakeVertical = true;
+	shakeStrength = 0.0f;
+	shakeDuration = 0.0f;
+
+	moneyTemp = 0;
+	moneyIcon = 0;
+	moneySize = 0;
+	moneyXPos = ingameUI->moneyBackground->RenderTransform.Translation.X;
+	moneyOpacity  = 1.0f;
+	moneyDuration = 0.0f;
+
+	keyboardUp    = false;
+	keyboardDown  = false;
+	keyboardLeft  = false;
+	keyboardRight = false;
+	keyboardSpace = false;
+	keyboardShift = false;
+	keyboardZ     = false;
+	keyboardX     = false;
+	keyboardC     = false;
+	keyboardOpacity  = 1.0f;
+	keyboardDuration = KeyboardShowDuration;
+
+	FocusCameraOn(GetPlayer());
 }
 
 // =============================================================================================================
@@ -73,34 +94,24 @@ void AGhost::BeginPlay() {
 void AGhost::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
-	UpdateMoney(DeltaTime);
-	if (GetPlayer() != nullptr) SetActorLocation(player->GetActorLocation());
+	UpdateCamera  (DeltaTime);
+	UpdateMoney   (DeltaTime);
+	UpdateKeyboard(DeltaTime);
+}
 
-	if (tutorialTime) {
-		tutorialTime = FMath::Max(tutorialTime - DeltaTime, 0.0f);
-		if (tutorialTime < 1.0f) {
-			ingameUI->keyboardUp   ->SetOpacity(tutorialTime);
-			ingameUI->keyboardDown ->SetOpacity(tutorialTime);
-			ingameUI->keyboardLeft ->SetOpacity(tutorialTime);
-			ingameUI->keyboardRight->SetOpacity(tutorialTime);
 
-			ingameUI->keyboardSpace->SetOpacity(tutorialTime);
-			ingameUI->keyboardShift->SetOpacity(tutorialTime);
-			ingameUI->keyboardZ    ->SetOpacity(tutorialTime);
-			ingameUI->keyboardX    ->SetOpacity(tutorialTime);
-			ingameUI->keyboardC    ->SetOpacity(tutorialTime);
-		}
-		ingameUI->keyboardUp   ->SetBrushFromTexture(GetTexture("KeyboardUp"    + FString(inputDirection[0] ? "2" : "1")));
-		ingameUI->keyboardDown ->SetBrushFromTexture(GetTexture("KeyboardDown"  + FString(inputDirection[1] ? "2" : "1")));
-		ingameUI->keyboardLeft ->SetBrushFromTexture(GetTexture("KeyboardLeft"  + FString(inputDirection[2] ? "2" : "1")));
-		ingameUI->keyboardRight->SetBrushFromTexture(GetTexture("KeyboardRight" + FString(inputDirection[3] ? "2" : "1")));
 
-		ingameUI->keyboardSpace->SetBrushFromTexture(GetTexture("KeyboardSpace" + FString(inputAction[(uint8)Action::Jump  ] ? "2" : "1")));
-		ingameUI->keyboardShift->SetBrushFromTexture(GetTexture("KeyboardShift" + FString(inputAction[(uint8)Action::Dash  ] ? "2" : "1")));
-		ingameUI->keyboardZ    ->SetBrushFromTexture(GetTexture("KeyboardZ"     + FString(inputAction[(uint8)Action::Attack] ? "2" : "1")));
-		ingameUI->keyboardX    ->SetBrushFromTexture(GetTexture("KeyboardX"     + FString(inputAction[(uint8)Action::Defend] ? "2" : "1")));
-		//ingameUI->keyboardC    ->SetBrushFromTexture(GetTexture("KeyboardC"     + FString(inputDirection[2] ? "2" : "1")));
-	}
+
+
+// =============================================================================================================
+// Money
+// =============================================================================================================
+
+int32 AGhost::GetMoney() {
+	return money;
+}
+void  AGhost::AdjustMoney(int32 value) {
+	money += value;
 }
 
 
@@ -111,13 +122,58 @@ void AGhost::Tick(float DeltaTime) {
 // UI
 // =============================================================================================================
 
-int32 AGhost::GetMoney() {
-	return money;
+void AGhost::UpdateCamera(float DeltaTime) {
+	FVector location = FVector::ZeroVector;
+	if (!focusLocation.IsZero() || focusEntity != nullptr) {
+		FVector target = focusEntity ? focusEntity->GetActorLocation() : focusLocation;
+		if (focusing) location = target;
+		else {
+			float distance = FVector::Distance(GetActorLocation(), target);
+			FVector locationDelta = (target - GetActorLocation()) / distance * CameraSpeed;
+			location = GetActorLocation() + locationDelta * DeltaTime;
+			if (FVector::Distance(location, target) < CameraSpeed * DeltaTime) focusing = true;
+		}
+	}
+	shakeDuration = FMath::Max(shakeDuration - DeltaTime, 0.0f);
+	if (shakeDuration) {
+		FVector vector = FVector::ZeroVector;
+		if (shakeVertical) vector.Y = FMath::RandRange(-1.0f, 1.0f) * shakeStrength;
+		else 			   vector.Z = FMath::RandRange(-1.0f, 1.0f) * shakeStrength;
+		location += FRotator(-48.590382f, 0.0f, 0.0f).RotateVector(vector);
+	}
+	SetActorLocation(location);
 }
-void  AGhost::AdjustMoney(int32 value) {
-	money += value;
+void AGhost::FocusCameraOn(AEntity* entity) {
+	focusing      = false;
+	if (entity   != nullptr) focusLocation = FVector::ZeroVector;
+	focusEntity   = entity;
 }
+void AGhost::FocusCameraOn(FVector location) {
+	focusing      = false;
+	focusLocation = location;
+	focusEntity   = nullptr;
+}
+void AGhost::UnfocusCamera() {
+	focusing      = false;
+	focusLocation = FVector::ZeroVector;
+	focusEntity   = nullptr;
+}
+void AGhost::ShakeCamera(float strength, float duration, bool vertical) {
+	shakeStrength = FMath::Max(strength, 0.0f);
+	shakeDuration = FMath::Max(duration, 0.0f);
+	shakeVertical = vertical;
+}
+
 void AGhost::UpdateMoney(float DeltaTime) {
+	moneyDuration = FMath::Max(moneyDuration - DeltaTime, 0.0f);
+
+	if (moneyTemp != money) moneyDuration = 5.0f;
+	if (moneyOpacity != FMath::Min(moneyDuration, 1.0f)) {
+		moneyOpacity  = FMath::Min(moneyDuration, 1.0f);
+		ingameUI->moneyText      ->SetOpacity((moneyDuration - 0.00f) * 2);
+		ingameUI->moneyIcon      ->SetOpacity((moneyDuration - 0.00f) * 2);
+		ingameUI->moneyBackground->SetOpacity((moneyDuration - 0.00f) * 2);
+	}
 	if (moneyTemp != money) {
 		moneyTemp += (moneyTemp < money ? 1 : -1) * DeltaTime * 20.0f;
 		moneyTemp = FMath::Clamp(moneyTemp, 0.0f, float(money));
@@ -131,18 +187,81 @@ void AGhost::UpdateMoney(float DeltaTime) {
 		else if (moneyTemp < 500) moneyIconTemp = 5;
 		else                      moneyIconTemp = 6;
 		if (moneyIcon != moneyIconTemp) {
+			moneyIcon = moneyIconTemp;
 			ingameUI->moneyIcon->SetBrushFromTexture(GetTexture("MoneyIcon" + FString::FromInt(moneyIconTemp)));
 		}
-
 		int32 moneySizeTemp = 0;
-		for (int32 i = 1; i < 10000000; i *= 10) {
+		for (int32 i = 1; true; i *= 10) {
 			if (int32(moneyTemp / i) == 0) break;
 			moneySizeTemp++;
 		}
 		if (moneySize != moneySizeTemp) {
 			moneySize = moneySizeTemp;
-			ingameUI->moneyBackground->SetRenderTranslation(FVector2D(moneyBackgroundXPos - 36 * (moneySize - 1), 0.0f));
+			ingameUI->moneyBackground->SetRenderTranslation(FVector2D(moneyXPos - 36 * (moneySize - 1), 0.0f));
 		}
+	}
+}
+
+void AGhost::UpdateKeyboard(float DeltaTime) {
+	keyboardDuration = FMath::Max(keyboardDuration - DeltaTime, 0.0f);
+
+	if (keyboardOpacity != FMath::Min(keyboardDuration, 1.0f)) {
+		keyboardOpacity  = FMath::Min(keyboardDuration, 1.0f);
+		ingameUI->keyboardUp        ->SetOpacity((keyboardDuration - 0.50f) * 2);
+		ingameUI->keyboardDown      ->SetOpacity((keyboardDuration - 0.50f) * 2);
+		ingameUI->keyboardLeft      ->SetOpacity((keyboardDuration - 0.50f) * 2);
+		ingameUI->keyboardRight     ->SetOpacity((keyboardDuration - 0.50f) * 2);
+		ingameUI->keyboardSpace     ->SetOpacity((keyboardDuration - 0.50f) * 2);
+		ingameUI->keyboardShift     ->SetOpacity((keyboardDuration - 0.50f) * 2);
+		ingameUI->keyboardZ         ->SetOpacity((keyboardDuration - 0.50f) * 2);
+		ingameUI->keyboardX         ->SetOpacity((keyboardDuration - 0.50f) * 2);
+		ingameUI->keyboardC         ->SetOpacity((keyboardDuration - 0.50f) * 2);
+		ingameUI->keyboardBackground->SetOpacity((keyboardDuration - 0.00f) * 2);
+	}
+	if (keyboardUp    != inputDirection[0]) {
+		keyboardUp    = inputDirection[0];
+		FString name = "KeyboardUp"    + FString(keyboardUp    ? "2" : "1");
+		ingameUI->keyboardUp->SetBrushFromTexture(GetTexture(name));
+	}
+	if (keyboardDown  != inputDirection[1]) {
+		keyboardDown  = inputDirection[1];
+		FString name = "KeyboardDown"  + FString(keyboardDown  ? "2" : "1");
+		ingameUI->keyboardDown->SetBrushFromTexture(GetTexture(name));
+	}
+	if (keyboardLeft  != inputDirection[2]) {
+		keyboardLeft  = inputDirection[2];
+		FString name = "KeyboardLeft"  + FString(keyboardLeft  ? "2" : "1");
+		ingameUI->keyboardLeft->SetBrushFromTexture(GetTexture(name));
+	}
+	if (keyboardRight != inputDirection[3]) {
+		keyboardRight = inputDirection[3];
+		FString name = "KeyboardRight" + FString(keyboardRight ? "2" : "1");
+		ingameUI->keyboardRight->SetBrushFromTexture(GetTexture(name));
+	}
+	if (keyboardSpace != inputAction[(uint8)Action::Jump]) {
+		keyboardSpace = inputAction[(uint8)Action::Jump];
+		FString name = "KeyboardSpace" + FString(keyboardSpace ? "2" : "1");
+		ingameUI->keyboardSpace->SetBrushFromTexture(GetTexture(name));
+	}
+	if (keyboardShift != inputAction[(uint8)Action::Dash]) {
+		keyboardShift = inputAction[(uint8)Action::Dash];
+		FString name = "KeyboardShift" + FString(keyboardShift ? "2" : "1");
+		ingameUI->keyboardShift->SetBrushFromTexture(GetTexture(name));
+	}
+	if (keyboardZ     != inputAction[(uint8)Action::Attack]) {
+		keyboardZ     = inputAction[(uint8)Action::Attack];
+		FString name = "KeyboardZ"     + FString(keyboardZ     ? "2" : "1");
+		ingameUI->keyboardZ->SetBrushFromTexture(GetTexture(name));
+	}
+	if (keyboardX     != inputAction[(uint8)Action::Defend]) {
+		keyboardX     = inputAction[(uint8)Action::Defend];
+		FString name = "KeyboardX"     + FString(keyboardX     ? "2" : "1");
+		ingameUI->keyboardX->SetBrushFromTexture(GetTexture(name));
+	}
+	if (keyboardC     != false) {
+		keyboardC     = false;
+		FString name = "KeyboardC"     + FString(keyboardC     ? "2" : "1");
+		ingameUI->keyboardC->SetBrushFromTexture(GetTexture(name));
 	}
 }
 
@@ -165,9 +284,11 @@ void AGhost::SetPlayer(AEntity* value) {
 	if (player == value) return;
 	if (player != nullptr) {
 		if (player->HasTag(Tag::Player)) player->RemoveTag(Tag::Player);
+		FocusCameraOn(nullptr);
 	}
 	if (value  != nullptr) {
 		if (!value->HasTag(Tag::Player)) value->AddTag(Tag::Player);
+		FocusCameraOn(value);
 	}
 	if (player == nullptr && value != nullptr) OnPlayerSpawned  ();
 	if (player != nullptr && value == nullptr) OnPlayerDestroyed();
@@ -175,7 +296,7 @@ void AGhost::SetPlayer(AEntity* value) {
 }
 
 void AGhost::OnPlayerSpawned() {
-	UE_LOG(LogTemp, Warning, TEXT("Player Spawned."));
+	UE_LOG(LogTemp, Warning, TEXT("Player Spawned.  "));
 }
 void AGhost::OnPlayerDestroyed() {
 	UE_LOG(LogTemp, Warning, TEXT("Player Destroyed."));

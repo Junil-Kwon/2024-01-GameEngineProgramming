@@ -18,8 +18,8 @@ class DUNGEON_API UIngameUI : public UUserWidget {
 
 public:
 	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UTextBlock* moneyText;
-	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage*     moneyBackground;
 	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage*     moneyIcon;
+	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage*     moneyBackground;
 
 public:
 	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage* keyboardShift;
@@ -31,4 +31,5 @@ public:
 	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage* keyboardDown;
 	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage* keyboardLeft;
 	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage* keyboardRight;
+	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage* keyboardBackground;
 };

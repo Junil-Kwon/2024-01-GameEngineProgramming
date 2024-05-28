@@ -247,8 +247,9 @@ void AEntity::OnSpawn() {
 	SetSpriteIndex    (nullptr);
 	SetSpriteXFlip    (nullptr);
 	SetSpriteColor    (nullptr);
-	SetSpriteAngle    (nullptr);
 	SetSpriteIntensity(nullptr);
+	SetSpriteOpacity  (nullptr);
+	SetSpriteAngle    (nullptr);
 
 	action = Action::Idle;
 	for (uint8 i = 0; i < static_cast<uint8>(Action::Length); i++) actionCooldown[i] = 0.0f;
@@ -389,10 +390,11 @@ void AEntity::OnInteract (AEntity* entity) {
 USceneComponent* AEntity::GetAnchorComponent() { return anchorComponent; }
 
 int32   AEntity::GetSpriteIndex    () { return spriteIndex;     }
-float   AEntity::GetSpriteAngle    () { return spriteAngle;     }
 bool    AEntity::GetSpriteXFlip    () { return spriteXFlip;     }
 FVector AEntity::GetSpriteColor    () { return spriteColor;     }
 float   AEntity::GetSpriteIntensity() { return spriteIntensity; }
+float   AEntity::GetSpriteOpacity  () { return spriteOpacity;   }
+float   AEntity::GetSpriteAngle    () { return spriteAngle;     }
 
 void AEntity::SetSpriteIndex(UStaticMeshComponent* component, int32 value) {
 	if (component == nullptr) {
@@ -401,14 +403,6 @@ void AEntity::SetSpriteIndex(UStaticMeshComponent* component, int32 value) {
 		spriteIndex = value;
 	}
 	component->SetScalarParameterValueOnMaterials(TEXT("Index"), value);
-}
-void AEntity::SetSpriteAngle(UStaticMeshComponent* component, float value) {
-	if (component == nullptr) {
-		if (value == spriteAngle) return;
-		component = spriteComponent;
-		spriteAngle = value;
-	}
-	component->SetRelativeRotation(FRotator(0.0f, value, 0.0f));
 }
 void AEntity::SetSpriteXFlip(UStaticMeshComponent* component, bool value) {
 	if (component == nullptr) {
@@ -433,6 +427,22 @@ void AEntity::SetSpriteIntensity(UStaticMeshComponent* component, float value) {
 		spriteIntensity = value;
 	}
 	component->SetScalarParameterValueOnMaterials(TEXT("Intensity"), value);
+}
+void AEntity::SetSpriteOpacity(UStaticMeshComponent* component, float value) {
+	if (component == nullptr) {
+		if (value == spriteOpacity) return;
+		component = spriteComponent;
+		spriteOpacity = value;
+	}
+	component->SetScalarParameterValueOnMaterials(TEXT("Opacity"), value);
+}
+void AEntity::SetSpriteAngle(UStaticMeshComponent* component, float value) {
+	if (component == nullptr) {
+		if (value == spriteAngle) return;
+		component = spriteComponent;
+		spriteAngle = value;
+	}
+	component->SetRelativeRotation(FRotator(0.0f, value, 0.0f));
 }
 
 // =============================================================================================================

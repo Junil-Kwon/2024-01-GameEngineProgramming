@@ -72,6 +72,7 @@ void AWeapon::OnInteract(AEntity* entity) {
 bool AWeapon::VerifyAction(Action value) {
 	if (!Super::VerifyAction(value)) return false;
 
-	if (value == Action::Idle || value == Action::Attack || value == Action::Defend) return true;
+	if (GetAction() == Action::Idle && (value == Action::Attack || value == Action::Defend)) return true;
+	if (value == Action::Idle && (GetAction() == Action::Attack || GetAction() == Action::Defend)) return true;
 	return false;
 }

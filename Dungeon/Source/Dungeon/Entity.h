@@ -235,21 +235,24 @@ private:
 	int32   spriteIndex;
 	bool    spriteXFlip;
 	FVector spriteColor;
-	float   spriteAngle;
 	float   spriteIntensity;
+	float   spriteOpacity;
+	float   spriteAngle;
+protected:
+	class USceneComponent* GetAnchorComponent();
 public:
 	int32   GetSpriteIndex();
 	bool    GetSpriteXFlip();
 	FVector GetSpriteColor();
-	float   GetSpriteAngle();
 	float   GetSpriteIntensity();
-protected:
-	class USceneComponent* GetAnchorComponent();
+	float   GetSpriteOpacity();
+	float   GetSpriteAngle();
 	UFUNCTION() void SetSpriteIndex    (UStaticMeshComponent* comp, int32   value = 0);
 	UFUNCTION() void SetSpriteXFlip    (UStaticMeshComponent* comp, bool    value = false);
 	UFUNCTION() void SetSpriteColor    (UStaticMeshComponent* comp, FVector value = FVector::OneVector);
-	UFUNCTION() void SetSpriteAngle    (UStaticMeshComponent* comp, float   value = 0);
-	UFUNCTION() void SetSpriteIntensity(UStaticMeshComponent* comp, float   value = 0);
+	UFUNCTION() void SetSpriteIntensity(UStaticMeshComponent* comp, float   value = 0.0f);
+	UFUNCTION() void SetSpriteOpacity  (UStaticMeshComponent* comp, float   value = 1.0f);
+	UFUNCTION() void SetSpriteAngle    (UStaticMeshComponent* comp, float   value = 0.0f);
 
 	// Shadow
 private:

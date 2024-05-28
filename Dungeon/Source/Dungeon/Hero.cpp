@@ -111,37 +111,18 @@ bool AHero::UpdateAction(float DeltaTime) {
 		if (actionDelay - DeltaTime == 0.0f) {
 			AddEffect(Effect::Speed, 1.0f, 0.3f);
 			if (HasWeapon()) GetWeapon()->SetAction(Action::Idle);
+			if (HasWeapon()) GetWeapon()->SetSpriteOpacity(nullptr, GetWeapon()->GetSpriteOpacity() - 1.0f);
 		}
 		if (0.6f <= actionDelay) {
-			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() * 0.75f, 0.0f));
-			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() * -0.75f, 0.0f));
-			SetAction(Action::Idle);
-			SetActionCooldown(Action::Dash, 0.5f);
-		}
-		break;
-		/*
-		UE_LOG(LogTemp, Warning, TEXT("%f"), actionDelay);
-		SetSpriteIndex(nullptr, FMath::Min(14 + int32(actionDelay * 10), 19)); break;
-		AddMovementInput(GetLookDirection());
-		if (actionDelay - DeltaTime == 0.0f) {
-			if (HasWeapon()) GetWeapon()->SetAction(Action::Idle);
-			AddEffect(Effect::Speed, 1.0f, 0.3f);
-		}
-		if (0.6f <= actionDelay) {
-			SetAction(Action::Idle);
-			SetActionCooldown(Action::Dash, 0.5f);
-		}
-		condition = int32(actionDelay * 10) != int32((actionDelay - DeltaTime) * 10);
-		condition &= !GetCharacterMovement()->IsFalling() && (actionDelay < 0.5f);
-		if (actionDelay - DeltaTime == 0.0f || condition) Spawn(Identifier::Dust, GetFootLocation());
-		if (0.5f <= actionDelay && actionDelay - DeltaTime < 0.5f) {
 			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() *  0.75f, 0.0f));
 			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() * -0.75f, 0.0f));
+			if (HasWeapon()) GetWeapon()->SetSpriteOpacity(nullptr, GetWeapon()->GetSpriteOpacity() + 1.0f);
+			SetAction(Action::Idle);
+			SetActionCooldown(Action::Dash, 0.5f);
 		}
 		break;
-		*/
 	case Action::Attack:
-		if (HasWeapon()) {
+		if (HasWeapon() && GetWeapon()->GetAction() == Action::Idle) {
 			if (actionDelay - DeltaTime == 0) GetWeapon()->SetAction(Action::Attack);
 		}
 		else {
@@ -150,7 +131,7 @@ bool AHero::UpdateAction(float DeltaTime) {
 		}
 		break;
 	case Action::Defend:
-		if (HasWeapon()) {
+		if (HasWeapon() && GetWeapon()->GetAction() == Action::Idle) {
 			if (actionDelay - DeltaTime == 0) GetWeapon()->SetAction(Action::Defend);
 		}
 		else {
