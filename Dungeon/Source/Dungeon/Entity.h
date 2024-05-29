@@ -258,14 +258,6 @@ public:
 private:
 	class UStaticMeshComponent* shadowComponent;
 
-	// Interactor
-private:
-	class AInteractor* interactor;
-	void CreateInteractor();
-	void RemoveInteractor();
-public:
-	AInteractor* GetInteractor();
-
 
 
 

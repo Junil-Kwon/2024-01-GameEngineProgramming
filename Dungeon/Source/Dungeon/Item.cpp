@@ -10,8 +10,8 @@
 // =============================================================================================================
 
 AItem::AItem() {
-	defaultHitboxRadius = 24.0f;
-	defaultHitboxHeight = 48.0f;
+	defaultHitboxRadius = 30.0f;
+	defaultHitboxHeight = 60.0f;
 	defaultTag += static_cast<uint8>(Tag::Interactability);
 	SetCollisionProfileName(TEXT("Particle"));
 }

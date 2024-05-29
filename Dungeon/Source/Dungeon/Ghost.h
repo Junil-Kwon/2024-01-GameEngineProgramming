@@ -17,6 +17,11 @@ class DUNGEON_API AGhost : public APawn {
 
 
 
+
+	// =========================================================================================================
+	// -
+	// =========================================================================================================
+	
 	// -
 public:
 	UTexture2D* GetTexture(FString name);
@@ -25,6 +30,10 @@ public:
 
 
 
+
+	// =========================================================================================================
+	// Setup
+	// =========================================================================================================
 
 	// Initialization
 public:
@@ -40,10 +49,14 @@ public:
 
 
 
+	// =========================================================================================================
+	// Components
+	// =========================================================================================================
+
 	// Camera
 	#define CameraSpeed 600.0f
 private:
-	class USphereComponent*    sphereComponent;
+	class UCapsuleComponent*   hitboxComponent;
 	class USpringArmComponent* springComponent;
 	class UCameraComponent*    cameraComponent;
 	bool     focusing;
@@ -59,6 +72,36 @@ public:
 	void FocusCameraOn(FVector  location);
 	void UnfocusCamera();
 	void ShakeCamera(float strength = 4.0f, float duration = 0.25f, bool vertical = true);
+
+	// Sensor
+protected:
+	UPROPERTY(EditAnywhere) float defaultSensorRange;
+private:
+	class UCapsuleComponent* sensorComponent;
+	float sensorRange;
+protected:
+	TArray<AEntity*> sensorArray;
+	virtual bool UpdateSensor(float DeltaTime);
+public:
+	float GetSensorRange();
+	void  SetSensorRange(AEntity* entity = nullptr);
+	UFUNCTION() void OnSensorBeginOverlap(
+		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+		bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION() void OnSensorEndOverlap(
+		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	// Select
+private:
+	AEntity* selected;
+	class AInteractor* interactor;
+public:
+	bool     HasSelected();
+	AEntity* GetSelected();
+protected:
+	virtual void SetSelected(AEntity* entity);
 
 
 

@@ -83,14 +83,6 @@ public:
 	UFUNCTION() void OnMagnetEndOverlap(
 		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-	// Select
-private:
-	AEntity* selected;
-protected:
-	bool     HasSelected();
-	AEntity* GetSelected();
-	virtual void SetSelected(AEntity* entity);
 	
 	// Weapon
 private:

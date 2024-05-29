@@ -1,6 +1,5 @@
 #include "Entity.h"
 #include "Ghost.h"
-#include "Interactor.h"
 
 #include "Components/CapsuleComponent.h"
 #include "Components/SceneComponent.h"
@@ -110,6 +109,7 @@ AEntity* AEntity::Spawn(Identifier value, FVector location) {
 			FString path = "/Game/Blueprints/BP_" + name + ".BP_" + name + "_C";
 			uClass[index] = LoadObject<UClass>(nullptr, *path);
 		}
+		if (uClass[index] == nullptr) return nullptr;
 		FActorSpawnParameters parameter;
 		parameter.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		entity = GetWorld()->SpawnActor<AEntity>(uClass[index], location, FRotator::ZeroRotator, parameter);
@@ -445,24 +445,6 @@ void AEntity::SetSpriteAngle(UStaticMeshComponent* component, float value) {
 	component->SetRelativeRotation(FRotator(0.0f, value, 0.0f));
 }
 
-// =============================================================================================================
-// Interactor
-// =============================================================================================================
-
-void AEntity::CreateInteractor() {
-	if (interactor != nullptr) return;
-	interactor = static_cast<AInteractor*>(Spawn(Identifier::Interactor));
-	interactor->OnInteract(this);
-	interactor->Attach(this);
-}
-void AEntity::RemoveInteractor() {
-	if (interactor == nullptr) return;
-	interactor->Despawn();
-	interactor = nullptr;
-}
-
-AInteractor* AEntity::GetInteractor() { return interactor; }
-
 
 
 
@@ -561,7 +543,7 @@ bool AEntity::AddTag(Tag value) {
 	case Tag::Floating:        GetCharacterMovement()->GravityScale = 0.0f; break;
 	case Tag::Piercing:        hitboxComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision); break;
 	case Tag::Invulnerability: break;
-	case Tag::Interactability: CreateInteractor(); break;
+	case Tag::Interactability: break;
 	case Tag::Collectable:     break;
 	case Tag::Player:          GetGhost()->SetPlayer(this); break;
 	case Tag::Leader:          break;
@@ -575,7 +557,7 @@ bool AEntity::RemoveTag(Tag value) {
 	case Tag::Floating:        GetCharacterMovement()->GravityScale = DefaultGravityScale; break;
 	case Tag::Piercing:        hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics); break;
 	case Tag::Invulnerability: break;
-	case Tag::Interactability: RemoveInteractor(); break;
+	case Tag::Interactability: break;
 	case Tag::Collectable:     break;
 	case Tag::Player:          break;
 	case Tag::Leader:          break;

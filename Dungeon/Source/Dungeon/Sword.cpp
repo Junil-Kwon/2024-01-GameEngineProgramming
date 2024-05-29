@@ -31,10 +31,7 @@ bool ASword::UpdateAction(float DeltaTime) {
 		}
 		break;
 	case Action::Attack:
-		if (actionDelay - DeltaTime == 0) {
-			if (FMath::Rand() < 0.75f) pattern = (pattern == 0) ? 1 : 0;
-			else pattern = FMath::RandRange(0, 1);
-		}
+		if (actionDelay - DeltaTime == 0 && FMath::Rand() < 0.75f) pattern = (pattern == 0) ? 1 : 0;
 		switch (pattern) {
 		case 0: SetSpriteIndex(nullptr, FMath::Min( 1 + int32(actionDelay * 10),  4)); break;
 		case 1: SetSpriteIndex(nullptr, FMath::Min( 5 + int32(actionDelay * 10),  8)); break;

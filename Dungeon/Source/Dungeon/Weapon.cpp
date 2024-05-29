@@ -26,7 +26,7 @@ void AWeapon::BeginPlay() {
 void AWeapon::OnSpawn() {
 	Super::OnSpawn();
 
-	SetSpriteXFlip(nullptr, FMath::Rand() < 0.5f);
+	SetSpriteXFlip(nullptr, bool(FMath::RandRange(0, 1)));
 }
 void AWeapon::OnDespawn() {
 	Super::OnDespawn();

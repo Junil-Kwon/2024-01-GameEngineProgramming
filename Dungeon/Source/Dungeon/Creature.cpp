@@ -73,7 +73,6 @@ void ACreature::OnSpawn() {
 void ACreature::OnDespawn() {
 	Super::OnDespawn();
 
-	SetSelected(nullptr);
 	SetWeapon  (nullptr);
 	indicator->Despawn();
 }
@@ -105,6 +104,13 @@ void ACreature::OnCollision(AEntity* entity) {
 
 bool ACreature::UpdateSensor(float DeltaTime) {
 	if (sensorArray.Num() == 0) return false;
+
+	for (int32 i = sensorArray.Num() - 1; -1 < i; i--) {
+		if (sensorArray[i] == nullptr) {
+			sensorArray.RemoveAt(i);
+			continue;
+		}
+	}
 	return true;
 }
 
@@ -138,7 +144,7 @@ bool ACreature::UpdateMagnet(float DeltaTime) {
 	if (GetGhost()->GetPlayer() == nullptr || GetGroup() != GetGhost()->GetPlayer()->GetGroup()) return false;
 
 	AEntity* entity = nullptr;
-	float nearest = magnetRange;
+	float nearest = GetSensorRange();
 	for (int32 i = magnetArray.Num() - 1; -1 < i; i--) {
 		if (magnetArray[i] == nullptr) {
 			magnetArray.RemoveAt(i);
@@ -147,13 +153,7 @@ bool ACreature::UpdateMagnet(float DeltaTime) {
 		if (magnetArray[i]->HasTag(Tag::Collectable)) {
 			magnetArray[i]->AddMovementInput(GetActorLocation() - magnetArray[i]->GetActorLocation(), 1.0f);
 		}
-		float distance = FVector::Distance(magnetArray[i]->GetActorLocation(), GetActorLocation());
-		if (magnetArray[i]->HasTag(Tag::Interactability) && distance < nearest) {
-			entity = magnetArray[i];
-			nearest = distance;
-		}
 	}
-	if (HasTag(Tag::Player)) SetSelected(entity);
 	return true;
 }
 
@@ -175,27 +175,7 @@ void ACreature::OnMagnetEndOverlap(
 	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
 	AEntity* entity = static_cast<AEntity*>(OtherActor);
-	if (OtherActor->IsA(AEntity::StaticClass()) && magnetArray.Contains(entity)) {
-		magnetArray.Remove(entity);
-		if (GetSelected() == entity) SetSelected(nullptr);
-	}
-}
-
-// =============================================================================================================
-// Select
-// =============================================================================================================
-
-bool     ACreature::HasSelected() { return selected != nullptr; };
-AEntity* ACreature::GetSelected() { return selected; }
-void ACreature::SetSelected(AEntity* entity) {
-	if (selected == entity) return;
-	if (selected != nullptr) {
-		if (selected->HasTag(Tag::Interactability)) selected->GetInteractor()->Hide();
-	}
-	if (entity != nullptr) {
-		if (entity->HasTag(Tag::Interactability)) entity->GetInteractor()->Hide(false);
-	}
-	selected = entity;
+	if (OtherActor->IsA(AEntity::StaticClass()) && magnetArray.Contains(entity)) magnetArray.Remove(entity);
 }
 
 // =============================================================================================================
@@ -241,12 +221,12 @@ bool ACreature::UpdateAction(float DeltaTime) {
 
 	switch (GetAction()) {
 	case Action::Attack:
-		if (actionDelay - DeltaTime == 0 && HasSelected()) {
-			if (GetSelected()->IsA(AWeapon::StaticClass())) SetWeapon(static_cast<AWeapon*>(GetSelected()));
-			else GetSelected()->OnInteract(this);
+		if (actionDelay - DeltaTime == 0 && HasTag(Tag::Player) && GetGhost()->HasSelected()) {
+			AEntity* selected = GetGhost()->GetSelected();
+			if (selected->IsA(AWeapon::StaticClass())) SetWeapon(static_cast<AWeapon*>(selected));
+			else selected->OnInteract(this);
 			SetAction(Action::Idle);
 			SetActionCooldown(Action::Attack, 0.25f);
-			
 		}
 		break;
 	case Action::Defend:

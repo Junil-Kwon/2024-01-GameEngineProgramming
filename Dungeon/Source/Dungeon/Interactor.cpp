@@ -42,7 +42,7 @@ void AInteractor::BeginPlay() {
 void AInteractor::OnSpawn() {
 	Super::OnSpawn();
 
-	Hide();
+	Hide(false);
 }
 void AInteractor::OnDespawn() {
 	Super::OnDespawn();

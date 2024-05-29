@@ -1,6 +1,9 @@
 #include "Ghost.h"
+#include "Creature.h"
+#include "Interactor.h"
+#include "Indicator.h"
 
-#include "Components/SphereComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 
@@ -34,11 +37,13 @@ UClass* AGhost::GetWidget(FString name) {
 // =============================================================================================================
 
 AGhost::AGhost() {
+	defaultSensorRange = 120.0f;
+
  	PrimaryActorTick.bCanEverTick = true;
 
-	sphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere"));
-	sphereComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	SetRootComponent(sphereComponent);
+	hitboxComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Hitbox"));
+	hitboxComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SetRootComponent(hitboxComponent);
 
 	springComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring"));
 	springComponent->SetRelativeLocation(FVector(-4000.0f, 0.0f, 4400.0f));
@@ -49,9 +54,17 @@ AGhost::AGhost() {
 	cameraComponent->PostProcessSettings.BloomIntensity = 0.0f;
 	cameraComponent->FieldOfView = 15.0f;
 	cameraComponent->SetupAttachment(springComponent);
+
+	sensorComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Sensor"));
+	sensorComponent->InitCapsuleSize(0.5f, 0.5f);
+	sensorComponent->SetCollisionProfileName(TEXT("Sensor"));
+	sensorComponent->SetupAttachment(RootComponent);
 }
 void AGhost::BeginPlay() {
 	Super::BeginPlay();
+
+	sensorComponent->OnComponentBeginOverlap.AddDynamic(this, &AGhost::OnSensorBeginOverlap);
+	sensorComponent->OnComponentEndOverlap  .AddDynamic(this, &AGhost::OnSensorEndOverlap  );
 
 	money = 0;
 
@@ -95,6 +108,7 @@ void AGhost::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
 	UpdateCamera  (DeltaTime);
+	UpdateSensor  (DeltaTime);
 	UpdateMoney   (DeltaTime);
 	UpdateKeyboard(DeltaTime);
 }
@@ -104,22 +118,7 @@ void AGhost::Tick(float DeltaTime) {
 
 
 // =============================================================================================================
-// Money
-// =============================================================================================================
-
-int32 AGhost::GetMoney() {
-	return money;
-}
-void  AGhost::AdjustMoney(int32 value) {
-	money += value;
-}
-
-
-
-
-
-// =============================================================================================================
-// UI
+// Camera
 // =============================================================================================================
 
 void AGhost::UpdateCamera(float DeltaTime) {
@@ -145,18 +144,21 @@ void AGhost::UpdateCamera(float DeltaTime) {
 }
 void AGhost::FocusCameraOn(AEntity* entity) {
 	focusing      = false;
-	if (entity   != nullptr) focusLocation = FVector::ZeroVector;
 	focusEntity   = entity;
+	if (entity   != nullptr) focusLocation = FVector::ZeroVector;
+	SetSensorRange(static_cast<ACreature*>(entity));
 }
 void AGhost::FocusCameraOn(FVector location) {
 	focusing      = false;
-	focusLocation = location;
 	focusEntity   = nullptr;
+	focusLocation = location;
+	SetSensorRange(static_cast<ACreature*>(nullptr));
 }
 void AGhost::UnfocusCamera() {
 	focusing      = false;
-	focusLocation = FVector::ZeroVector;
 	focusEntity   = nullptr;
+	focusLocation = FVector::ZeroVector;
+	SetSensorRange(static_cast<ACreature*>(nullptr));
 }
 void AGhost::ShakeCamera(float strength, float duration, bool vertical) {
 	shakeStrength = FMath::Max(strength, 0.0f);
@@ -164,6 +166,96 @@ void AGhost::ShakeCamera(float strength, float duration, bool vertical) {
 	shakeVertical = vertical;
 }
 
+// =============================================================================================================
+// Sensor
+// =============================================================================================================
+
+bool AGhost::UpdateSensor(float DeltaTime) {
+	if (sensorArray.Num() == 0) return false;
+
+	for (int32 i = sensorArray.Num() - 1; -1 < i; i--) {
+		if (sensorArray[i] == nullptr) {
+			sensorArray.RemoveAt(i);
+			continue;
+		}
+	}
+	AEntity* entity = nullptr;
+	float nearest = sensorRange;
+	if (focusing && focusEntity) for (int32 i = 0; i < sensorArray.Num(); i++) {
+		float distance = FVector::Distance(sensorArray[i]->GetActorLocation(), GetActorLocation());
+		if (sensorArray[i]->HasTag(Tag::Interactability) && distance < nearest) {
+			entity = sensorArray[i];
+			nearest = distance;
+		}
+	}
+	SetSelected(entity);
+	return true;
+}
+
+float AGhost::GetSensorRange() {
+	return sensorRange;
+}
+void  AGhost::SetSensorRange(AEntity* entity) {
+	if (!(entity->IsA(ACreature::StaticClass()))) {
+		sensorRange = defaultSensorRange;
+		sensorComponent->SetCapsuleSize(defaultSensorRange, 0.0f);
+	}
+	else {
+		ACreature* creature = static_cast<ACreature*>(entity);
+		sensorRange = creature->GetMagnetRange();
+		float hitboxRadius = creature->GetHitboxRadius();
+		float hitboxHeight = creature->GetHitboxHeight();
+		sensorComponent->SetCapsuleRadius    (sensorRange);
+		sensorComponent->SetCapsuleHalfHeight(sensorRange + hitboxHeight * 0.5f - hitboxRadius);
+	}
+}
+void AGhost::OnSensorBeginOverlap(
+	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+	bool bFromSweep, const FHitResult& SweepResult) {
+	AEntity* entity = static_cast<AEntity*>(OtherActor);
+	if (OtherActor->IsA(AEntity::StaticClass()) && !sensorArray.Contains(entity)) sensorArray.Add(entity);
+}
+void AGhost::OnSensorEndOverlap(
+	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+	AEntity* entity = static_cast<AEntity*>(OtherActor);
+	if (OtherActor->IsA(AEntity::StaticClass()) && sensorArray.Contains(entity)) {
+		sensorArray.Remove(entity);
+		if (GetSelected() == entity) SetSelected(nullptr);
+	}
+}
+
+// =============================================================================================================
+// Select
+// =============================================================================================================
+
+bool     AGhost::HasSelected() { return selected != nullptr; };
+AEntity* AGhost::GetSelected() { return selected; }
+void AGhost::SetSelected(AEntity* entity) {
+	if (selected == entity) return;
+	if (selected != nullptr) {
+		if (interactor) interactor->Despawn();
+	}
+	if (entity != nullptr) {
+		if (!interactor) {
+			interactor = static_cast<AInteractor*>(entity->Spawn(Identifier::Interactor));
+			interactor->OnInteract(entity);
+		}
+	}
+	selected = entity;
+}
+
+// =============================================================================================================
+// Money
+// =============================================================================================================
+
+int32 AGhost::GetMoney() {
+	return money;
+}
+void  AGhost::AdjustMoney(int32 value) {
+	money += value;
+}
 void AGhost::UpdateMoney(float DeltaTime) {
 	moneyDuration = FMath::Max(moneyDuration - DeltaTime, 0.0f);
 
@@ -201,6 +293,10 @@ void AGhost::UpdateMoney(float DeltaTime) {
 		}
 	}
 }
+
+// =============================================================================================================
+// Keyboard
+// =============================================================================================================
 
 void AGhost::UpdateKeyboard(float DeltaTime) {
 	keyboardDuration = FMath::Max(keyboardDuration - DeltaTime, 0.0f);
