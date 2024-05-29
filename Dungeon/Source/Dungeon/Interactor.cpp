@@ -41,8 +41,6 @@ void AInteractor::BeginPlay() {
 
 void AInteractor::OnSpawn() {
 	Super::OnSpawn();
-
-	Hide(false);
 }
 void AInteractor::OnDespawn() {
 	Super::OnDespawn();
@@ -61,6 +59,7 @@ void AInteractor::OnInteract(AEntity* entity) {
 	if (entity == nullptr) return;
 
 	parent = entity;
+	Hide(false);
 	RefreshLocation();
 }
 
@@ -77,7 +76,7 @@ void AInteractor::Hide(bool value) {
 	hide = value;
 	SetSpriteIndex(nullptr, hide ? 63 : 0);
 	if (hide) nameComponent->SetText(FText::FromString(TEXT("")));
-	else      nameComponent->SetText(FText::FromString(ToString(parent->GetIdentifier())));
+	else nameComponent->SetText(FText::FromString(ToString(parent->GetIdentifier())));
 	if (parent) RefreshLocation();
 }
 

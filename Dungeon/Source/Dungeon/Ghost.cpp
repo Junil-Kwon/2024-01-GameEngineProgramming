@@ -196,17 +196,17 @@ float AGhost::GetSensorRange() {
 	return sensorRange;
 }
 void  AGhost::SetSensorRange(AEntity* entity) {
-	if (!(entity->IsA(ACreature::StaticClass()))) {
-		sensorRange = defaultSensorRange;
-		sensorComponent->SetCapsuleSize(defaultSensorRange, 0.0f);
-	}
-	else {
+	if (entity && entity->IsA(ACreature::StaticClass())) {
 		ACreature* creature = static_cast<ACreature*>(entity);
 		sensorRange = creature->GetMagnetRange();
 		float hitboxRadius = creature->GetHitboxRadius();
 		float hitboxHeight = creature->GetHitboxHeight();
 		sensorComponent->SetCapsuleRadius    (sensorRange);
 		sensorComponent->SetCapsuleHalfHeight(sensorRange + hitboxHeight * 0.5f - hitboxRadius);
+	}
+	else {
+		sensorRange = defaultSensorRange;
+		sensorComponent->SetCapsuleSize(defaultSensorRange, 0.0f);
 	}
 }
 void AGhost::OnSensorBeginOverlap(
@@ -236,11 +236,13 @@ void AGhost::SetSelected(AEntity* entity) {
 	if (selected == entity) return;
 	if (selected != nullptr) {
 		if (interactor) interactor->Despawn();
+		interactor = nullptr;
 	}
 	if (entity != nullptr) {
 		if (!interactor) {
 			interactor = static_cast<AInteractor*>(entity->Spawn(Identifier::Interactor));
 			interactor->OnInteract(entity);
+			interactor->Attach(entity);
 		}
 	}
 	selected = entity;
