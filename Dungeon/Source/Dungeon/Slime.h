@@ -2,23 +2,23 @@
 
 #include "CoreMinimal.h"
 #include "Creature.h"
-#include "Hero.generated.h"
+#include "Slime.generated.h"
 
 
 
 
 
 UCLASS()
-class DUNGEON_API AHero : public ACreature {
+class DUNGEON_API ASlime : public ACreature {
 	GENERATED_BODY()
-	
+		
 
 
 
 
 	// Initialization
 public:
-	AHero();
+	ASlime();
 protected:
 	virtual void BeginPlay() override;
 

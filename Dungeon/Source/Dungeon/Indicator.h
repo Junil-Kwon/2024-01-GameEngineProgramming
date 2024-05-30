@@ -27,6 +27,14 @@ protected:
 	virtual void OnSpawn  () override;
 	virtual void OnDespawn() override;
 
+	// Update
+private:
+	bool hide;
+public:
+	bool IsHiding();
+	void Hide(bool value = true);
+	virtual void Update(float DeltaTime) override;
+
 
 
 
@@ -34,18 +42,6 @@ protected:
 	// Hitbox
 public:
 	virtual void OnInteract(AEntity* entity) override;
-
-
-
-
-
-	// Action
-private:
-	bool hide;
-public:
-	bool IsHiding();
-	void Hide(bool value = true);
-	virtual bool UpdateAction(float DeltaTime) override;
 
 
 

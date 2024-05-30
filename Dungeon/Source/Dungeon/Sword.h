@@ -16,9 +16,26 @@ class DUNGEON_API ASword : public AWeapon {
 
 
 
+	// Initialization
+public:
+	ASword();
+protected:
+	virtual void BeginPlay() override;
+
+	// Spawn
+protected:
+	virtual void OnSpawn  () override;
+	virtual void OnDespawn() override;
+
+
+
+
+
 	// Action
 private:
 	int32 pattern;
 public:
-	virtual bool UpdateAction(float DeltaTime) override;
+	virtual bool VerifyAction(Action value) override;
+protected:
+	virtual void UpdateAction(float DeltaTime) override;
 };

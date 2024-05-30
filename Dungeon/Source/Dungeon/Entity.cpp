@@ -15,7 +15,7 @@
 
 
 // =============================================================================================================
-// -
+// Default
 // =============================================================================================================
 
 bool AEntity::operator==(const AEntity& other) const { return this == &other; }
@@ -109,7 +109,10 @@ AEntity* AEntity::Spawn(Identifier value, FVector location) {
 			FString path = "/Game/Blueprints/BP_" + name + ".BP_" + name + "_C";
 			uClass[index] = LoadObject<UClass>(nullptr, *path);
 		}
-		if (uClass[index] == nullptr) return nullptr;
+		if (uClass[index] == nullptr) {
+			UE_LOG(LogTemp, Warning, TEXT("%s Spawn Failed."), *ToString(value));
+			return nullptr;
+		}
 		FActorSpawnParameters parameter;
 		parameter.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		entity = GetWorld()->SpawnActor<AEntity>(uClass[index], location, FRotator::ZeroRotator, parameter);
@@ -156,6 +159,15 @@ void AEntity::Detach() {
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 }
 
+// =============================================================================================================
+// Ghost
+// =============================================================================================================
+
+AGhost* AEntity::GetGhost() {
+	if (ghost == nullptr) ghost = Cast<AGhost>(UGameplayStatics::GetPlayerPawn(this->GetWorld(), 0));
+	return ghost;
+}
+
 
 
 
@@ -165,11 +177,13 @@ void AEntity::Detach() {
 // =============================================================================================================
 
 AEntity::AEntity() {
-	defaultSpeed = 300.0f;
-	defaultHitboxRadius = 0.0f;
-	defaultHitboxHeight = 0.0f;
-	defaultHandLocation = FVector2D::ZeroVector;
-	defaultGroup = Group::None;
+	defaultSpeed          = 300.0f;
+
+	defaultHitboxRadius   = 0.0f;
+	defaultHitboxHeight   = 0.0f;
+	defaultHandLocation   = FVector2D::ZeroVector;
+
+	defaultGroup          = Group::None;
 	defaultEffect         = 0;
 	defaultEffectImmunity = 0;
 
@@ -251,10 +265,6 @@ void AEntity::OnSpawn() {
 	SetSpriteOpacity  (nullptr);
 	SetSpriteAngle    (nullptr);
 
-	action = Action::Idle;
-	for (uint8 i = 0; i < static_cast<uint8>(Action::Length); i++) actionCooldown[i] = 0.0f;
-	actionDelay = 0.0f;
-
 	SetGroup(defaultGroup);
 
 	for (uint8 i = 0; i < static_cast<uint8>(Tag::Length); i++) {
@@ -285,28 +295,39 @@ void AEntity::OnDespawn() {
 
 void AEntity::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
-	if (!active) return;
 
+	if (active) Update(DeltaTime);
+}
+
+void AEntity::Update(float DeltaTime) {
+	lifeTime += DeltaTime;
 	if (GetCharacterMovement()->IsFalling()) {
 		if (!isFalling) isFalling = true;
 		fallSpeed = GetCharacterMovement()->Velocity.Z;
 		if (fallSpeed < FallSpeedMax) GetCharacterMovement()->Velocity.Z = FallSpeedMax;
-		if (GetFootLocation().Z < VoidZAxis) Despawn();
-	}
-	else if (isFalling) {
-		if (fallSpeed < DustThreshold) {
-			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -hitboxRadius *  0.75f, 0.0f));
-			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -hitboxRadius * -0.75f, 0.0f));
+		if (GetFootLocation().Z < VoidZAxis) {
+			if (GetGhost()->GetPlayer() && GetGroup() == GetGhost()->GetPlayer()->GetGroup()) {
+				SetActorLocation(lastLocation);
+				GetCharacterMovement()->StopMovementImmediately();
+				Damage(1.0f);
+			}
+			else Despawn();
 		}
-		isFalling = false;
-		fallSpeed = 0.0f;
 	}
-
-	float multiplier = (HasEffect(Effect::Stun) ? 0.0f : 1.0f) * (1.0f - GetEffectStrength(Effect::Freeze));
-	if (0.0f < multiplier) UpdateInputs(DeltaTime * multiplier);
-	if (0.0f < multiplier) UpdateAction(DeltaTime * multiplier);
+	else {
+		lastLocation = GetActorLocation();
+		if (isFalling) {
+			if (fallSpeed < DustThreshold) {
+				Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -hitboxRadius *  0.75f, 0.0f));
+				Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -hitboxRadius * -0.75f, 0.0f));
+			}
+			isFalling = false;
+			fallSpeed = 0.0f;
+		}
+	}
 	UpdateEffect(DeltaTime);
 }
+float AEntity::GetLifeTime() { return lifeTime; }
 
 FVector AEntity::GetLookDirection() { return lookDirection; }
 FVector AEntity::GetMoveDirection() { return moveDirection; }
@@ -369,14 +390,14 @@ void AEntity::OnHit(
 	UPrimitiveComponent* OtherComponent, FVector NormalImpulse,
 	const FHitResult& Hit) {
 	AEntity* entity = static_cast<AEntity*>(OtherActor);
-	if (OtherActor->IsA(AEntity::StaticClass())) OnCollision(entity);
+	if (OtherActor && OtherActor->IsA(AEntity::StaticClass())) OnCollision(entity);
 }
 void AEntity::OnHitboxBeginOverlap(
 	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 	bool bFromSweep, const FHitResult& SweepResult) {
 	AEntity* entity = static_cast<AEntity*>(OtherActor);
-	if (OtherActor->IsA(AEntity::StaticClass())) OnCollision(entity);
+	if (OtherActor && OtherActor->IsA(AEntity::StaticClass())) OnCollision(entity);
 }
 void AEntity::OnCollision(AEntity* entity) {
 }
@@ -450,73 +471,6 @@ void AEntity::SetSpriteAngle(UStaticMeshComponent* component, float value) {
 
 
 // =============================================================================================================
-// Input
-// =============================================================================================================
-
-AGhost* AEntity::GetGhost() {
-	if (ghost == nullptr) ghost = Cast<AGhost>(UGameplayStatics::GetPlayerPawn(this->GetWorld(), 0));
-	return ghost;
-}
-
-bool AEntity::GetInput(Action value) {
-	if (!GetGhost()) return false;
-	return GetGhost()->GetInput(value);
-	return false;
-}
-FVector AEntity::GetInputDirection() {
-	if (!GetGhost()) return FVector::ZeroVector;
-	return GetGhost()->GetInputDirection();
-}
-
-// =============================================================================================================
-// Action
-// =============================================================================================================
-
-Action AEntity::GetAction() {
-	return action;
-}
-void AEntity::SetAction(Action value) {
-	if (actionCooldown[static_cast<uint8>(value)] || !VerifyAction(value)) return;
-	action = value;
-	actionDelay = 0.0f;
-}
-float AEntity::GetActionCooldown(Action value) {
-	return actionCooldown[static_cast<uint8>(value)];
-}
-void  AEntity::SetActionCooldown(Action value, float cooldown) {
-	actionCooldown[static_cast<uint8>(value)] = FMath::Max(cooldown, 0.0f);
-}
-
-bool  AEntity::VerifyAction(Action value) {
-	return (GetAction() != value);
-}
-bool  AEntity::UpdateInputs(float DeltaTime) {
-	if (HasTag(Tag::Player)) {
-		SetMoveDirection(GetInputDirection());
-		if (action == Action::Idle && !GetMoveDirection().IsZero()) SetAction(Action::Move);
-		if (action == Action::Move &&  GetMoveDirection().IsZero()) SetAction(Action::Idle);
-		for (uint8 i = 0; i < static_cast<uint8>(Action::Length); i++) {
-			Action index = static_cast<Action>(i);
-			if (GetInput(index)) SetAction(index);
-		}
-		return false;
-	}
-	return true;
-}
-bool  AEntity::UpdateAction(float DeltaTime) {
-	actionDelay += DeltaTime;
-	actionFrame += DeltaTime;
-	for (uint8 i = 0; i < static_cast<uint8>(Action::Length); i++) {
-		actionCooldown[i] = FMath::Max(actionCooldown[i] - DeltaTime, 0.0f);
-	}
-	return true;
-}
-
-
-
-
-
-// =============================================================================================================
 // Identifier
 // =============================================================================================================
 
@@ -570,9 +524,9 @@ bool AEntity::RemoveTag(Tag value) {
 // =============================================================================================================
 
 void AEntity::Damage(float value) {
-	effectHit = 0.2f;
+	effectHit = EffectHitDuration;
 }
-bool AEntity::UpdateEffect(float DeltaTime) {
+void AEntity::UpdateEffect(float DeltaTime) {
 	for (uint8 i = 0; i < static_cast<uint8>(Effect::Length); i++) {
 		Effect value = static_cast<Effect>(1 << i);
 		if (!HasEffect(value)) continue;
@@ -608,12 +562,12 @@ bool AEntity::UpdateEffect(float DeltaTime) {
 			}
 		}
 	}
-	if (refreshColor || FMath::Max(0.0f, effectHit -= DeltaTime)) {
+	if (refreshColor || effectHit) {
 		refreshColor = false;
+		effectHit = FMath::Max(effectHit - DeltaTime, 0.0f);
 		FVector color     = GetSpriteColor    ();
-		float   intensity = GetSpriteIntensity();
+		float   intensity = GetSpriteIntensity() + effectHit * 7.5f;
 
-		intensity += FMath::Clamp(effectHit * 5.0f, 0.0f, 1.0f);
 		if (HasEffect(Effect::Burn)) {
 			color += FVector(1.0f, 0.0f, 0.0f) * GetEffectStrength(Effect::Burn) * 8.0f;
 			intensity += GetEffectStrength(Effect::Burn);
@@ -636,25 +590,22 @@ bool AEntity::UpdateEffect(float DeltaTime) {
 		GetCharacterMovement()->MaxWalkSpeed    = speed * i;
 		GetCharacterMovement()->MaxAcceleration = speed * i * 100;
 	}
-	return true;
 }
 
 bool AEntity::HasEffect(Effect value) {
 	return static_cast<uint8>(effect) & static_cast<uint8>(value);
 }
-bool AEntity::AddEffect(Effect value, float strength, float duration) {
-	if (static_cast<uint8>(effectImmunity) & static_cast<uint8>(value)) return false;
+void AEntity::AddEffect(Effect value, float strength, float duration) {
+	if (static_cast<uint8>(effectImmunity) & static_cast<uint8>(value)) return;
 	effect |= static_cast<uint8>(value);
 	AdjustEffectStrength(value, strength);
 	AdjustEffectDuration(value, duration);
-	return true;
 }
-bool AEntity::RemoveEffect(Effect value) {
-	if (!HasEffect(value)) return false;
+void AEntity::RemoveEffect(Effect value) {
+	if (!HasEffect(value)) return;
 	effect &= ~static_cast<uint8>(value);
 	AdjustEffectStrength(value, -EffectStrengthMax);
 	AdjustEffectDuration(value, -EffectDurationMax);
-	return true;
 }
 
 float AEntity::GetEffectStrength(Effect value) { return effectStrength[GetIndex(value)]; }

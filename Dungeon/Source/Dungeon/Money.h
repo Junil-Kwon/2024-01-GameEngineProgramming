@@ -27,6 +27,10 @@ protected:
 	virtual void OnSpawn  () override;
 	virtual void OnDespawn() override;
 
+	// Update
+public:
+	virtual void Tick(float DeltaTime) override;
+
 
 
 
@@ -35,14 +39,6 @@ protected:
 public:
 	virtual void OnCollision(AEntity* entity) override;
 	virtual void OnInteract (AEntity* entity) override;
-
-
-
-
-
-	// Action
-protected:
-	virtual bool UpdateAction(float DeltaTime) override;
 
 
 

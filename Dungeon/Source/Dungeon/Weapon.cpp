@@ -13,6 +13,7 @@ AWeapon::AWeapon() {
 	defaultHitboxRadius = 24.0f;
 	defaultHitboxHeight = 72.0f;
 	defaultTag += static_cast<uint8>(Tag::Interactability);
+	defaultWeaponRange = 0.0f;
 	SetCollisionProfileName(TEXT("Particle"));
 }
 void AWeapon::BeginPlay() {
@@ -26,12 +27,30 @@ void AWeapon::BeginPlay() {
 void AWeapon::OnSpawn() {
 	Super::OnSpawn();
 
+	action = Action::Idle;
+	weaponRange = defaultWeaponRange;
 	SetSpriteXFlip(nullptr, bool(FMath::RandRange(0, 1)));
 }
 void AWeapon::OnDespawn() {
 	Super::OnDespawn();
 
 	parent = nullptr;
+}
+
+// =============================================================================================================
+// Update
+// =============================================================================================================
+
+void AWeapon::Update(float DeltaTime) {
+	Super::Update(DeltaTime);
+
+	float multiplier = (HasEffect(Effect::Stun) ? 0.0f : 1.0f) * (1.0f - GetEffectStrength(Effect::Freeze));
+	float multiplierParent = 1.0f;
+	if (parent) {
+		multiplierParent *= parent->HasEffect(Effect::Stun) ? 0.0f : 1.0f;
+		multiplierParent *= 1.0f - parent->GetEffectStrength(Effect::Freeze);
+	}
+	if (multiplier && multiplierParent) UpdateAction(DeltaTime * FMath::Min(multiplier, multiplierParent));
 }
 
 
@@ -71,10 +90,34 @@ void AWeapon::OnInteract(AEntity* entity) {
 // Action
 // =============================================================================================================
 
+Action AWeapon::GetAction() {
+	return action;
+}
+bool AWeapon::SetAction(Action value) {
+	if ((parent && parent->GetActionCooldown(value)) || !VerifyAction(value)) return false;
+	action = value;
+	actionDelay = 0.0f;
+	return true;
+}
+float AWeapon::GetActionDelay() {
+	return actionDelay;
+}
+void AWeapon::SetActionDelay(float value) {
+	actionDelay = value;
+}
 bool AWeapon::VerifyAction(Action value) {
-	if (!Super::VerifyAction(value)) return false;
+	if (GetAction() == value) return false;
+	if (value != Action::Idle || value != Action::Attack || value != Action::Defend) return false;
+	return true;
+}
+void AWeapon::UpdateAction(float DeltaTime) {
+	actionDelay += DeltaTime;
+}
 
-	if (GetAction() == Action::Idle && (value == Action::Attack || value == Action::Defend)) return true;
-	if (value == Action::Idle && (GetAction() == Action::Attack || GetAction() == Action::Defend)) return true;
-	return false;
+// =============================================================================================================
+// Weapon
+// =============================================================================================================
+
+float AWeapon::GetWeaponRange() {
+	return weaponRange;
 }

@@ -1,24 +1,24 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Entity.h"
-#include "Particle.generated.h"
+#include "Weapon.h"
+#include "XBow.generated.h"
 
 
 
 
 
 UCLASS()
-class DUNGEON_API AParticle : public AEntity {
+class DUNGEON_API AXBow : public AWeapon {
 	GENERATED_BODY()
-
+	
 
 
 
 
 	// Initialization
 public:
-	AParticle();
+	AXBow();
 protected:
 	virtual void BeginPlay() override;
 
@@ -27,7 +27,13 @@ protected:
 	virtual void OnSpawn  () override;
 	virtual void OnDespawn() override;
 
+
+
+
+
 	// Update
 public:
-	virtual void Tick(float DeltaTime) override;
+	virtual bool VerifyAction(Action value) override;
+protected:
+	virtual void UpdateAction(float DeltaTime) override;
 };

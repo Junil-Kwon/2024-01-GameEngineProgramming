@@ -16,6 +16,10 @@ class DUNGEON_API AWeapon : public AEntity {
 
 
 
+	// =========================================================================================================
+	// Setup
+	// =========================================================================================================
+
 	// Initialization
 public:
 	AWeapon();
@@ -27,9 +31,17 @@ protected:
 	virtual void OnSpawn  () override;
 	virtual void OnDespawn() override;
 
+	// Update
+protected:
+	virtual void Update(float DeltaTime) override;
 
 
 
+
+
+	// =========================================================================================================
+	// Components
+	// =========================================================================================================
 
 	// Hitbox
 protected:
@@ -41,7 +53,29 @@ public:
 
 
 
+
+	// =========================================================================================================
+	// AI
+	// =========================================================================================================
+
 	// Action
+private:
+	Action action;
+	float  actionDelay;
 public:
-	virtual bool VerifyAction(Action value) override;
+	Action GetAction();
+	bool   SetAction(Action value);
+	float  GetActionDelay();
+	void   SetActionDelay(float value);
+	virtual bool VerifyAction(Action value);
+protected:
+	virtual void UpdateAction(float DeltaTime);
+
+	// Weapon
+protected:
+	UPROPERTY(EditAnywhere) float defaultWeaponRange;
+private:
+	float  weaponRange;
+public:
+	float  GetWeaponRange();
 };

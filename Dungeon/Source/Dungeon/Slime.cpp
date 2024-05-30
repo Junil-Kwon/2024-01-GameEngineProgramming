@@ -1,4 +1,4 @@
-#include "Hero.h"
+#include "Slime.h"
 #include "Weapon.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
@@ -11,9 +11,12 @@
 // Initialization
 // =============================================================================================================
 
-AHero::AHero() {
+ASlime::ASlime() {
+	defaultHitboxRadius = 40.0f;
+	defaultHitboxHeight = 80.0f;
+	defaultGroup = Group::Enemy;
 }
-void AHero::BeginPlay() {
+void ASlime::BeginPlay() {
 	Super::BeginPlay();
 }
 
@@ -21,10 +24,10 @@ void AHero::BeginPlay() {
 // Spawn
 // =============================================================================================================
 
-void AHero::OnSpawn() {
+void ASlime::OnSpawn() {
 	Super::OnSpawn();
 }
-void AHero::OnDespawn() {
+void ASlime::OnDespawn() {
 	Super::OnDespawn();
 }
 
@@ -36,7 +39,7 @@ void AHero::OnDespawn() {
 // Action
 // =============================================================================================================
 
-bool AHero::VerifyAction(Action value) {
+bool ASlime::VerifyAction(Action value) {
 	if (!Super::VerifyAction(value)) return false;
 
 	if (value == Action::Idle || value == Action::Move || value == Action::Defeat) return true;
@@ -61,38 +64,37 @@ bool AHero::VerifyAction(Action value) {
 		switch (value) {
 		case Action::Jump:   return true;
 		case Action::Dash:   return true;
-		case Action::Defend: return (HasWeapon() ? (GetWeapon()->GetAction() == Action::Idle) : false);
+		case Action::Defend: return false;
 		}
 		break;
 	case Action::Defend:
 		switch (value) {
 		case Action::Jump:   return true;
 		case Action::Dash:   return true;
-		case Action::Attack: return (HasWeapon() ? (GetWeapon()->GetAction() == Action::Idle) : false);
+		case Action::Attack: return false;
 		}
 		break;
 	}
 	return false;
 }
-bool AHero::UpdateInputs(float DeltaTime) {
+bool ASlime::UpdateInputs(float DeltaTime) {
 	if (!Super::UpdateInputs(DeltaTime)) return false;
 
 	// Default AI
 	return true;
 }
-void AHero::UpdateAction(float DeltaTime) {
+void ASlime::UpdateAction(float DeltaTime) {
 	Super::UpdateAction(DeltaTime);
 
 	bool condition;
 	switch (GetAction()) {
 	case Action::Idle:
-		SetSpriteIndex(nullptr, 0 + int32(GetLifeTime()  * 2) % 4);
+		SetSpriteIndex(nullptr,  0 + int32(GetLifeTime() *  5) %  4);
 		break;
 	case Action::Move:
-		SetSpriteIndex(nullptr, 4 + int32(GetLifeTime() * 10) % 6);
+		SetSpriteIndex(nullptr,  0 + int32(GetLifeTime() *  5) %  4);
 		AddMovementInput(GetMoveDirection());
-		SetLookDirection(GetMoveDirection());
-		if (HasTarget()) SetLookDirection(GetTarget()->GetActorLocation() - GetActorLocation());
+		if (!HasWeapon() || GetWeapon()->GetAction() == Action::Idle) SetLookDirection(GetMoveDirection());
 		break;
 	case Action::Jump:
 		SetSpriteIndex(nullptr, FMath::Min(10 + int32(GetActionDelay() * 10), 13));
@@ -126,14 +128,18 @@ void AHero::UpdateAction(float DeltaTime) {
 		if (GetActionDelay() - DeltaTime == 0.0f || condition) Spawn(Identifier::Dust, GetFootLocation());
 		break;
 	case Action::Attack:
-		if (HasWeapon() && GetActionDelay() - DeltaTime == 0 && GetWeapon()->SetAction(Action::Attack));
+		if (HasWeapon() && GetWeapon()->GetAction() == Action::Idle) {
+			if (GetActionDelay() - DeltaTime == 0) GetWeapon()->SetAction(Action::Attack);
+		}
 		else {
 			SetAction(Action::Idle);
 			SetActionCooldown(Action::Attack, 0.25f);
 		}
 		break;
 	case Action::Defend:
-		if (HasWeapon() && GetActionDelay() - DeltaTime == 0 && GetWeapon()->SetAction(Action::Defend));
+		if (HasWeapon() && GetWeapon()->GetAction() == Action::Idle) {
+			if (GetActionDelay() - DeltaTime == 0) GetWeapon()->SetAction(Action::Defend);
+		}
 		else {
 			SetAction(Action::Idle);
 			SetActionCooldown(Action::Defend, 0.25f);

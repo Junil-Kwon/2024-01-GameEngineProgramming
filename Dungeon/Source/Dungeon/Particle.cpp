@@ -28,31 +28,26 @@ void AParticle::OnDespawn() {
 	Super::OnDespawn();
 }
 
-
-
-
-
 // =============================================================================================================
-// Action
+// Update
 // =============================================================================================================
 
-bool AParticle::UpdateAction(float DeltaTime) {
-	if (!Super::UpdateAction(DeltaTime)) return false;
+void AParticle::Tick(float DeltaTime) {
+	Super::Tick(DeltaTime);
 	
 	switch (GetIdentifier()) {
 	case Identifier::Dust:
 	case Identifier::Flame:
-		if (actionDelay - DeltaTime == 0.0f) SetSpriteXFlip(nullptr, FMath::RandBool());
-		SetSpriteIndex(nullptr, FMath::Min(0 + static_cast<int32>(actionDelay * 10), 4));
-		if (0.5f <= actionDelay) Despawn();
+		if (GetLifeTime() - DeltaTime == 0.0f) SetSpriteXFlip(nullptr, FMath::RandBool());
+		SetSpriteIndex(nullptr, FMath::Min(0 + static_cast<int32>(GetLifeTime() * 10), 4));
+		if (0.5f <= GetLifeTime()) Despawn();
 		break;
 
 	case Identifier::Twinkle:
-		SetSpriteIndex(nullptr, FMath::Min(0 + static_cast<int32>(actionDelay * 10), 4));
-		if (actionDelay - DeltaTime == 0.0) SetSpriteIntensity(nullptr, 0.2f);
-		if (0.5f <= actionDelay) Despawn();
+		SetSpriteIndex(nullptr, FMath::Min(0 + static_cast<int32>(GetLifeTime() * 10), 4));
+		if (GetLifeTime() - DeltaTime == 0.0) SetSpriteIntensity(nullptr, 0.2f);
+		if (0.5f <= GetLifeTime()) Despawn();
 		break;
 	}
-	return true;
 }
 

@@ -46,6 +46,25 @@ void AInteractor::OnDespawn() {
 	Super::OnDespawn();
 }
 
+// =============================================================================================================
+// Update
+// =============================================================================================================
+
+bool AInteractor::IsHiding() { return hide; }
+void AInteractor::Hide(bool value) {
+	hide = value;
+	SetSpriteIndex(nullptr, hide ? 63 : 0);
+	if (hide) nameComponent->SetText(FText::FromString(TEXT("")));
+	else nameComponent->SetText(FText::FromString(ToString(parent->GetIdentifier())));
+	if (parent) RefreshLocation();
+}
+
+void AInteractor::Update(float DeltaTime) {
+	Super::Update(DeltaTime);
+
+	if (!IsHiding()) RefreshLocation();
+}
+
 
 
 
@@ -61,30 +80,6 @@ void AInteractor::OnInteract(AEntity* entity) {
 	parent = entity;
 	Hide(false);
 	RefreshLocation();
-}
-
-
-
-
-
-// =============================================================================================================
-// Action
-// =============================================================================================================
-
-bool AInteractor::IsHiding() { return hide; }
-void AInteractor::Hide(bool value) {
-	hide = value;
-	SetSpriteIndex(nullptr, hide ? 63 : 0);
-	if (hide) nameComponent->SetText(FText::FromString(TEXT("")));
-	else nameComponent->SetText(FText::FromString(ToString(parent->GetIdentifier())));
-	if (parent) RefreshLocation();
-}
-
-bool AInteractor::UpdateAction(float DeltaTime) {
-	if (!Super::UpdateAction(DeltaTime)) return false;
-
-	if (!IsHiding()) RefreshLocation();
-	return true;
 }
 
 

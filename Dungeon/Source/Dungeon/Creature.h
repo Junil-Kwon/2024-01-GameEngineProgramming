@@ -31,6 +31,10 @@ protected:
 	virtual void OnSpawn  () override;
 	virtual void OnDespawn() override;
 
+	// Update
+protected:
+	virtual void Update(float DeltaTime) override;
+
 
 
 
@@ -51,8 +55,8 @@ private:
 	class UCapsuleComponent* sensorComponent;
 	float sensorRange;
 protected:
-	TArray<AEntity*> sensorArray;
-	virtual bool UpdateSensor(float DeltaTime);
+	TArray<ACreature*> sensorArray;
+	virtual void UpdateSensor(float DeltaTime);
 public:
 	float GetSensorRange();
 	void  SetSensorRange(float value);
@@ -72,7 +76,7 @@ private:
 	float magnetRange;
 protected:
 	TArray<AEntity*> magnetArray;
-	virtual bool UpdateMagnet(float DeltaTime);
+	virtual void UpdateMagnet(float DeltaTime);
 public:
 	float GetMagnetRange();
 	void  SetMagnetRange(float value);
@@ -83,14 +87,6 @@ public:
 	UFUNCTION() void OnMagnetEndOverlap(
 		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-	
-	// Weapon
-private:
-	class AWeapon* weapon;
-protected:
-	bool     HasWeapon();
-	AWeapon* GetWeapon();
-	virtual void SetWeapon(AWeapon* value);
 
 	// Indicator
 protected:
@@ -112,9 +108,39 @@ protected:
 	// AI
 	// =========================================================================================================
 	
-	// Action
+	// Target
+private:
+	ACreature* target;
 protected:
-	virtual bool UpdateAction(float DeltaTime) override;
+	bool       HasTarget();
+	ACreature* GetTarget();
+	void       SetTarget(ACreature* value);
+	virtual void SearchTarget();
+
+	// Action
+private:
+	Action action;
+	float  actionDelay;
+	float  actionCooldown[static_cast<uint8>(Action::Length)];
+public:
+	Action GetAction();
+	bool   SetAction(Action value);
+	float  GetActionDelay();
+	void   SetActionDelay(float delay);
+	float  GetActionCooldown(Action value);
+	void   SetActionCooldown(Action value, float cooldown);
+protected:
+	virtual bool VerifyAction(Action value);
+	virtual bool UpdateInputs(float DeltaTime);
+	virtual void UpdateAction(float DeltaTime);
+
+	// Weapon
+private:
+	class AWeapon* weapon;
+protected:
+	bool     HasWeapon();
+	AWeapon* GetWeapon();
+	virtual void SetWeapon(AWeapon* value);
 
 
 

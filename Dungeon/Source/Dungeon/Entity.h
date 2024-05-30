@@ -32,6 +32,7 @@ UENUM(BlueprintType)
 enum class Identifier : uint8 {
 	Default			= 0,
 	Hero			,
+	Slime			,
 
 	Chest			,
 	Money			,
@@ -40,6 +41,7 @@ enum class Identifier : uint8 {
 	Armour			,
 	Sword			,
 	Wand			,
+	XBow			,
 
 	Interactor		,
 	Indicator		,
@@ -108,10 +110,10 @@ class DUNGEON_API AEntity : public ACharacter {
 	GENERATED_BODY()
 
 	// =========================================================================================================
-	// -
+	// Default
 	// =========================================================================================================
 	
-	// -
+	// Default
 public:
 	bool operator==(const AEntity& other) const;
 
@@ -136,6 +138,12 @@ public:
 	bool IsAttached();
 	void Attach(AEntity* entity);
 	void Detach();
+
+	// Ghost
+private:
+	class AGhost* ghost;
+public:
+	AGhost* GetGhost();
 
 
 
@@ -168,14 +176,16 @@ protected:
 protected:
 	UPROPERTY(EditAnywhere) float defaultSpeed;
 private:
+	float lifeTime;
 	float speed;
-protected:
 	bool  isFalling;
 	float fallSpeed;
+	FVector lastLocation;
 public:
 	virtual void Tick(float DeltaTime) override;
-
-
+protected:
+	virtual void Update(float DeltaTime);
+	float GetLifeTime();
 
 private:
 	FVector lookDirection;
@@ -263,40 +273,6 @@ private:
 
 
 	// =========================================================================================================
-	// Action
-	// =========================================================================================================
-	
-	// Input
-private:
-	class AGhost* ghost;
-public:
-	AGhost* GetGhost();
-protected:
-	bool GetInput(Action value);
-	FVector GetInputDirection();
-
-	// Action
-private:
-	Action action;
-	float  actionCooldown[static_cast<uint8>(Action::Length)];
-protected:
-	float  actionDelay;
-	float  actionFrame;
-public:
-	Action GetAction();
-	void   SetAction(Action value);
-	float GetActionCooldown(Action value);
-	void  SetActionCooldown(Action value, float cooldown);
-protected:
-	virtual bool VerifyAction(Action value);
-	virtual bool UpdateInputs(float DeltaTime);
-	virtual bool UpdateAction(float DeltaTime);
-
-
-
-
-
-	// =========================================================================================================
 	// Properties
 	// =========================================================================================================
 	
@@ -326,6 +302,7 @@ public:
 	virtual bool RemoveTag(Tag value);
 
 	// Effect
+	#define EffectHitDuration    0.2f
 	#define EffectStrengthMax 9999.0f
 	#define EffectDurationMax 9999.0f
 protected:
@@ -340,12 +317,12 @@ private:
 	bool  refreshColor = false;
 	bool  refreshSpeed = false;
 protected:
-	virtual bool UpdateEffect(float DeltaTime);
+	virtual void UpdateEffect(float DeltaTime);
 public:
 	virtual void Damage(float value = 0.0f);
 	bool         HasEffect   (Effect value);
-	virtual bool AddEffect   (Effect value, float strength = 1.0f, float duration = EffectDurationMax);
-	virtual bool RemoveEffect(Effect value);
+	virtual void AddEffect   (Effect value, float strength = 1.0f, float duration = EffectDurationMax);
+	virtual void RemoveEffect(Effect value);
 
 	float GetEffectStrength(Effect value);
 	float GetEffectDuration(Effect value);

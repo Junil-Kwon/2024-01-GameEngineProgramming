@@ -152,9 +152,10 @@ void AIndicator::Hide(bool value) {
 	SetSpriteIndex(iArmourComponent, value ? 63 : armourMax ? 12 : 63);
 }
 
-bool AIndicator::UpdateAction(float DeltaTime) {
-	if (!Super::UpdateAction(DeltaTime) || !parent) return false;
+void AIndicator::Update(float DeltaTime) {
+	Super::Update(DeltaTime);
 
+	if (!parent) return;
 	if (width  != parent->GetIndicatorWidth()) SetWidth();
 	else if (health != parent->GetHealth() || armourMax != parent->GetArmourMax()) SetWidth();
 	else if (armour != parent->GetArmour() || armourMax != parent->GetArmourMax()) SetWidth();
@@ -162,7 +163,7 @@ bool AIndicator::UpdateAction(float DeltaTime) {
 	else if (hboost != parent->GetEffectStrength(Effect::HealthBoost)) SetWidth();
 	if (group  != parent->GetGroup()) SetColor();
 	if (leader != parent->HasTag(Tag::Leader)) SetLeader();
-	return true;
+	return;
 }
 
 

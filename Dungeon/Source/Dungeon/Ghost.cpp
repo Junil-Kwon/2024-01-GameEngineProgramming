@@ -63,6 +63,7 @@ AGhost::AGhost() {
 void AGhost::BeginPlay() {
 	Super::BeginPlay();
 
+	SetSensorRange(nullptr);
 	sensorComponent->OnComponentBeginOverlap.AddDynamic(this, &AGhost::OnSensorBeginOverlap);
 	sensorComponent->OnComponentEndOverlap  .AddDynamic(this, &AGhost::OnSensorEndOverlap  );
 
@@ -95,9 +96,13 @@ void AGhost::BeginPlay() {
 	keyboardX     = false;
 	keyboardC     = false;
 	keyboardOpacity  = 1.0f;
-	keyboardDuration = KeyboardShowDuration;
+	keyboardDuration = 0.0f;
+	//keyboardDuration = KeyboardShowDuration;
 
-	FocusCameraOn(GetPlayer());
+	if (GetPlayer()) {
+		SetActorLocation(GetPlayer()->GetActorLocation());
+		FocusCameraOn(GetPlayer());
+	}
 }
 
 // =============================================================================================================
@@ -146,19 +151,19 @@ void AGhost::FocusCameraOn(AEntity* entity) {
 	focusing      = false;
 	focusEntity   = entity;
 	if (entity   != nullptr) focusLocation = FVector::ZeroVector;
-	SetSensorRange(static_cast<ACreature*>(entity));
+	SetSensorRange(entity);
 }
 void AGhost::FocusCameraOn(FVector location) {
 	focusing      = false;
 	focusEntity   = nullptr;
 	focusLocation = location;
-	SetSensorRange(static_cast<ACreature*>(nullptr));
+	SetSensorRange(nullptr);
 }
 void AGhost::UnfocusCamera() {
 	focusing      = false;
 	focusEntity   = nullptr;
 	focusLocation = FVector::ZeroVector;
-	SetSensorRange(static_cast<ACreature*>(nullptr));
+	SetSensorRange(nullptr);
 }
 void AGhost::ShakeCamera(float strength, float duration, bool vertical) {
 	shakeStrength = FMath::Max(strength, 0.0f);
@@ -206,7 +211,7 @@ void  AGhost::SetSensorRange(AEntity* entity) {
 	}
 	else {
 		sensorRange = defaultSensorRange;
-		sensorComponent->SetCapsuleSize(defaultSensorRange, 0.0f);
+		sensorComponent->SetCapsuleSize(defaultSensorRange, defaultSensorRange);
 	}
 }
 void AGhost::OnSensorBeginOverlap(

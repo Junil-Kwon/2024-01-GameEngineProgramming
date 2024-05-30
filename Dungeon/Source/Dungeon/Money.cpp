@@ -37,6 +37,16 @@ void AMoney::OnDespawn() {
 	Super::OnDespawn();
 }
 
+// =============================================================================================================
+// Update
+// =============================================================================================================
+
+void AMoney::Tick(float DeltaTime) {
+	Super::Tick(DeltaTime);
+
+	if (merged) Despawn();
+}
+
 
 
 
@@ -74,21 +84,6 @@ void AMoney::OnInteract(AEntity* entity) {
 	}
 	GetGhost()->AdjustMoney(moneyValue);
 	Despawn();
-}
-
-
-
-
-
-// =============================================================================================================
-// Action
-// =============================================================================================================
-
-bool AMoney::UpdateAction(float DeltaTime) {
-	if (!Super::UpdateAction(DeltaTime)) return false;
-	if (merged) Despawn();
-
-	return false;
 }
 
 

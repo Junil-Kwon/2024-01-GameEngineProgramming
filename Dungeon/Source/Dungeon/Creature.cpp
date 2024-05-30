@@ -15,16 +15,18 @@
 // =============================================================================================================
 
 ACreature::ACreature() {
-	defaultHitboxRadius = 36.0f;
-	defaultHitboxHeight = 96.0f;
-	defaultHandLocation = FVector2D(24.0f, -4.0f);
-	defaultSensorRange = 480.0f;
-	defaultMagnetRange = 120.0f;
-	defaultIndicatorWidth = 24.0f;
-	defaultHealth = 1.0f;
-	defaultArmour = 0.0f;
-	defaultEnerge = 0.0f;
-	defaultDamage = 0.0f;
+	defaultHitboxRadius   =  36.0f;
+	defaultHitboxHeight   =  96.0f;
+	defaultHandLocation   = FVector2D(24.0f, -4.0f);
+
+	defaultSensorRange    = 480.0f;
+	defaultMagnetRange    = 120.0f;
+	defaultIndicatorWidth =  24.0f;
+
+	defaultHealth         =   1.0f;
+	defaultArmour         =   0.0f;
+	defaultEnerge         =   0.0f;
+	defaultDamage         =   0.0f;
 	
 	sensorComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Sensor"));
 	sensorComponent->InitCapsuleSize(0.5f, 0.5f);
@@ -50,12 +52,14 @@ void ACreature::BeginPlay() {
 // =============================================================================================================
 
 void ACreature::OnSpawn() {
-	Super::OnSpawn();
-
 	SetSensorRange(defaultSensorRange);
 	SetMagnetRange(defaultMagnetRange);
 	sensorArray.Empty();
 	magnetArray.Empty();
+
+	action = Action::Idle;
+	for (uint8 i = 0; i < static_cast<uint8>(Action::Length); i++) actionCooldown[i] = 0.0f;
+	actionDelay = 0.0f;
 
 	health = defaultHealth, healthMax = defaultHealth;
 	armour = defaultArmour, armourMax = defaultArmour;
@@ -63,6 +67,8 @@ void ACreature::OnSpawn() {
 	damage = defaultDamage;
 	hurtCooldown = 0.0f;
 	mendCooldown = 0.0f;
+
+	Super::OnSpawn();
 
 	SetIndicatorWidth(defaultIndicatorWidth);
 	indicator = static_cast<AIndicator*>(Spawn(Identifier::Indicator));
@@ -75,6 +81,20 @@ void ACreature::OnDespawn() {
 
 	SetWeapon  (nullptr);
 	indicator->Despawn();
+}
+
+// =============================================================================================================
+// Update
+// =============================================================================================================
+
+void ACreature::Update(float DeltaTime) {
+	Super::Update(DeltaTime);
+
+	UpdateSensor(DeltaTime);
+	UpdateMagnet(DeltaTime);
+	float multiplier = (HasEffect(Effect::Stun) ? 0.0f : 1.0f) * (1.0f - GetEffectStrength(Effect::Freeze));
+	if (0.0f < multiplier) UpdateInputs(DeltaTime * multiplier);
+	if (0.0f < multiplier) UpdateAction(DeltaTime * multiplier);
 }
 
 
@@ -102,16 +122,13 @@ void ACreature::OnCollision(AEntity* entity) {
 // Sensor
 // =============================================================================================================
 
-bool ACreature::UpdateSensor(float DeltaTime) {
-	if (sensorArray.Num() == 0) return false;
-
+void ACreature::UpdateSensor(float DeltaTime) {
 	for (int32 i = sensorArray.Num() - 1; -1 < i; i--) {
 		if (sensorArray[i] == nullptr) {
 			sensorArray.RemoveAt(i);
 			continue;
 		}
 	}
-	return true;
 }
 
 float ACreature::GetSensorRange() {
@@ -125,26 +142,29 @@ void ACreature::OnSensorBeginOverlap(
 	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 	bool bFromSweep, const FHitResult& SweepResult) {
-	AEntity* entity = static_cast<AEntity*>(OtherActor);
-	if (OtherActor->IsA(AEntity::StaticClass()) && !sensorArray.Contains(entity)) sensorArray.Add(entity);
+	if (OtherActor->IsA(ACreature::StaticClass())) {
+		ACreature* creature = static_cast<ACreature*>(OtherActor);
+		if (!sensorArray.Contains(creature)) sensorArray.Add(creature);
+	}
 }
 void ACreature::OnSensorEndOverlap(
 	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
-	AEntity* entity = static_cast<AEntity*>(OtherActor);
-	if (OtherActor->IsA(AEntity::StaticClass()) && sensorArray.Contains(entity)) sensorArray.Remove(entity);
+	if (OtherActor->IsA(ACreature::StaticClass())) {
+		ACreature* creature = static_cast<ACreature*>(OtherActor);
+		if (sensorArray.Contains(creature)) {
+			sensorArray.Remove(creature);
+			if (creature == GetTarget()) SetTarget(nullptr);
+		}
+	}
 }
 
 // =============================================================================================================
 // Magnet
 // =============================================================================================================
 
-bool ACreature::UpdateMagnet(float DeltaTime) {
-	if (magnetArray.Num() == 0) return false;
-	if (GetGhost()->GetPlayer() == nullptr || GetGroup() != GetGhost()->GetPlayer()->GetGroup()) return false;
-
-	AEntity* entity = nullptr;
-	float nearest = GetSensorRange();
+void ACreature::UpdateMagnet(float DeltaTime) {
+	if (GetGhost()->GetPlayer() == nullptr || GetGroup() != GetGhost()->GetPlayer()->GetGroup()) return;
 	for (int32 i = magnetArray.Num() - 1; -1 < i; i--) {
 		if (magnetArray[i] == nullptr) {
 			magnetArray.RemoveAt(i);
@@ -154,7 +174,6 @@ bool ACreature::UpdateMagnet(float DeltaTime) {
 			magnetArray[i]->AddMovementInput(GetActorLocation() - magnetArray[i]->GetActorLocation(), 1.0f);
 		}
 	}
-	return true;
 }
 
 float ACreature::GetMagnetRange() {
@@ -168,14 +187,122 @@ void ACreature::OnMagnetBeginOverlap(
 	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 	bool bFromSweep, const FHitResult& SweepResult) {
-	AEntity* entity = static_cast<AEntity*>(OtherActor);
-	if (OtherActor->IsA(AEntity::StaticClass()) && !magnetArray.Contains(entity)) magnetArray.Add(entity);
+	if (OtherActor->IsA(AEntity::StaticClass())) {
+		AEntity* entity = static_cast<AEntity*>(OtherActor);
+		if (!magnetArray.Contains(entity)) magnetArray.Add(entity);
+	}
 }
 void ACreature::OnMagnetEndOverlap(
 	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
-	AEntity* entity = static_cast<AEntity*>(OtherActor);
-	if (OtherActor->IsA(AEntity::StaticClass()) && magnetArray.Contains(entity)) magnetArray.Remove(entity);
+	if (OtherActor->IsA(AEntity::StaticClass())) {
+		AEntity* entity = static_cast<AEntity*>(OtherActor);
+		if (magnetArray.Contains(entity)) magnetArray.Remove(entity);
+	}
+}
+
+// =============================================================================================================
+// Indicator
+// =============================================================================================================
+
+AIndicator* ACreature::GetIndicator() { return indicator; }
+float ACreature::GetIndicatorWidth() { return indicatorWidth; }
+void  ACreature::SetIndicatorWidth(float value) { indicatorWidth = value; }
+
+
+
+
+
+// =============================================================================================================
+// Target
+// =============================================================================================================
+
+bool ACreature::HasTarget() {
+	return target != nullptr; 
+}
+ACreature* ACreature::GetTarget() {
+	return target; 
+}
+void ACreature::SetTarget(ACreature* value) {
+	if (value == target || (value != nullptr && value->HasTag(Tag::Invulnerability))) return;
+	target = value;
+}
+void ACreature::SearchTarget() {
+	ACreature* creature = nullptr;
+	float nearest = GetSensorRange();
+	for (int32 i = 0; i < sensorArray.Num(); i++) {
+		if (sensorArray[i] == nullptr || sensorArray[i]->HasTag(Tag::Invulnerability)) continue;
+		if (sensorArray[i]->GetGroup() == GetGroup()) continue;
+		float distance = FVector::Distance(GetActorLocation(), sensorArray[i]->GetActorLocation());
+		if (distance < nearest) {
+			creature = sensorArray[i];
+			nearest = distance;
+		}
+	}
+	SetTarget(creature);
+}
+
+// =============================================================================================================
+// Action
+// =============================================================================================================
+
+Action ACreature::GetAction() {
+	return action;
+}
+bool ACreature::SetAction(Action value) {
+	if (GetActionCooldown(value) || !VerifyAction(value)) return false;
+	action = value;
+	actionDelay = 0.0f;
+	return true;
+}
+float ACreature::GetActionDelay() {
+	return actionDelay;
+}
+void  ACreature::SetActionDelay(float value) {
+	actionDelay = FMath::Max(value, 0.0f);
+}
+float ACreature::GetActionCooldown(Action value) {
+	return actionCooldown[static_cast<uint8>(value)];
+}
+void  ACreature::SetActionCooldown(Action value, float cooldown) {
+	actionCooldown[static_cast<uint8>(value)] = FMath::Max(cooldown, 0.0f);
+}
+
+bool  ACreature::VerifyAction(Action value) {
+	return (GetAction() != value) ? true : false;
+}
+bool  ACreature::UpdateInputs(float DeltaTime) {
+	if (HasTag(Tag::Player)) {
+		SearchTarget();
+		SetMoveDirection(GetGhost()->GetInputDirection());
+		if (action == Action::Idle && !GetMoveDirection().IsZero()) SetAction(Action::Move);
+		if (action == Action::Move &&  GetMoveDirection().IsZero()) SetAction(Action::Idle);
+		for (uint8 i = 0; i < static_cast<uint8>(Action::Length); i++) {
+			Action index = static_cast<Action>(i);
+			if (GetGhost()->GetInput(index)) SetAction(index);
+		}
+		return false;
+	}
+	return true;
+}
+void  ACreature::UpdateAction(float DeltaTime) {
+	actionDelay += DeltaTime;
+	for (uint8 i = 0; i < static_cast<uint8>(Action::Length); i++) {
+		actionCooldown[i] = FMath::Max(actionCooldown[i] - DeltaTime, 0.0f);
+	}
+	switch (GetAction()) {
+	case Action::Attack:
+		if (actionDelay - DeltaTime == 0 && HasTag(Tag::Player) && GetGhost()->HasSelected()) {
+			AEntity* selected = GetGhost()->GetSelected();
+			if (selected->IsA(AWeapon::StaticClass())) SetWeapon(static_cast<AWeapon*>(selected));
+			else selected->OnInteract(this);
+			SetAction(Action::Idle);
+			SetActionCooldown(Action::Attack, 0.25f);
+		}
+		break;
+	case Action::Defend:
+		break;
+	}
 }
 
 // =============================================================================================================
@@ -200,44 +327,6 @@ void ACreature::SetWeapon(AWeapon* value) {
 	weapon = value;
 }
 
-// =============================================================================================================
-// Indicator
-// =============================================================================================================
-
-AIndicator* ACreature::GetIndicator() { return indicator; }
-float ACreature::GetIndicatorWidth() { return indicatorWidth; }
-void  ACreature::SetIndicatorWidth(float value) { indicatorWidth = value; }
-
-
-
-
-
-// =============================================================================================================
-// Action
-// =============================================================================================================
-
-bool ACreature::UpdateAction(float DeltaTime) {
-	if (!Super::UpdateAction(DeltaTime)) return false;
-
-	switch (GetAction()) {
-	case Action::Attack:
-		if (actionDelay - DeltaTime == 0 && HasTag(Tag::Player) && GetGhost()->HasSelected()) {
-			AEntity* selected = GetGhost()->GetSelected();
-			if (selected->IsA(AWeapon::StaticClass())) SetWeapon(static_cast<AWeapon*>(selected));
-			else selected->OnInteract(this);
-			SetAction(Action::Idle);
-			SetActionCooldown(Action::Attack, 0.25f);
-		}
-		break;
-	case Action::Defend:
-
-		break;
-	}
-	UpdateSensor(DeltaTime);
-	UpdateMagnet(DeltaTime);
-	return true;
-}
-
 
 
 
@@ -257,6 +346,7 @@ void ACreature::Damage(float value) {
 // =============================================================================================================
 
 void  ACreature::OnDamaged(float value) {
+	UE_LOG(LogTemp, Warning, TEXT("%f"), value);
 	if (0.0f < value) {
 		if (HasTag(Tag::Invulnerability)) return;
 		if (HasEffect(Effect::Resistance)) value *= 1 - GetEffectStrength(Effect::Resistance);
@@ -271,7 +361,7 @@ void  ACreature::OnDamaged(float value) {
 	}
 	float armourTemp = armour;
 	if (armour) armour = FMath::Clamp(armour - value, 0.0f, armourMax);
-	else        health = FMath::Clamp(health - value, 0.0f, armourMax);
+	else        health = FMath::Clamp(health - value, 0.0f, healthMax);
 	if (armour == 0.0f && armourTemp) OnArmourBroken();
 	if (health == 0.0f) OnDie();
 }

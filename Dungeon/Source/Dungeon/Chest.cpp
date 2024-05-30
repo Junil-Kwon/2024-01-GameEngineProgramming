@@ -24,9 +24,10 @@ void AChest::BeginPlay() {
 void AChest::OnSpawn() {
 	Super::OnSpawn();
 
+	action = Action::Idle;
+	actionDelay = 0.0f;
 	for (int32 i = 0; i < 20; i++) lootArray.Add(Identifier::Money);
 	//lootArray.Add(Identifier::Hero);
-	lootArray.Add(Identifier::Sword);
 }
 void AChest::OnDespawn() {
 	Super::OnDespawn();
@@ -34,39 +35,15 @@ void AChest::OnDespawn() {
 	lootArray.Empty();
 }
 
-
-
-
-
 // =============================================================================================================
-// Hitbox
+// Update
 // =============================================================================================================
 
-void AChest::OnInteract(AEntity* entity) {
-	Super::OnInteract(entity);
+void AChest::Tick(float DeltaTime) {
+	Super::Tick(DeltaTime);
 
-	RemoveTag(Tag::Interactability);
-	SetAction(Action::Move);
-}
-
-
-
-
-
-// =============================================================================================================
-// Action
-// =============================================================================================================
-
-bool AChest::VerifyAction(Action value) {
-	if (GetAction() == value || GetAction() == Action::Defeat ) return false;
-	if (GetAction() == Action::Idle && value == Action::Move  ) return true;
-	if (GetAction() == Action::Move && value == Action::Defeat) return true;
-	return false;
-}
-bool AChest::UpdateAction(float DeltaTime) {
-	if (!Super::UpdateAction(DeltaTime)) return false;
-
-	switch (GetAction()) {
+	actionDelay += DeltaTime;
+	switch (action) {
 	case Action::Idle:
 		break;
 	case Action::Move:
@@ -82,12 +59,30 @@ bool AChest::UpdateAction(float DeltaTime) {
 			Spawn(lootArray[loot], location)->LaunchCharacter(direction, true, true);
 			loot++;
 		}
-		if (0.7f <= actionDelay && lootArray.Num() <= loot) SetAction(Action::Defeat);
+		if (0.7f <= actionDelay && lootArray.Num() <= loot) {
+			action = Action::Defeat;
+			actionDelay = 0.0f;
+		}
 		break;
 	case Action::Defeat:
 		break;
 	}
-	return true;
+}
+
+
+
+
+
+// =============================================================================================================
+// Hitbox
+// =============================================================================================================
+
+void AChest::OnInteract(AEntity* entity) {
+	Super::OnInteract(entity);
+
+	RemoveTag(Tag::Interactability);
+	action = Action::Move;
+	actionDelay = 0.0f;
 }
 
 
