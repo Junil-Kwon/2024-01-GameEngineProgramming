@@ -93,10 +93,11 @@ enum class Effect : uint8 {
 	DamageBoost		= 1 << 1,
 	Resistance		= 1 << 2,
 	Speed			= 1 << 3,
-	Burn			= 1 << 4,
-	Stun			= 1 << 5,
-	Freeze			= 1 << 6,
-	Length			= 7 UMETA(Hidden),
+	Slowness		= 1 << 4,
+	Burn			= 1 << 5,
+	Stun			= 1 << 6,
+	Freeze			= 1 << 7,
+	Length			= 8 UMETA(Hidden),
 };
 ENUM_CLASS_FLAGS(Effect);
 

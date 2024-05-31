@@ -555,6 +555,7 @@ void AEntity::UpdateEffect(float DeltaTime) {
 				if (AdjustEffectStrength(value, -DeltaTime * 0.5f) == 0.0f) RemoveEffect(value);
 				break;
 			case Effect::Speed:
+			case Effect::Slowness:
 			case Effect::Stun:
 			default:
 				RemoveEffect(value);
@@ -617,6 +618,7 @@ float AEntity::AdjustEffectStrength(Effect value, float strength) {
 	case Effect::DamageBoost: strength = FMath::Clamp(strength, 0.0f, EffectStrengthMax); break;
 	case Effect::Resistance:  strength = FMath::Clamp(strength, 0.0f, 1.0f);              break;
 	case Effect::Speed:       strength = FMath::Clamp(strength, 0.0f, EffectStrengthMax); break;
+	case Effect::Slowness:    strength = FMath::Clamp(strength, 0.0f, EffectStrengthMax); break;
 	case Effect::Burn:        strength = FMath::Clamp(strength, 0.0f, EffectStrengthMax); break;
 	case Effect::Stun:        strength = FMath::Clamp(strength, 1.0f, 1.0f);              break;
 	case Effect::Freeze:      strength = FMath::Clamp(strength, 0.0f, 1.0f);              break;
@@ -626,6 +628,7 @@ float AEntity::AdjustEffectStrength(Effect value, float strength) {
 	case Effect::DamageBoost: break;
 	case Effect::Resistance:  break;
 	case Effect::Speed:       refreshSpeed = true; break;
+	case Effect::Slowness:    refreshSpeed = true; break;
 	case Effect::Burn:        refreshColor = true; refreshSpeed = true; break;
 	case Effect::Stun:        refreshColor = true; break;
 	case Effect::Freeze:      refreshColor = true; refreshSpeed = true; break;
@@ -640,6 +643,7 @@ float AEntity::AdjustEffectDuration(Effect value, float duration) {
 	case Effect::DamageBoost: duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
 	case Effect::Resistance:  duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
 	case Effect::Speed:       duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
+	case Effect::Slowness:    duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
 	case Effect::Burn:        duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
 	case Effect::Stun:        duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
 	case Effect::Freeze:      duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;

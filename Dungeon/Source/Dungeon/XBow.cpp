@@ -58,7 +58,7 @@ void AXBow::UpdateAction(float DeltaTime) {
 			location = location + ToVector(rotation) * (parent->GetHitboxRadius() * 0.5f);
 			location += RotateVector(FVector(FMath::Abs(rotation.Yaw) < 60.0f ? 1.0f : -24.0f, 0.0f, 0.0f));
 			SetActorLocation(location);
-			SetSpriteIndex(nullptr, FMath::Min( 6 + int32(GetActionDelay() * 20),  7));
+			SetSpriteIndex(nullptr, FMath::Min( 5 + int32(GetActionDelay() * 20),  7));
 			SetSpriteXFlip(nullptr, false);
 			SetSpriteAngle(nullptr, rotation.Yaw - 45.0f);
 		}
@@ -68,13 +68,14 @@ void AXBow::UpdateAction(float DeltaTime) {
 			// Spawn Arrow
 			parent->SetAction(Action::Idle);
 			parent->SetActionCooldown(Action::Attack, 0.3f);
+			parent->AddEffect(Effect::Slowness, 0.2f, 0.3f);
 		}
 		rotation = ToRotator(parent->GetLookDirection());
 		location = parent->GetActorLocation();
 		location = location + ToVector(rotation) * (parent->GetHitboxRadius() * 0.5f);
 		location += RotateVector(FVector(FMath::Abs(rotation.Yaw) < 60.0f ? 1.0f : -24.0f, 0.0f, 0.0f));
 		SetActorLocation(location);
-		SetSpriteIndex(nullptr, FMath::Min(1 + int32(GetActionDelay() * 20), 7));
+		SetSpriteIndex(nullptr, FMath::Min(1 + int32(GetActionDelay() * 20), 4));
 		SetSpriteXFlip(nullptr, false);
 		SetSpriteAngle(nullptr, rotation.Yaw - 45.0f);
 		if (0.3f <= GetActionDelay()) {
@@ -92,9 +93,9 @@ void AXBow::UpdateAction(float DeltaTime) {
 			SetSpriteXFlip(nullptr, false);
 			SetSpriteAngle(nullptr, rotation.Yaw - 45.0f);
 			parent->SetAction(Action::Idle);
-			parent->SetActionCooldown(Action::Defend, 0.5f);
+			parent->SetActionCooldown(Action::Defend, 0.6f);
 		}
-		if (0.3f <= GetActionDelay()) SetAction(Action::Idle);
+		if (0.5f <= GetActionDelay()) SetAction(Action::Idle);
 		break;
 	}
 }

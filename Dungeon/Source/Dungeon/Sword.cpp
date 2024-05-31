@@ -63,8 +63,8 @@ void ASword::UpdateAction(float DeltaTime) {
 	case Action::Attack:
 		if (GetActionDelay() - DeltaTime == 0 && FMath::RandRange(0.0f, 1.0f) < 0.8f) pattern = pattern ? 0 : 1;
 		switch (pattern) {
-		case 0: SetSpriteIndex(nullptr, FMath::Min( 1 + int32(GetActionDelay() * 20),  4)); break;
-		case 1: SetSpriteIndex(nullptr, FMath::Min( 5 + int32(GetActionDelay() * 20),  8)); break;
+		case 0: SetSpriteIndex(nullptr, FMath::Min(1 + int32(GetActionDelay() * 20), 4)); break;
+		case 1: SetSpriteIndex(nullptr, FMath::Min(5 + int32(GetActionDelay() * 20), 8)); break;
 		}
 		if (GetActionDelay() - DeltaTime == 0.0f) {
 			rotation = ToRotator(parent->GetLookDirection());
@@ -96,6 +96,7 @@ void ASword::UpdateAction(float DeltaTime) {
 			parent->SetAction(Action::Idle);
 			parent->SetActionCooldown(Action::Defend, 1.0f);
 			parent->AddEffect(Effect::Resistance, 0.8f, 0.5f);
+			parent->AddEffect(Effect::Slowness, 0.5f, 0.5f);
 		}
 		if (0.5f <= GetActionDelay()) {
 			SetAction(Action::Idle);
