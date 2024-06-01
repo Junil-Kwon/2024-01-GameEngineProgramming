@@ -43,6 +43,8 @@ enum class Identifier : uint8 {
 	Wand			,
 	XBow			,
 
+	Arrow			,
+
 	Interactor		,
 	Indicator		,
 

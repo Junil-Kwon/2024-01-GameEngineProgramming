@@ -171,7 +171,7 @@ void ACreature::UpdateMagnet(float DeltaTime) {
 			continue;
 		}
 		if (magnetArray[i]->HasTag(Tag::Collectable)) {
-			magnetArray[i]->AddMovementInput(GetActorLocation() - magnetArray[i]->GetActorLocation(), 1.0f);
+			magnetArray[i]->AddMovementInput(GetActorLocation() - magnetArray[i]->GetActorLocation());
 		}
 	}
 }

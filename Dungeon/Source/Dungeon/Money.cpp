@@ -41,8 +41,8 @@ void AMoney::OnDespawn() {
 // Update
 // =============================================================================================================
 
-void AMoney::Tick(float DeltaTime) {
-	Super::Tick(DeltaTime);
+void AMoney::Update(float DeltaTime) {
+	Super::Update(DeltaTime);
 
 	if (merged) Despawn();
 }

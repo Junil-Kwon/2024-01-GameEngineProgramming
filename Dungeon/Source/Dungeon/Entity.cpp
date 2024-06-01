@@ -495,7 +495,7 @@ bool AEntity::AddTag(Tag value) {
 	tag |= static_cast<uint8>(value);
 	switch (value) {
 	case Tag::Floating:        GetCharacterMovement()->GravityScale = 0.0f; break;
-	case Tag::Piercing:        hitboxComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision); break;
+	case Tag::Piercing:        hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly); break;
 	case Tag::Invulnerability: break;
 	case Tag::Interactability: break;
 	case Tag::Collectable:     break;

@@ -32,8 +32,8 @@ void AParticle::OnDespawn() {
 // Update
 // =============================================================================================================
 
-void AParticle::Tick(float DeltaTime) {
-	Super::Tick(DeltaTime);
+void AParticle::Update(float DeltaTime) {
+	Super::Update(DeltaTime);
 	
 	switch (GetIdentifier()) {
 	case Identifier::Dust:

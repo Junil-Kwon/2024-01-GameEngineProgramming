@@ -29,7 +29,7 @@ protected:
 
 	// Update
 public:
-	virtual void Tick(float DeltaTime) override;
+	virtual void Update(float DeltaTime) override;
 
 
 

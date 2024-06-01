@@ -66,6 +66,11 @@ void AXBow::UpdateAction(float DeltaTime) {
 	case Action::Attack:
 		if (GetActionDelay() - DeltaTime == 0.0f) {
 			// Spawn Arrow
+			AEntity* arrow = Spawn(Identifier::Arrow, GetActorLocation() + ToVector(ToRotator(parent->GetLookDirection())) * 48.0f);
+			arrow->SetGroup(GetGroup());
+			arrow->SetSpriteAngle(nullptr, GetSpriteAngle());
+			arrow->GetMovementComponent()->AddRadialImpulse(GetActorLocation(), 1024.0f, 1024.0f, ERadialImpulseFalloff::RIF_Linear, true);
+			//
 			parent->SetAction(Action::Idle);
 			parent->SetActionCooldown(Action::Attack, 0.3f);
 			parent->AddEffect(Effect::Slowness, 0.2f, 0.3f);

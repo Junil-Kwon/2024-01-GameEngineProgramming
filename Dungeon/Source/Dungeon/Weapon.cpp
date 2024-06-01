@@ -68,13 +68,15 @@ void AWeapon::OnInteract(AEntity* entity) {
 	ACreature* creature = static_cast<ACreature*>(entity);
 	if (parent != nullptr) {
 		SetHitbox(defaultHitboxRadius, defaultHitboxHeight);
+		SetGroup(Group::None);
 		RemoveTag(Tag::Floating);
 		RemoveTag(Tag::Piercing);
 		AddTag(Tag::Interactability);
 		SetAction(Action::Idle);
 	}
 	if (creature != nullptr) {
-		SetHitbox(0, 0);
+		SetHitbox(0.0f, 0.0f);
+		SetGroup(creature->GetGroup());
 		AddTag(Tag::Floating);
 		AddTag(Tag::Piercing);
 		RemoveTag(Tag::Interactability);
