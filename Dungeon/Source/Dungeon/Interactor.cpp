@@ -29,18 +29,18 @@ AInteractor::AInteractor() {
 	nameComponent->SetHorizontalAlignment(EHTA_Center);
 	nameComponent->SetVerticalAlignment(EVRTA_TextBottom);
 }
-void AInteractor::BeginPlay() {
-	Super::BeginPlay();
-
-	SetSpriteIndex(nullptr, 63);
-}
 
 // =============================================================================================================
 // Spawn
 // =============================================================================================================
 
+void AInteractor::OnStart() {
+	Super::OnStart();
+}
 void AInteractor::OnSpawn() {
 	Super::OnSpawn();
+
+	SetSpriteIndex(nullptr, 63);
 }
 void AInteractor::OnDespawn() {
 	Super::OnDespawn();

@@ -19,11 +19,10 @@ class DUNGEON_API AChest : public AEntity {
 	// Initialization
 public:
 	AChest();
-protected:
-	virtual void BeginPlay() override;
 
 	// Spawn
 protected:
+	virtual void OnStart  () override;
 	virtual void OnSpawn  () override;
 	virtual void OnDespawn() override;
 
@@ -32,7 +31,7 @@ private:
 	Action action;
 	float  actionDelay;
 public:
-	virtual void Tick(float DeltaTime) override;
+	virtual void Update(float DeltaTime) override;
 
 
 

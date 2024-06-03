@@ -1,4 +1,5 @@
 #include "Projectile.h"
+#include "Creature.h"
 
 
 
@@ -11,20 +12,27 @@
 AProjectile::AProjectile() {
 	defaultHitboxRadius = 10.0f;
 	defaultHitboxHeight = 20.0f;
-	//defaultTag += static_cast<uint8>(Tag::Floating);
-	//defaultTag += static_cast<uint8>(Tag::Piercing);
 	SetCollisionProfileName(TEXT("Projectile"));
-}
-void AProjectile::BeginPlay() {
-	Super::BeginPlay();
 }
 
 // =============================================================================================================
 // Spawn
 // =============================================================================================================
 
+void AProjectile::OnStart() {
+	Super::OnStart();
+}
 void AProjectile::OnSpawn() {
 	Super::OnSpawn();
+
+	switch (GetIdentifier()) {
+	case Identifier::Melee:
+		AddTag(Tag::Floating);
+		AddTag(Tag::Piercing);
+		break;
+	case Identifier::Arrow:
+		break;
+	}
 }
 void AProjectile::OnDespawn() {
 	Super::OnDespawn();
@@ -36,6 +44,16 @@ void AProjectile::OnDespawn() {
 
 void AProjectile::Update(float DeltaTime) {
 	Super::Update(DeltaTime);
+
+	switch (GetIdentifier()) {
+	case Identifier::Melee:
+		if (0.2f <= GetLifeTime()) Despawn();
+		break;
+		break;
+	case Identifier::Arrow:
+		if (3.0f <= GetLifeTime()) Despawn();
+		break;
+	}
 }
 
 
@@ -48,17 +66,22 @@ void AProjectile::Update(float DeltaTime) {
 
 void AProjectile::OnCollision(AEntity* entity) {
 	Super::OnCollision(entity);
-	
-	if (GetGroup() == Group::None) return;
+	ACreature* creature = static_cast<ACreature*>(entity);
+
 	switch (GetIdentifier()) {
+	case Identifier::Melee:
+		if (entity->IsA(ACreature::StaticClass()) && GetGroup() != entity->GetGroup()) {
+			UE_LOG(LogTemp, Log, TEXT("%s"), *ToString(creature->GetIdentifier()));
+			creature->Damage(0.1f);
+		}
+		break;
 	case Identifier::Arrow:
 		if (parent == nullptr && GetGroup() != entity->GetGroup()) {
-			UE_LOG(LogTemp, Warning, TEXT("%d, %d, %s"), GetGroup(), entity->GetGroup(), *entity->ToString(entity->GetIdentifier()));
-			Attach(entity);
 			parent = entity;
+			Attach(entity);
 			AddTag(Tag::Floating);
 			AddTag(Tag::Piercing);
-			
+			if (entity->IsA(ACreature::StaticClass())) creature->Damage(0.1f);
 		}
 		break;
 	}

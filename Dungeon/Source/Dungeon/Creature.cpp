@@ -17,12 +17,10 @@
 ACreature::ACreature() {
 	defaultHitboxRadius   =  36.0f;
 	defaultHitboxHeight   =  96.0f;
-	defaultHandLocation   = FVector2D(24.0f, -4.0f);
-
+	defaultHandLocation   = FVector2D(24.0f, -12.0f);
 	defaultSensorRange    = 480.0f;
 	defaultMagnetRange    = 120.0f;
 	defaultIndicatorWidth =  24.0f;
-
 	defaultHealth         =   1.0f;
 	defaultArmour         =   0.0f;
 	defaultEnerge         =   0.0f;
@@ -38,18 +36,19 @@ ACreature::ACreature() {
 	magnetComponent->SetCollisionProfileName(TEXT("Sensor"));
 	magnetComponent->SetupAttachment(RootComponent);
 }
-void ACreature::BeginPlay() {
-	Super::BeginPlay();
+
+// =============================================================================================================
+// Spawn
+// =============================================================================================================
+
+void ACreature::OnStart() {
+	Super::OnStart();
 
 	sensorComponent->OnComponentBeginOverlap.AddDynamic(this, &ACreature::OnSensorBeginOverlap);
 	sensorComponent->OnComponentEndOverlap  .AddDynamic(this, &ACreature::OnSensorEndOverlap  );
 	magnetComponent->OnComponentBeginOverlap.AddDynamic(this, &ACreature::OnMagnetBeginOverlap);
 	magnetComponent->OnComponentEndOverlap  .AddDynamic(this, &ACreature::OnMagnetEndOverlap  );
 }
-
-// =============================================================================================================
-// Spawn
-// =============================================================================================================
 
 void ACreature::OnSpawn() {
 	SetSensorRange(defaultSensorRange);
@@ -93,6 +92,7 @@ void ACreature::Update(float DeltaTime) {
 	UpdateSensor(DeltaTime);
 	UpdateMagnet(DeltaTime);
 	float multiplier = (HasEffect(Effect::Stun) ? 0.0f : 1.0f) * (1.0f - GetEffectStrength(Effect::Freeze));
+	if (0.0f < multiplier) UpdateSprite(DeltaTime * multiplier);
 	if (0.0f < multiplier) UpdateInputs(DeltaTime * multiplier);
 	if (0.0f < multiplier) UpdateAction(DeltaTime * multiplier);
 }
@@ -243,6 +243,29 @@ void ACreature::SearchTarget() {
 }
 
 // =============================================================================================================
+// Sprite
+// =============================================================================================================
+
+Action ACreature::GetSprite() {
+	return sprite;
+}
+void ACreature::SetSprite(Action value) {
+	if (GetSprite() == value) return;
+	sprite = value;
+	spriteDelay = 0.0f;
+}
+float ACreature::GetSpriteDelay() {
+	return spriteDelay;
+}
+void  ACreature::SetSpriteDelay(float value) {
+	spriteDelay = FMath::Max(value, 0.0f);
+}
+
+void ACreature::UpdateSprite(float DeltaTime) {
+	spriteDelay += DeltaTime;
+}
+
+// =============================================================================================================
 // Action
 // =============================================================================================================
 
@@ -346,7 +369,6 @@ void ACreature::Damage(float value) {
 // =============================================================================================================
 
 void  ACreature::OnDamaged(float value) {
-	UE_LOG(LogTemp, Warning, TEXT("%f"), value);
 	if (0.0f < value) {
 		if (HasTag(Tag::Invulnerability)) return;
 		if (HasEffect(Effect::Resistance)) value *= 1 - GetEffectStrength(Effect::Resistance);

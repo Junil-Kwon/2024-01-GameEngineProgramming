@@ -14,14 +14,14 @@
 ASword::ASword() {
 	defaultWeaponRange = 0.0f;
 }
-void ASword::BeginPlay() {
-	Super::BeginPlay();
-}
 
 // =============================================================================================================
 // Spawn
 // =============================================================================================================
 
+void ASword::OnStart() {
+	Super::OnStart();
+}
 void ASword::OnSpawn() {
 	Super::OnSpawn();
 }
@@ -74,7 +74,7 @@ void ASword::UpdateAction(float DeltaTime) {
 			SetActorLocation(location);
 			SetSpriteXFlip(nullptr, false);
 			SetSpriteAngle(nullptr, rotation.Yaw - 45.0f);
-			parent->SetAction(Action::Idle);
+			if (parent->SetAction(parent->GetSprite())) parent->SetActionDelay(parent->GetSpriteDelay());
 			parent->SetActionCooldown(Action::Attack, 0.4f);
 			if (!parent->GetCharacterMovement()->IsFalling()) parent->AddEffect(Effect::Speed, 0.5f, 0.1f);
 		}
@@ -93,7 +93,7 @@ void ASword::UpdateAction(float DeltaTime) {
 			SetSpriteXFlip(nullptr, parent->GetSpriteXFlip());
 			SetSpriteAngle(nullptr, !GetSpriteXFlip() ? -135.0f : 135.0f);
 			Damage();
-			parent->SetAction(Action::Idle);
+			if (parent->SetAction(parent->GetSprite())) parent->SetActionDelay(parent->GetSpriteDelay());
 			parent->SetActionCooldown(Action::Defend, 1.0f);
 			parent->AddEffect(Effect::Resistance, 0.8f, 0.5f);
 			parent->AddEffect(Effect::Slowness, 0.5f, 0.5f);

@@ -19,11 +19,10 @@ class DUNGEON_API AProjectile : public AEntity {
 	// Initialization
 public:
 	AProjectile();
-protected:
-	virtual void BeginPlay() override;
 
 	// Spawn
 protected:
+	virtual void OnStart  () override;
 	virtual void OnSpawn  () override;
 	virtual void OnDespawn() override;
 

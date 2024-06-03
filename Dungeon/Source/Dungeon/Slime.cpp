@@ -16,14 +16,14 @@ ASlime::ASlime() {
 	defaultHitboxHeight = 80.0f;
 	defaultGroup = Group::Enemy;
 }
-void ASlime::BeginPlay() {
-	Super::BeginPlay();
-}
 
 // =============================================================================================================
 // Spawn
 // =============================================================================================================
 
+void ASlime::OnStart() {
+	Super::OnStart();
+}
 void ASlime::OnSpawn() {
 	Super::OnSpawn();
 }

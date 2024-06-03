@@ -23,11 +23,10 @@ class DUNGEON_API ACreature : public AEntity {
 	// Initialization
 public:
 	ACreature();
-protected:
-	virtual void BeginPlay() override;
 
 	// Spawn
 protected:
+	virtual void OnStart  () override;
 	virtual void OnSpawn  () override;
 	virtual void OnDespawn() override;
 
@@ -116,6 +115,18 @@ protected:
 	ACreature* GetTarget();
 	void       SetTarget(ACreature* value);
 	virtual void SearchTarget();
+
+	// Sprite
+private:
+	Action sprite;
+	float  spriteDelay;
+public:
+	Action GetSprite();
+	void   SetSprite(Action value);
+	float  GetSpriteDelay();
+	void   SetSpriteDelay(float delay);
+protected:
+	virtual void UpdateSprite(float DeltaTime);
 
 	// Action
 private:

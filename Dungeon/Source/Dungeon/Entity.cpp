@@ -31,6 +31,25 @@ FVector  AEntity::ToVector(FRotator value) {
 FVector AEntity::RotateVector(FVector value) {
 	return FRotator(-48.590382f, 0.0f, 0.0f).RotateVector(value);
 }
+float AEntity::ToFloat(FVector value) {
+	/*
+	FRotator cameraRotation(-48.590382f, 0.0f, 0.0f);
+	FQuat cameraQuat = FQuat(cameraRotation);
+	FVector cameraForward = cameraQuat.GetForwardVector();
+
+	FVector planeNormal = FVector::CrossProduct(cameraForward, value);
+	float dot = FVector::DotProduct(planeNormal, FVector::UpVector);
+	float determinant = FVector::DotProduct(cameraForward, value);
+	float angle = FMath::RadiansToDegrees(FMath::Atan2(dot, determinant));
+	*/
+	value.Normalize();
+	FRotator cameraRotation(-48.590382f, 0.0f, 0.0f);
+	FVector cameraForward = FRotationMatrix(cameraRotation).GetColumn(0);
+	FVector planeNormal = FVector::CrossProduct(cameraForward, value);
+	float dot = FVector::DotProduct(planeNormal, FVector::UpVector);
+	float determinant = FVector::DotProduct(cameraForward, value);
+	return FMath::RadiansToDegrees(FMath::Atan2(dot, determinant));
+}
 
 template<typename TEnum> uint8 AEntity::GetIndex(TEnum value) {
 	static uint8 list[255] = { 0, };
@@ -46,6 +65,10 @@ template<typename TEnum> TEnum AEntity::ToEnum(FString value) {
 	int64 index = StaticEnum<TEnum>()->GetValueByName(FName(*value));
 	return static_cast<TEnum>(index == INDEX_NONE ? 0 : index);
 }
+
+// =============================================================================================================
+// Resources
+// =============================================================================================================
 
 UStaticMesh* AEntity::GetStaticMesh(MeshType value) {
 	static UStaticMesh* uStaticMesh[static_cast<uint8>(MeshType::Length)] = { nullptr, };
@@ -99,52 +122,40 @@ UMaterial* AEntity::GetFontMaterial(FontType value) {
 	return uMaterial[index];
 }
 
+// =============================================================================================================
+// Ghost
+// =============================================================================================================
+
+AGhost* AEntity::GetGhost() {
+	if (ghost == nullptr) ghost = Cast<AGhost>(UGameplayStatics::GetPlayerPawn(this->GetWorld(), 0));
+	return ghost;
+}
+
+// =============================================================================================================
+// Entiy Management
+// =============================================================================================================
+
 AEntity* AEntity::Spawn(Identifier value, FVector location) {
-	AEntity* entity = nullptr;
-	if (GetGhost()->GetObjectPool(value)->Num() == 0) {
-		static UClass* uClass[static_cast<uint8>(Identifier::Length)] = { nullptr, };
-		uint8 index = static_cast<uint8>(value);
-		if (uClass[index] == nullptr) {
-			FString name = ToString(value);
-			FString path = "/Game/Blueprints/BP_" + name + ".BP_" + name + "_C";
-			uClass[index] = LoadObject<UClass>(nullptr, *path);
-		}
-		if (uClass[index] == nullptr) {
-			UE_LOG(LogTemp, Warning, TEXT("%s Spawn Failed."), *ToString(value));
-			return nullptr;
-		}
-		FActorSpawnParameters parameter;
-		parameter.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		entity = GetWorld()->SpawnActor<AEntity>(uClass[index], location, FRotator::ZeroRotator, parameter);
+	static UClass* uClass[static_cast<uint8>(Identifier::Length)] = { nullptr, };
+	uint8 index = static_cast<uint8>(value);
+	if (uClass[index] == nullptr) {
+		FString name = ToString(value);
+		FString path = "/Game/Blueprints/BP_" + name + ".BP_" + name + "_C";
+		uClass[index] = LoadObject<UClass>(nullptr, *path);
 	}
-	else {
-		entity = GetGhost()->GetObjectPool(value)->Pop();
-		entity->SetActorLocation(location);
-		entity->SetActorTickEnabled(true);
-		entity->SetActorHiddenInGame(false);
-		entity->hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-		entity->GetCharacterMovement()->StopMovementImmediately();
-		entity->active = true;
-		entity->OnSpawn();
-	}
+	FActorSpawnParameters parameter;
+	parameter.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	
+	AEntity* entity;
+	entity = GetWorld()->SpawnActor<AEntity>(uClass[index], location, FRotator::ZeroRotator, parameter);
+	entity->identifier = value;
+	entity->OnStart();
+	entity->OnSpawn();
 	return entity;
 }
 void AEntity::Despawn() {
 	OnDespawn();
 	Destroy();
-	//Remove AI Controller
-	/*
-	GetGhost()->GetObjectPool(GetIdentifier())->Push(this);
-	SetActorLocation(FVector(0.0f, 0.0f, 0.0f));
-	SetActorTickEnabled(false);
-	SetActorHiddenInGame(true);
-	hitboxComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GetCharacterMovement()->StopMovementImmediately();
-	GetCharacterMovement()->GravityScale = 0;
-	if (IsAttached()) Detach();
-	active = false;
-	OnDespawn();
-	*/
 }
 
 bool AEntity::IsAttached() {
@@ -159,15 +170,6 @@ void AEntity::Detach() {
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 }
 
-// =============================================================================================================
-// Ghost
-// =============================================================================================================
-
-AGhost* AEntity::GetGhost() {
-	if (ghost == nullptr) ghost = Cast<AGhost>(UGameplayStatics::GetPlayerPawn(this->GetWorld(), 0));
-	return ghost;
-}
-
 
 
 
@@ -177,18 +179,16 @@ AGhost* AEntity::GetGhost() {
 // =============================================================================================================
 
 AEntity::AEntity() {
-	defaultSpeed          = 300.0f;
+	PrimaryActorTick.bCanEverTick = true;
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
+	defaultSpeed          = 300.0f;
 	defaultHitboxRadius   = 0.0f;
 	defaultHitboxHeight   = 0.0f;
 	defaultHandLocation   = FVector2D::ZeroVector;
-
 	defaultGroup          = Group::None;
 	defaultEffect         = 0;
 	defaultEffectImmunity = 0;
-
-	PrimaryActorTick.bCanEverTick = true;
-	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
 	hitboxComponent = GetCapsuleComponent();
 	hitboxComponent->InitCapsuleSize(defaultHitboxRadius, defaultHitboxHeight * 0.5f);
@@ -211,15 +211,23 @@ AEntity::AEntity() {
 	shadowComponent->SetVisibility(false);
 	shadowComponent->SetupAttachment(RootComponent);
 }
-void AEntity::BeginPlay() {
-	Super::BeginPlay();
-	
-	FString name = GetName();
-	int64 BP = name.Find(TEXT("_"), ESearchCase::IgnoreCase, ESearchDir::FromStart, 0);
-	int64 C0 = name.Find(TEXT("_"), ESearchCase::IgnoreCase, ESearchDir::FromStart, BP + 1);
-	FString edit = name.Mid(BP + 1, C0 - BP - 1);
-	for (int64 i = edit.Len() - 1; -1 < i; i--) if ('0' <= edit[i] && edit[i] <= '9') edit.RemoveAt(i, 1);
-	identifier = ToEnum<Identifier>(edit);
+
+// =============================================================================================================
+// Spawn
+// =============================================================================================================
+
+void AEntity::OnStart() {
+	if (start) return;
+	start = true;
+
+	if (GetIdentifier() == Identifier::Default) {
+		FString name = GetName();
+		int64 BP = name.Find(TEXT("_"), ESearchCase::IgnoreCase, ESearchDir::FromStart, 0);
+		int64 C0 = name.Find(TEXT("_"), ESearchCase::IgnoreCase, ESearchDir::FromStart, BP + 1);
+		FString edit = name.Mid(BP + 1, C0 - BP - 1);
+		for (int64 i = edit.Len() - 1; -1 < i; i--) if ('0' <= edit[i] && edit[i] <= '9') edit.RemoveAt(i, 1);
+		identifier = ToEnum<Identifier>(edit);
+	}
 
 	hitboxComponent->OnComponentHit.AddDynamic(this, &AEntity::OnHit);
 	hitboxComponent->OnComponentBeginOverlap.AddDynamic(this, &AEntity::OnHitboxBeginOverlap);
@@ -231,19 +239,11 @@ void AEntity::BeginPlay() {
 	shadowComponent->SetVisibility(true);
 	shadowComponent->bCastHiddenShadow = true;
 	shadowComponent->bHiddenInGame = true;
-
-	active = true;
-	OnSpawn();
-}
-
-// =============================================================================================================
-// Spawn
-// =============================================================================================================
-
-bool AEntity::IsActive() {
-	return active;
 }
 void AEntity::OnSpawn() {
+	if (spawn) return;
+	spawn = true;
+
 	speed = defaultSpeed;
 	isFalling = false;
 	fallSpeed = 0.0f;
@@ -278,6 +278,9 @@ void AEntity::OnSpawn() {
 	}
 }
 void AEntity::OnDespawn() {
+	if (!spawn) return;
+	spawn = false;
+
 	if (HasTag(Tag::Player)) GetGhost()->SetPlayer(nullptr);
 	for (uint8 i = 0; i < static_cast<uint8>(Tag::Length); i++) {
 		Tag value = static_cast<Tag>(1 << i);
@@ -288,6 +291,7 @@ void AEntity::OnDespawn() {
 		if (HasEffect(value)) RemoveEffect(value);
 	}
 }
+bool AEntity::Spawned() { return spawn; }
 
 // =============================================================================================================
 // Update
@@ -296,7 +300,9 @@ void AEntity::OnDespawn() {
 void AEntity::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
-	if (active) Update(DeltaTime);
+	if (!start) OnStart();
+	if (!spawn) OnSpawn();
+	Update(DeltaTime);
 }
 
 void AEntity::Update(float DeltaTime) {
@@ -305,17 +311,9 @@ void AEntity::Update(float DeltaTime) {
 		if (!isFalling) isFalling = true;
 		fallSpeed = GetCharacterMovement()->Velocity.Z;
 		if (fallSpeed < FallSpeedMax) GetCharacterMovement()->Velocity.Z = FallSpeedMax;
-		if (GetFootLocation().Z < VoidZAxis) {
-			if (GetGhost()->GetPlayer() && GetGroup() == GetGhost()->GetPlayer()->GetGroup()) {
-				SetActorLocation(lastLocation);
-				GetCharacterMovement()->StopMovementImmediately();
-				Damage(1.0f);
-			}
-			else Despawn();
-		}
+		if (GetFootLocation().Z < VoidZAxis) Despawn();
 	}
 	else {
-		lastLocation = GetActorLocation();
 		if (isFalling) {
 			if (fallSpeed < DustThreshold) {
 				Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -hitboxRadius *  0.75f, 0.0f));
@@ -390,14 +388,14 @@ void AEntity::OnHit(
 	UPrimitiveComponent* OtherComponent, FVector NormalImpulse,
 	const FHitResult& Hit) {
 	AEntity* entity = static_cast<AEntity*>(OtherActor);
-	if (OtherActor && OtherActor->IsA(AEntity::StaticClass())) OnCollision(entity);
+	if (Spawned() && OtherActor && OtherActor->IsA(AEntity::StaticClass())) OnCollision(entity);
 }
 void AEntity::OnHitboxBeginOverlap(
 	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 	bool bFromSweep, const FHitResult& SweepResult) {
 	AEntity* entity = static_cast<AEntity*>(OtherActor);
-	if (OtherActor && OtherActor->IsA(AEntity::StaticClass())) OnCollision(entity);
+	if (Spawned() && OtherActor && OtherActor->IsA(AEntity::StaticClass())) OnCollision(entity);
 }
 void AEntity::OnCollision(AEntity* entity) {
 }
@@ -495,7 +493,7 @@ bool AEntity::AddTag(Tag value) {
 	tag |= static_cast<uint8>(value);
 	switch (value) {
 	case Tag::Floating:        GetCharacterMovement()->GravityScale = 0.0f; break;
-	case Tag::Piercing:        hitboxComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly); break;
+	case Tag::Piercing:        hitboxComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision); break;
 	case Tag::Invulnerability: break;
 	case Tag::Interactability: break;
 	case Tag::Collectable:     break;

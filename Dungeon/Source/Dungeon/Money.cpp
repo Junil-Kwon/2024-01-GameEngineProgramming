@@ -15,14 +15,14 @@ AMoney::AMoney() {
 	defaultTag += static_cast<uint8>(Tag::Collectable);
 	SetCollisionProfileName(TEXT("Particle"));
 }
-void AMoney::BeginPlay() {
-	Super::BeginPlay();
-}
 
 // =============================================================================================================
 // Spawn
 // =============================================================================================================
 
+void AMoney::OnStart() {
+	Super::OnStart();
+}
 void AMoney::OnSpawn() {
 	Super::OnSpawn();
 

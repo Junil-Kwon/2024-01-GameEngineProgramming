@@ -15,14 +15,14 @@ AItem::AItem() {
 	defaultTag += static_cast<uint8>(Tag::Interactability);
 	SetCollisionProfileName(TEXT("Particle"));
 }
-void AItem::BeginPlay() {
-	Super::BeginPlay();
-}
 
 // =============================================================================================================
 // Spawn
 // =============================================================================================================
 
+void AItem::OnStart() {
+	Super::OnStart();
+}
 void AItem::OnSpawn() {
 	Super::OnSpawn();
 

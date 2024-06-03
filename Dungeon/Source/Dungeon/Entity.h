@@ -43,6 +43,7 @@ enum class Identifier : uint8 {
 	Wand			,
 	XBow			,
 
+	Melee			,
 	Arrow			,
 
 	Interactor		,
@@ -123,10 +124,13 @@ public:
 	FRotator ToRotator   (FVector  value);
 	FVector  ToVector    (FRotator value);
 	FVector  RotateVector(FVector  value);
+	float    ToFloat     (FVector  value);
 
 	template<typename TEnum> uint8   GetIndex(TEnum   value);
 	template<typename TEnum> FString ToString(TEnum   value);
 	template<typename TEnum> TEnum   ToEnum  (FString value);
+
+	// --
 
 	UStaticMesh*              GetStaticMesh             (MeshType   value);
 	UTexture2D*               GetTexture2D              (Identifier value);
@@ -135,18 +139,20 @@ public:
 	UFont*     GetFont        (FontType value);
 	UMaterial* GetFontMaterial(FontType value);
 
+	// Ghost
+private:
+	class AGhost* ghost;
+public:
+	AGhost* GetGhost();
+
+	// --
+
 	AEntity* Spawn(Identifier value, FVector location = FVector::ZeroVector);
 	void     Despawn();
 
 	bool IsAttached();
 	void Attach(AEntity* entity);
 	void Detach();
-
-	// Ghost
-private:
-	class AGhost* ghost;
-public:
-	AGhost* GetGhost();
 
 
 
@@ -159,17 +165,17 @@ public:
 	// Initialization
 public:
 	AEntity();
-protected:
-	virtual void BeginPlay() override;
 
 	// Spawn
 private:
-	bool active;
-public:
-	bool IsActive();
+	bool start;
+	bool spawn;
 protected:
+	virtual void OnStart  ();
 	virtual void OnSpawn  ();
 	virtual void OnDespawn();
+public:
+	bool Spawned();
 
 	// Update
 	#define DefaultGravityScale     3.0f
@@ -183,7 +189,6 @@ private:
 	float speed;
 	bool  isFalling;
 	float fallSpeed;
-	FVector lastLocation;
 public:
 	virtual void Tick(float DeltaTime) override;
 protected:
@@ -197,8 +202,8 @@ public:
 	FVector GetLookDirection();
 	FVector GetMoveDirection();
 protected:
-	void    SetLookDirection(FVector value);
-	void    SetMoveDirection(FVector value);
+	void SetLookDirection(FVector value);
+	void SetMoveDirection(FVector value);
 
 
 
@@ -215,8 +220,8 @@ protected:
 	UPROPERTY(EditAnywhere) FVector2D defaultHandLocation;
 private:
 	UCapsuleComponent* hitboxComponent;
-	float hitboxRadius;
-	float hitboxHeight;
+	float   hitboxRadius;
+	float   hitboxHeight;
 	FVector handLocation;
 protected:
 	virtual void OnHitboxChanged();

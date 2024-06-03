@@ -44,10 +44,14 @@ void AIndicator::SetupComponent(UStaticMeshComponent* component) {
 	component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	component->SetupAttachment(GetAnchorComponent());
 }
-void AIndicator::BeginPlay() {
-	Super::BeginPlay();
 
-	SetSpriteIndex(nullptr, 63);
+// =============================================================================================================
+// Spawn
+// =============================================================================================================
+
+void AIndicator::OnStart() {
+	Super::OnStart();
+
 	FVector scale = FVector::OneVector * GetTexture2D(GetIdentifier())->GetSizeX() * 0.005f;
 	lBorderComponent->SetMaterial(0, GetMaterialInstanceDynamic(GetIdentifier()));
 	rBorderComponent->SetMaterial(0, GetMaterialInstanceDynamic(GetIdentifier()));
@@ -76,14 +80,10 @@ void AIndicator::BeginPlay() {
 	SetSpriteColor(iArmourComponent, FVector(0.2f, 0.2f, 0.2f));
 	SetSpriteColor(lEnergeComponent, FVector(0.0f, 0.2f, 1.0f));
 }
-
-// =============================================================================================================
-// Spawn
-// =============================================================================================================
-
 void AIndicator::OnSpawn() {
 	Super::OnSpawn();
 	
+	SetSpriteIndex(nullptr, 63);
 	SetSpriteIndex(lBorderComponent, 63);
 	SetSpriteIndex(rBorderComponent, 63);
 	SetSpriteIndex(lHealthComponent, 63);

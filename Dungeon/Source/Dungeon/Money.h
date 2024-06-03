@@ -19,11 +19,10 @@ class DUNGEON_API AMoney : public AEntity {
 	// Initialization
 public:
 	AMoney();
-protected:
-	virtual void BeginPlay() override;
 
 	// Spawn
 protected:
+	virtual void OnStart  () override;
 	virtual void OnSpawn  () override;
 	virtual void OnDespawn() override;
 

@@ -16,14 +16,14 @@ AWeapon::AWeapon() {
 	defaultWeaponRange = 0.0f;
 	SetCollisionProfileName(TEXT("Particle"));
 }
-void AWeapon::BeginPlay() {
-	Super::BeginPlay();
-}
 
 // =============================================================================================================
 // Spawn
 // =============================================================================================================
 
+void AWeapon::OnStart() {
+	Super::OnStart();
+}
 void AWeapon::OnSpawn() {
 	Super::OnSpawn();
 
@@ -67,6 +67,7 @@ void AWeapon::OnInteract(AEntity* entity) {
 	if (parent == entity || (entity != nullptr && !entity->IsA(ACreature::StaticClass()))) return;
 	ACreature* creature = static_cast<ACreature*>(entity);
 	if (parent != nullptr) {
+		SetSpriteOpacity(nullptr);
 		SetHitbox(defaultHitboxRadius, defaultHitboxHeight);
 		SetGroup(Group::None);
 		RemoveTag(Tag::Floating);

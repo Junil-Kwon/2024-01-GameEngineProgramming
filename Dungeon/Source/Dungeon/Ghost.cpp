@@ -50,7 +50,7 @@ AGhost::AGhost() {
 	springComponent->SetupAttachment(RootComponent);
 
 	cameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	cameraComponent->SetRelativeRotation(FRotator(-45.590382f, 0.0f, 0.0f));
+	cameraComponent->SetRelativeRotation(FRotator(-48.590382f, 0.0f, 0.0f));
 	cameraComponent->PostProcessSettings.BloomIntensity = 0.0f;
 	cameraComponent->FieldOfView = 15.0f;
 	cameraComponent->SetupAttachment(springComponent);
