@@ -66,7 +66,9 @@ void AProjectile::OnCollision(AEntity* entity) {
 				Attach(entity);
 				AddTag(Tag::Floating);
 				AddTag(Tag::Piercing);
-				if (entity->IsA(ACreature::StaticClass())) creature->Damage(0.1f);
+				if (entity->IsA(ACreature::StaticClass())) {
+					Damage(creature, GetEffectStrength(Effect::DamageBoost));
+				}
 			}
 			else if (!entity) {
 				parent = this;

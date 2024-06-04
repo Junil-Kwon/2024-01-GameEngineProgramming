@@ -181,7 +181,7 @@ protected:
 
 	// Properties
 public:
-	virtual void Damage(float value) override;
+	virtual void Damage(AEntity* entity, float value) override;
 
 	// =========================================================================================================
 	// Stats

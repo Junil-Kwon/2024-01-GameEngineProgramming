@@ -516,8 +516,8 @@ bool AEntity::RemoveTag(Tag value) {
 // Effect
 // =============================================================================================================
 
-void AEntity::Damage(float value) {
-	effectHit = EffectHitDuration;
+void AEntity::Damage(AEntity* entity, float value) {
+	if (entity) entity->effectHit = EffectHitDuration;
 }
 void AEntity::UpdateEffect(float DeltaTime) {
 	for (uint8 i = 0; i < static_cast<uint8>(Effect::Length); i++) {
@@ -581,7 +581,7 @@ void AEntity::UpdateEffect(float DeltaTime) {
 		refreshColor = false;
 		effectHit = FMath::Max(effectHit - DeltaTime, 0.0f);
 		FVector color     = GetSpriteColor    ();
-		float   intensity = GetSpriteIntensity() + FMath::Clamp(effectHit * 30.0f, 0.0f, 2.0f);
+		float   intensity = GetSpriteIntensity() + FMath::Clamp(effectHit * 16.0f, 0.0f, 1.6f);
 
 		if (HasEffect(Effect::Burn)) {
 			color += FVector(1.0f, 0.0f, 0.0f) * GetEffectStrength(Effect::Burn) * 8.0f;

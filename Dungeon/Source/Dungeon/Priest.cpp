@@ -1,4 +1,4 @@
-#include "StalKnight.h"
+#include "Priest.h"
 #include "Ghost.h"
 #include "Weapon.h"
 
@@ -10,30 +10,23 @@
 // Initialization
 // =============================================================================================================
 
-AStalKnight::AStalKnight() {
-	defaultSpeed = 360.0f;
-	defaultHitboxRadius = 32.0f;
-	defaultHitboxHeight = 88.0f;
-	defaultHandLocation = FVector2D(24.0f, 0.0f);
-	defaultGroup = Group::Friendly;
-	defaultIndicatorWidth = 8.0f;
-	defaultHealth = 1.0f;
-	defaultArmour = 1.0f;
+APriest::APriest() {
+	defaultGroup  = Group::Friendly;
+	defaultHealth = 20.0f;
+	defaultTag += static_cast<uint8>(Tag::Interactability);
 }
 
 // =============================================================================================================
 // Spawn
 // =============================================================================================================
 
-void AStalKnight::OnStart() {
+void APriest::OnStart() {
 	Super::OnStart();
 }
-void AStalKnight::OnSpawn() {
+void APriest::OnSpawn() {
 	Super::OnSpawn();
-	
-	SetAction(Action::Dash);
 }
-void AStalKnight::OnDespawn() {
+void APriest::OnDespawn() {
 	Super::OnDespawn();
 }
 
@@ -45,10 +38,13 @@ void AStalKnight::OnDespawn() {
 // Hitbox
 // =============================================================================================================
 
-void AStalKnight::OnInteract(AEntity* entity) {
+void APriest::OnInteract(AEntity* entity) {
 	Super::OnInteract(entity);
 
-	if (entity && entity->IsA(ACreature::StaticClass())) parent = static_cast<ACreature*>(entity);
+	if (entity) entity->AddTag(Tag::Interactability);
+	RemoveTag(Tag::Interactability);
+	AddTag(Tag::Player);
+	AddTag(Tag::PlayerParty);
 }
 
 
@@ -59,16 +55,17 @@ void AStalKnight::OnInteract(AEntity* entity) {
 // Sprite
 // =============================================================================================================
 
-void AStalKnight::UpdateSprite(float DeltaTime) {
+void APriest::UpdateSprite(float DeltaTime) {
 	Super::UpdateSprite(DeltaTime);
 
 	switch (GetSprite()) {
 	case Action::Idle:   SetSpriteIndex(nullptr,  0 + int32(GetLifeTime()  * 2) % 4); break;
 	case Action::Move:   SetSpriteIndex(nullptr,  4 + int32(GetLifeTime() * 10) % 6); break;
-	case Action::Dash:   SetSpriteIndex(nullptr, FMath::Min(14 + int32(GetSpriteDelay() *  5), 17)); break;
+	case Action::Jump:   SetSpriteIndex(nullptr, FMath::Min(10 + int32(GetSpriteDelay() * 10), 13)); break;
+	case Action::Dash:   SetSpriteIndex(nullptr, FMath::Min(14 + int32(GetSpriteDelay() * 10), 19)); break;
 	case Action::Attack: break;
 	case Action::Defend: break;
-	case Action::Defeat: SetSpriteIndex(nullptr, FMath::Min(10 + int32(GetSpriteDelay() * 10), 13)); break;
+	case Action::Defeat: SetSpriteIndex(nullptr, FMath::Min(20 + int32(GetSpriteDelay() * 10), 23)); break;
 	}
 }
 
@@ -76,52 +73,45 @@ void AStalKnight::UpdateSprite(float DeltaTime) {
 // Action
 // =============================================================================================================
 
-bool AStalKnight::VerifyAction(Action value) {
+bool APriest::VerifyAction(Action value) {
 	if (!Super::VerifyAction(value)) return false;
 
 	if (value == Action::Idle || value == Action::Move || value == Action::Defeat) return true;
-	if (value == Action::Jump) return false;
 	switch (GetAction()) {
 	case Action::Idle: return true;
 	case Action::Move: return true;
-	case Action::Attack: return (HasWeapon() ? true : false);
-	case Action::Defend: return (HasWeapon() ? true : false);
+	case Action::Jump:
+		switch (value) {
+		case Action::Dash:   return false;
+		case Action::Attack: return true;
+		case Action::Defend: return true;
+		}
+		break;
+	case Action::Dash:
+		switch (value) {
+		case Action::Jump:   return false;
+		case Action::Attack: return false;
+		case Action::Defend: return false;
+		}
+		break;
+	case Action::Attack:
+		switch (value) {
+		case Action::Jump:   return true;
+		case Action::Dash:   return true;
+		case Action::Defend: return (HasWeapon() ? true : false);
+		}
+		break;
+	case Action::Defend:
+		switch (value) {
+		case Action::Jump:   return true;
+		case Action::Dash:   return true;
+		case Action::Attack: return (HasWeapon() ? true : false);
+		}
+		break;
 	}
 	return false;
 }
-bool AStalKnight::UpdateInputs(float DeltaTime) {
-	if (!Super::UpdateInputs(DeltaTime)) return false;
-
-	AdjustHealth(-DeltaTime * 0.1f);
-	if (!parent) return false;
-	if (int32(GetLifeTime()) * 10 != int32((GetLifeTime() - DeltaTime)) * 10) {
-		float distance = GetDistance(parent, this);
-		if (distance < PlayerNearby) SetMoveDirection(FVector::ZeroVector);
-		else {
-			FVector direction = parent->GetActorLocation() - GetActorLocation();
-			direction.Normalize();
-			SetMoveDirection(direction);
-		}
-		SearchTarget();
-	}
-	if (HasWeapon() && HasTarget()) {
-		float distance = FVector::Dist(GetTarget()->GetActorLocation(), GetActorLocation());
-		if (GetWeapon()->GetWeaponRange() < distance) {
-			FVector direction = GetTarget()->GetActorLocation() - GetActorLocation();
-			direction.Normalize();
-			SetMoveDirection(direction);
-		}
-		else {
-			SetMoveDirection(FVector::ZeroVector);
-			SetAction(Action::Attack);
-		}
-		if (GetTarget()->GetAction() == Action::Defeat) SetTarget(nullptr);
-	}
-	if (GetAction() == Action::Idle && !GetMoveDirection().IsZero()) SetAction(Action::Move);
-	if (GetAction() == Action::Move &&  GetMoveDirection().IsZero()) SetAction(Action::Idle);
-	return true;
-}
-void AStalKnight::UpdateAction(float DeltaTime) {
+void APriest::UpdateAction(float DeltaTime) {
 	Super::UpdateAction(DeltaTime);
 
 	switch (GetAction()) {
@@ -135,19 +125,37 @@ void AStalKnight::UpdateAction(float DeltaTime) {
 		SetLookDirection(GetMoveDirection());
 		if (HasTarget()) SetLookDirection(GetTarget()->GetActorLocation() - GetActorLocation());
 		break;
+	case Action::Jump:
+		SetSprite(Action::Jump);
+		AddMovementInput(GetMoveDirection());
+		if (HasTarget()) SetLookDirection(GetTarget()->GetActorLocation() - GetActorLocation());
+		if (0.1f <= GetActionDelay() && GetActionDelay() - DeltaTime < 0.1f) Jump();
+		if (0.2f <= GetActionDelay() && !IsFalling()) {
+			SetAction(Action::Idle);
+			SetActionCooldown(Action::Jump, 0.2f);
+		}
+		break;
 	case Action::Dash:
 		SetSprite(Action::Dash);
-		if (GetActionDelay() - DeltaTime == 0) {
-			SetSpriteXFlip  (nullptr, FMath::RandBool());
-			SetSpriteOpacity(nullptr, 0.0f);
-			AddEffect(Effect::Slowness, 1.0f, 0.8f);
-			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, GetHitboxRadius() *  0.75f, 0.0f));
-			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, GetHitboxRadius() * -0.75f, 0.0f));
+		if (GetActionDelay() - DeltaTime == 0.0f) {
+			if (HasWeapon()) GetWeapon()->SetAction(Action::Idle);
 		}
-		else SetSpriteOpacity(nullptr);
-		if (0.8f <= GetActionDelay()) {
+		if (0.6f <= GetActionDelay() && GetActionDelay() - DeltaTime < 0.6f) {
+			for (int32 i = 0; i < sensorArray.Num(); i++) {
+				if (sensorArray[i] == nullptr || sensorArray[i] == this) continue;
+				if (sensorArray[i]->HasTag(Tag::Invulnerability)) continue;
+				if (sensorArray[i]->GetAction() == Action::Defeat) continue;
+				if (GetGroup() == Group::None || sensorArray[i]->GetGroup() != GetGroup()) continue;
+				sensorArray[i]->AddEffect(Effect::HealthBoost, 10.0f, 5.0f);
+				sensorArray[i]->AddEffect(Effect::DamageBoost, 10.0f, 5.0f);
+				sensorArray[i]->AdjustHealth(10.0f);
+			}
+		}
+		if (1.2f <= GetActionDelay()) {
 			SetAction(Action::Idle);
-			SetWeapon(static_cast<AWeapon*>(Spawn(Identifier::Spear)));
+			SetActionCooldown(Action::Dash,   9.4f);
+			SetActionCooldown(Action::Attack, 0.1f);
+			SetActionCooldown(Action::Defend, 0.1f);
 		}
 		break;
 	case Action::Attack:

@@ -13,7 +13,10 @@ AWeapon::AWeapon() {
 	defaultHitboxRadius = 24.0f;
 	defaultHitboxHeight = 72.0f;
 	defaultTag += static_cast<uint8>(Tag::Interactability);
-	defaultWeaponRange = 0.0f;
+	defaultAttackDamage = 0.0f;
+	defaultDefendDamage = 0.0f;
+	defaultWeaponRange  = 0.0f;
+	defaultDroppable    = true;
 	SetCollisionProfileName(TEXT("Particle"));
 }
 
@@ -28,7 +31,10 @@ void AWeapon::OnSpawn() {
 	Super::OnSpawn();
 
 	action = Action::Idle;
-	weaponRange = defaultWeaponRange;
+	attackDamage = defaultAttackDamage;
+	defendDamage = defaultDefendDamage;
+	weaponRange  = defaultWeaponRange;
+	droppable    = defaultDroppable;
 	SetSpriteXFlip(nullptr, bool(FMath::RandRange(0, 1)));
 }
 void AWeapon::OnDespawn() {
@@ -67,13 +73,19 @@ void AWeapon::OnInteract(AEntity* entity) {
 	if (parent == entity || (entity != nullptr && !entity->IsA(ACreature::StaticClass()))) return;
 	ACreature* creature = static_cast<ACreature*>(entity);
 	if (parent != nullptr) {
-		SetSpriteOpacity(nullptr);
-		SetHitbox(defaultHitboxRadius, defaultHitboxHeight);
-		SetGroup(Group::None);
-		RemoveTag(Tag::Floating);
-		RemoveTag(Tag::Piercing);
-		AddTag(Tag::Interactability);
-		SetAction(Action::Idle);
+		if (droppable) {
+			SetSpriteOpacity(nullptr);
+			SetHitbox(defaultHitboxRadius, defaultHitboxHeight);
+			SetGroup(Group::None);
+			RemoveTag(Tag::Floating);
+			RemoveTag(Tag::Piercing);
+			AddTag(Tag::Interactability);
+			SetAction(Action::Idle);
+		}
+		else {
+			Despawn();
+			return;
+		}
 	}
 	if (creature != nullptr) {
 		SetHitbox(0.0f, 0.0f);
@@ -121,16 +133,22 @@ void AWeapon::UpdateAction(float DeltaTime) {
 // Weapon
 // =============================================================================================================
 
+float AWeapon::GetAttackDamage() {
+	return attackDamage;
+}
+float AWeapon::GetDefendDamage() {
+	return defendDamage;
+}
 float AWeapon::GetWeaponRange() {
 	return weaponRange + (parent ? (parent->GetHitboxRadius() * 0.5f) : 0.0f);
 }
 
-FVector AWeapon::GetAngleLocation(float angle) {
+FVector AWeapon::GetAngleLocation(float angle, float distance) {
 	if (!parent) return GetActorLocation();
 	FVector location;
 	location.X = FMath::Abs(angle) < 60.0f ? 1.0f : -24.0f;
-	location.Y = FMath::Sin(FMath::DegreesToRadians(angle)) * parent->GetHitboxRadius() * 0.5f;
-	location.Z = FMath::Cos(FMath::DegreesToRadians(angle)) * parent->GetHitboxRadius() * 0.5f;
+	location.Y = FMath::Sin(FMath::DegreesToRadians(angle)) * (parent->GetHitboxRadius() * 0.5f) + distance;
+	location.Z = FMath::Cos(FMath::DegreesToRadians(angle)) * (parent->GetHitboxRadius() * 0.5f) + distance;
 	location = parent->GetActorLocation() + RotateVector(location);
 	return location;
 }

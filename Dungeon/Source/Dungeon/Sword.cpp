@@ -12,7 +12,9 @@
 // =============================================================================================================
 
 ASword::ASword() {
-	defaultWeaponRange = 120.0f;
+	defaultAttackDamage =   0.0f;
+	defaultDefendDamage =   0.0f;
+	defaultWeaponRange  = 120.0f;
 }
 
 // =============================================================================================================
@@ -73,7 +75,9 @@ void ASword::UpdateAction(float DeltaTime) {
 			if (parent->SetAction(parent->GetSprite())) parent->SetActionDelay(parent->GetSpriteDelay());
 			parent->SetActionCooldown(Action::Attack, 0.4f);
 			if (!parent->GetCharacterMovement()->IsFalling()) parent->AddEffect(Effect::Speed, 0.5f, 0.1f);
-			parent->Melee(location, 120.0f, 1.0f);
+			location = parent->GetActorLocation();
+			location += parent->GetLookDirection() * (parent->GetHitboxRadius() * 0.5f + 60.0f);
+			parent->Melee(location, 60.0f, 0.1f);
 		}
 		if (0.3f <= GetActionDelay()) {
 			SetActorLocation(parent->GetHandLocation());
@@ -89,7 +93,7 @@ void ASword::UpdateAction(float DeltaTime) {
 			SetSpriteIndex(nullptr);
 			SetSpriteXFlip(nullptr, parent->GetSpriteXFlip());
 			SetSpriteAngle(nullptr, !GetSpriteXFlip() ? -135.0f : 135.0f);
-			Damage();
+			Damage(this, 0.0f);
 
 			if (parent->SetAction(parent->GetSprite())) parent->SetActionDelay(parent->GetSpriteDelay());
 			parent->SetActionCooldown(Action::Defend, 1.0f);

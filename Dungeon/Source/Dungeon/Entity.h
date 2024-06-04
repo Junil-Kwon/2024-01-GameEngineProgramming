@@ -32,6 +32,7 @@ UENUM(BlueprintType)
 enum class Identifier : uint8 {
 	Default			= 0,
 	Hero			,
+	Priest			,
 	Knight			,
 	Necromancer		,
 	StalKnight		,
@@ -46,6 +47,7 @@ enum class Identifier : uint8 {
 	Sword			,
 	Wand			,
 	XBow			,
+	Spear			,
 
 	Arrow			,
 
@@ -339,7 +341,7 @@ private:
 protected:
 	virtual void UpdateEffect(float DeltaTime);
 public:
-	virtual void Damage(float value = 0.0f);
+	virtual void Damage(AEntity* entity, float value);
 	bool         HasEffect   (Effect value);
 	virtual void AddEffect   (Effect value, float strength = 1.0f, float duration = EffectDurationMax);
 	virtual void RemoveEffect(Effect value);

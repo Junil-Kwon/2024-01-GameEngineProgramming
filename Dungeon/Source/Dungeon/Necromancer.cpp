@@ -13,7 +13,6 @@
 ANecromancer::ANecromancer() {
 	defaultGroup  = Group::Friendly;
 	defaultHealth = 20.0f;
-	defaultEnerge = 50.0f;
 	defaultTag += static_cast<uint8>(Tag::Interactability);
 }
 
@@ -148,14 +147,11 @@ void ANecromancer::UpdateAction(float DeltaTime) {
 			for (int32 i = 0; i < 3; i++) {
 				angle += 120.0f;
 				location = GetFootLocation();
-				location.X += FMath::Sin(FMath::DegreesToRadians(angle)) * (GetHitboxRadius() + 64.0f);
-				location.Y += FMath::Cos(FMath::DegreesToRadians(angle)) * (GetHitboxRadius() + 64.0f);
+				location.X += FMath::Sin(FMath::DegreesToRadians(angle)) * (GetHitboxRadius() + 128.0f);
+				location.Y += FMath::Cos(FMath::DegreesToRadians(angle)) * (GetHitboxRadius() + 128.0f);
 				AEntity* entity = Spawn(Identifier::StalKnight);
 				entity->SetActorLocation(location);
 				entity->OnInteract(this);
-				location = entity->GetFootLocation();
-				Spawn(Identifier::Dust, location + FVector(0.0f, -entity->GetHitboxRadius() *  0.75f, 0.0f));
-				Spawn(Identifier::Dust, location + FVector(0.0f, -entity->GetHitboxRadius() * -0.75f, 0.0f));
 			}
 		}
 		if (1.2f <= GetActionDelay()) {

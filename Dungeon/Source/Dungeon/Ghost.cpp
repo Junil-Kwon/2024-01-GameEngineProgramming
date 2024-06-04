@@ -411,7 +411,10 @@ TArray<ACreature*>* AGhost::GetPlayerParty() {
 
 void AGhost::UpdatePlayer(float DeltaTime) {
 	if (GetPlayer() == nullptr) {
-		if (playerParty.Num()) playerParty[0]->OnInteract(nullptr);
+		for (int32 i = 0; i < playerParty.Num(); i++) if (playerParty[i]->GetAction() != Action::Defeat) {
+			playerParty[i]->OnInteract(nullptr);
+			break;
+		}
 	}
 }
 

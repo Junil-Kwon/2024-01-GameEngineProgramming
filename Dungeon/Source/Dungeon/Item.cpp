@@ -54,7 +54,7 @@ void AItem::OnInteract(AEntity* entity) {
 	float angle;
 	switch (GetIdentifier()) {
 	case Identifier::HealthPotion:
-		if (entity != nullptr) for (uint8 i = 0; i < 3; i++) {
+		if (entity != nullptr) for (uint8 i = 0; i < 5; i++) {
 			location = FVector::ZeroVector;
 			angle = FMath::RandRange(0.0f * PI, 2.0f * PI);
 			location.X = -4.0f;
@@ -67,7 +67,7 @@ void AItem::OnInteract(AEntity* entity) {
 		break;
 	case Identifier::EnergePotion:
 		if (!creature->GetEnergeMax()) break;
-		if (entity != nullptr) for (uint8 i = 0; i < 3; i++) {
+		if (entity != nullptr) for (uint8 i = 0; i < 5; i++) {
 			location = FVector::ZeroVector;
 			angle = FMath::RandRange(0.0f * PI, 2.0f * PI);
 			location.X = -4.0f;

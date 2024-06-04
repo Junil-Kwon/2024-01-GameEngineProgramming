@@ -53,10 +53,10 @@ void ACreature::OnStart() {
 void ACreature::OnSpawn() {
 	GetGhost()->GetCreatures()->Add(this);
 
-	SetSensorRange(defaultSensorRange);
-	SetMagnetRange(defaultMagnetRange);
 	sensorArray.Empty();
 	magnetArray.Empty();
+	SetSensorRange(defaultSensorRange);
+	SetMagnetRange(defaultMagnetRange);
 
 	action = Action::Idle;
 	for (uint8 i = 0; i < static_cast<uint8>(Action::Length); i++) actionCooldown[i] = 0.0f;
@@ -102,7 +102,7 @@ void ACreature::Update(float DeltaTime) {
 	if (0.0f < multiplier) UpdateSprite(DeltaTime * multiplier);
 	if (0.0f < multiplier) UpdateInputs(DeltaTime * multiplier);
 	if (0.0f < multiplier) UpdateAction(DeltaTime * multiplier);
-	if (GetAction() == Action::Defeat && 4.0f < GetLifeTime()) Despawn();
+	if (GetAction() == Action::Defeat && 4.0f < GetLifeTime() && !HasTag(Tag::PlayerParty)) Despawn();
 }
 
 
@@ -135,12 +135,13 @@ void ACreature::Melee(FVector location, float range, float value) {
 	for (int32 i = 0; i < entity->Num(); i++) {
 		if ((*entity)[i] == nullptr || (*entity)[i] == this) continue;
 		if ((*entity)[i]->HasTag(Tag::Invulnerability)) continue;
+		if ((*entity)[i]->GetAction() == Action::Defeat) continue;
 		if (GetGroup() != Group::None && (*entity)[i]->GetGroup() == GetGroup()) continue;
 		float distance = FVector::Dist(location, (*entity)[i]->GetActorLocation());
 		distance -= (*entity)[i]->GetHitboxRadius();
 		if (distance < range) {
 			melee.Add(static_cast<ACreature*>((*entity)[i]));
-			(*entity)[i]->Damage(value);
+			Damage((*entity)[i], value);
 		}
 	}
 }
@@ -260,6 +261,7 @@ void ACreature::SearchTarget(FTargetPredicateFunction match) {
 	for (int32 i = 0; i < sensorArray.Num(); i++) {
 		if (sensorArray[i] == nullptr || sensorArray[i] == this) continue;
 		if (sensorArray[i]->HasTag(Tag::Invulnerability)) continue;
+		if (sensorArray[i]->GetAction() == Action::Defeat) continue;
 		if (GetGroup() != Group::None && sensorArray[i]->GetGroup() == GetGroup()) continue;
 		if (match && !match(sensorArray[i])) continue;
 		float distance = FVector::Dist(GetActorLocation(), sensorArray[i]->GetActorLocation());
@@ -365,6 +367,7 @@ bool  ACreature::UpdateInputs(float DeltaTime) {
 					SetMoveDirection(FVector::ZeroVector);
 					SetAction(Action::Attack);
 				}
+				if (GetTarget()->GetAction() == Action::Defeat) SetTarget(nullptr);
 			}
 		}
 		if (GetAction() == Action::Idle && !GetMoveDirection().IsZero()) SetAction(Action::Move);
@@ -445,10 +448,13 @@ bool ACreature::RemoveTag(Tag value) {
 // Stats
 // =============================================================================================================
 
-void ACreature::Damage(float value) {
-	Super::Damage(value);
+void ACreature::Damage(AEntity* entity, float value) {
+	Super::Damage(entity, value);
 
-	OnDamaged(value);
+	if (entity && entity->IsA(ACreature::StaticClass())) {
+		if (HasEffect(Effect::DamageBoost)) value += GetEffectStrength(Effect::DamageBoost);
+		static_cast<ACreature*>(entity)->OnDamaged(value);
+	}
 }
 
 void  ACreature::OnDamaged(float value) {
@@ -479,7 +485,6 @@ void  ACreature::OnDie() {
 	SetAction(Action::Defeat);
 	SetWeapon(nullptr);
 	if (HasTag(Tag::Player)) RemoveTag(Tag::Player);
-
 	SetLifeTime(0.0f);
 	// if (HasEffect(Effect::Burn)) smoke effect, if enough strength, ashed effect
 }
