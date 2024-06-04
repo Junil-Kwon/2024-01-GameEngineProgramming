@@ -77,4 +77,6 @@ private:
 	float  weaponRange;
 public:
 	float  GetWeaponRange();
+protected:
+	FVector GetAngleLocation(float angle);
 };

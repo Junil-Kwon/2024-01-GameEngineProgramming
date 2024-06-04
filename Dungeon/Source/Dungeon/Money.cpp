@@ -11,7 +11,7 @@
 
 AMoney::AMoney() {
 	defaultHitboxRadius = 24.0f;
-	defaultHitboxHeight = 48.0f;
+	defaultHitboxHeight = 56.0f;
 	defaultTag += static_cast<uint8>(Tag::Collectable);
 	SetCollisionProfileName(TEXT("Particle"));
 }
@@ -27,7 +27,7 @@ void AMoney::OnSpawn() {
 	Super::OnSpawn();
 
 	SetSpriteIndex(nullptr, FMath::RandRange(0, 3));
-	SetSpriteIntensity(nullptr, 0.1f);
+	SetSpriteIntensity(nullptr, 0.5f);
 
 	moneyValue = MoneyValueMin;
 	mergeUpper = FMath::RandRange(MoneyValueMin, MoneyValueMax);
@@ -60,7 +60,7 @@ void AMoney::OnCollision(AEntity* entity) {
 
 	if (mergeUpper <= moneyValue) return;
 	AMoney* money = static_cast<AMoney*>(entity);
-	if (entity->IsA(AMoney::StaticClass()) && !merged && !money->merged) {
+	if (entity && entity->IsA(AMoney::StaticClass()) && !merged && !money->merged) {
 		int32 mergeValue = moneyValue + money->moneyValue;
 		if (mergeValue <= mergeUpper && mergeValue <= money->mergeUpper) {
 			Spawn(Identifier::Twinkle, money->GetActorLocation());

@@ -1,7 +1,6 @@
 #include "Hero.h"
+#include "Ghost.h"
 #include "Weapon.h"
-
-#include "GameFramework/CharacterMovementComponent.h"
 
 
 
@@ -26,6 +25,23 @@ void AHero::OnSpawn() {
 }
 void AHero::OnDespawn() {
 	Super::OnDespawn();
+}
+
+
+
+
+
+// =============================================================================================================
+// Hitbox
+// =============================================================================================================
+
+void AHero::OnInteract(AEntity* entity) {
+	Super::OnInteract(entity);
+
+	if (entity) entity->AddTag(Tag::Interactability);
+	RemoveTag(Tag::Interactability);
+	AddTag(Tag::Player);
+	AddTag(Tag::PlayerParty);
 }
 
 
@@ -92,16 +108,9 @@ bool AHero::VerifyAction(Action value) {
 	}
 	return false;
 }
-bool AHero::UpdateInputs(float DeltaTime) {
-	if (!Super::UpdateInputs(DeltaTime)) return false;
-
-	// Default AI
-	return true;
-}
 void AHero::UpdateAction(float DeltaTime) {
 	Super::UpdateAction(DeltaTime);
 
-	bool condition;
 	switch (GetAction()) {
 	case Action::Idle:
 		SetSprite(Action::Idle);
@@ -118,7 +127,7 @@ void AHero::UpdateAction(float DeltaTime) {
 		AddMovementInput(GetMoveDirection());
 		if (HasTarget()) SetLookDirection(GetTarget()->GetActorLocation() - GetActorLocation());
 		if (0.1f <= GetActionDelay() && GetActionDelay() - DeltaTime < 0.1f) Jump();
-		if (0.2f <= GetActionDelay() && !GetCharacterMovement()->IsFalling()) {
+		if (0.2f <= GetActionDelay() && !IsFalling()) {
 			SetAction(Action::Idle);
 			SetActionCooldown(Action::Jump, 0.2f);
 		}
@@ -127,25 +136,26 @@ void AHero::UpdateAction(float DeltaTime) {
 		SetSprite(Action::Dash);
 		AddMovementInput(GetLookDirection());
 		if (GetActionDelay() - DeltaTime == 0.0f) {
-			AddEffect(Effect::Speed, 1.0f, 0.3f);
 			if (GetMoveDirection() != FVector::ZeroVector) SetLookDirection(GetMoveDirection());
 			if (HasWeapon()) {
 				GetWeapon()->SetSpriteOpacity(nullptr, GetWeapon()->GetSpriteOpacity() - 1.0f);
 				GetWeapon()->SetAction(Action::Idle);
 			}
+			AddEffect(Effect::Speed, 1.0f, 0.3f);
+			Spawn(Identifier::Dust, GetFootLocation());
 		}
 		if (0.6f <= GetActionDelay()) {
 			if (HasWeapon()) GetWeapon()->SetSpriteOpacity(nullptr, GetWeapon()->GetSpriteOpacity() + 1.0f);
-			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() *  0.75f, 0.0f));
-			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() * -0.75f, 0.0f));
 			SetAction(Action::Idle);
 			SetActionCooldown(Action::Dash,   0.5f);
 			SetActionCooldown(Action::Attack, 0.1f);
 			SetActionCooldown(Action::Defend, 0.1f);
+			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() *  0.75f, 0.0f));
+			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() * -0.75f, 0.0f));
 		}
-		condition = int32(GetActionDelay() * 10) != int32((GetActionDelay() - DeltaTime) * 10);
-		condition &= !GetCharacterMovement()->IsFalling() && (GetActionDelay() < 0.5f);
-		if (GetActionDelay() - DeltaTime == 0.0f || condition) Spawn(Identifier::Dust, GetFootLocation());
+		if (int32(GetActionDelay() * 10) != int32((GetActionDelay() - DeltaTime) * 10)) {
+			if (!IsFalling() && GetActionDelay() < 0.5f) Spawn(Identifier::Dust, GetFootLocation());
+		}
 		break;
 	case Action::Attack:
 		if (HasWeapon() && GetActionDelay() - DeltaTime == 0 && GetWeapon()->SetAction(Action::Attack));

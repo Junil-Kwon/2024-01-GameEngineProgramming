@@ -47,17 +47,34 @@ void AItem::OnDespawn() {
 void AItem::OnInteract(AEntity* entity) {
 	Super::OnInteract(entity);
 
-	if (!entity->IsA(ACreature::StaticClass())) return;
+	if (entity == nullptr || !entity->IsA(ACreature::StaticClass())) return;
 	ACreature* creature = static_cast<ACreature*>(entity);
+
+	FVector location;
+	float angle;
 	switch (GetIdentifier()) {
 	case Identifier::HealthPotion:
-		// health effect
+		if (entity != nullptr) for (uint8 i = 0; i < 3; i++) {
+			location = FVector::ZeroVector;
+			angle = FMath::RandRange(0.0f * PI, 2.0f * PI);
+			location.X = -4.0f;
+			location.Y = entity->GetHitboxRadius() * FMath::Cos(angle) * FMath::RandRange(0.0f, 0.8f);
+			location.Z = entity->GetHitboxHeight() * FMath::Sin(angle) * FMath::RandRange(0.0f, 0.4f);
+			Spawn(Identifier::HealthUp, entity->GetActorLocation() + RotateVector(location))->Attach(entity);
+		}
 		creature->AdjustHealth(10.0f);
 		Despawn();
 		break;
 	case Identifier::EnergePotion:
 		if (!creature->GetEnergeMax()) break;
-		// energe effect
+		if (entity != nullptr) for (uint8 i = 0; i < 3; i++) {
+			location = FVector::ZeroVector;
+			angle = FMath::RandRange(0.0f * PI, 2.0f * PI);
+			location.X = -4.0f;
+			location.Y = entity->GetHitboxRadius() * FMath::Cos(angle) * FMath::RandRange(0.0f, 0.8f);
+			location.Z = entity->GetHitboxHeight() * FMath::Sin(angle) * FMath::RandRange(0.0f, 0.4f);
+			Spawn(Identifier::EnergeUp, entity->GetActorLocation() + RotateVector(location))->Attach(entity);
+		}
 		creature->AdjustEnerge(10.0f);
 		Despawn();
 		break;

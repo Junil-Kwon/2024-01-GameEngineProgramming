@@ -1,6 +1,8 @@
 #include "Projectile.h"
 #include "Creature.h"
 
+#include "GameFramework/CharacterMovementComponent.h"
+
 
 
 
@@ -24,15 +26,6 @@ void AProjectile::OnStart() {
 }
 void AProjectile::OnSpawn() {
 	Super::OnSpawn();
-
-	switch (GetIdentifier()) {
-	case Identifier::Melee:
-		AddTag(Tag::Floating);
-		AddTag(Tag::Piercing);
-		break;
-	case Identifier::Arrow:
-		break;
-	}
 }
 void AProjectile::OnDespawn() {
 	Super::OnDespawn();
@@ -46,9 +39,6 @@ void AProjectile::Update(float DeltaTime) {
 	Super::Update(DeltaTime);
 
 	switch (GetIdentifier()) {
-	case Identifier::Melee:
-		if (0.2f <= GetLifeTime()) Despawn();
-		break;
 		break;
 	case Identifier::Arrow:
 		if (3.0f <= GetLifeTime()) Despawn();
@@ -66,22 +56,24 @@ void AProjectile::Update(float DeltaTime) {
 
 void AProjectile::OnCollision(AEntity* entity) {
 	Super::OnCollision(entity);
-	ACreature* creature = static_cast<ACreature*>(entity);
 
+	ACreature* creature = static_cast<ACreature*>(entity);
 	switch (GetIdentifier()) {
-	case Identifier::Melee:
-		if (entity->IsA(ACreature::StaticClass()) && GetGroup() != entity->GetGroup()) {
-			UE_LOG(LogTemp, Log, TEXT("%s"), *ToString(creature->GetIdentifier()));
-			creature->Damage(0.1f);
-		}
-		break;
 	case Identifier::Arrow:
-		if (parent == nullptr && GetGroup() != entity->GetGroup()) {
-			parent = entity;
-			Attach(entity);
-			AddTag(Tag::Floating);
-			AddTag(Tag::Piercing);
-			if (entity->IsA(ACreature::StaticClass())) creature->Damage(0.1f);
+		if (parent == nullptr) {
+			if (entity && GetGroup() != entity->GetGroup()) {
+				parent = entity;
+				Attach(entity);
+				AddTag(Tag::Floating);
+				AddTag(Tag::Piercing);
+				if (entity->IsA(ACreature::StaticClass())) creature->Damage(0.1f);
+			}
+			else if (!entity) {
+				parent = this;
+				GetCharacterMovement()->StopMovementImmediately();
+				AddTag(Tag::Floating);
+				AddTag(Tag::Piercing);
+			}
 		}
 		break;
 	}

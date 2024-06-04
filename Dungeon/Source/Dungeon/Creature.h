@@ -46,6 +46,9 @@ protected:
 protected:
 	virtual void OnHitboxChanged() override;
 	virtual void OnCollision(AEntity* entity) override;
+	TArray<ACreature*> melee;
+public:
+	void Melee(FVector location, float range, float damage = 0.0f);
 	
 	// Sensor
 protected:
@@ -104,6 +107,19 @@ protected:
 
 
 	// =========================================================================================================
+	// Properties
+	// =========================================================================================================
+
+	// Tag
+public:
+	virtual bool AddTag   (Tag value) override;
+	virtual bool RemoveTag(Tag value) override;
+
+
+
+
+
+	// =========================================================================================================
 	// AI
 	// =========================================================================================================
 	
@@ -114,7 +130,8 @@ protected:
 	bool       HasTarget();
 	ACreature* GetTarget();
 	void       SetTarget(ACreature* value);
-	virtual void SearchTarget();
+	typedef bool (*FTargetPredicateFunction)(ACreature*);
+	virtual void SearchTarget(FTargetPredicateFunction match = nullptr);
 
 	// Sprite
 private:
@@ -129,6 +146,7 @@ protected:
 	virtual void UpdateSprite(float DeltaTime);
 
 	// Action
+#define PlayerNearby 160.0f
 private:
 	Action action;
 	float  actionDelay;
@@ -172,11 +190,12 @@ public:
 	// Stats
 	#define MendCooldown 4.0f
 	#define HurtCooldown 0.2f
-private:
+protected:
 	UPROPERTY(EditAnywhere) float defaultHealth;
 	UPROPERTY(EditAnywhere) float defaultArmour;
 	UPROPERTY(EditAnywhere) float defaultEnerge;
 	UPROPERTY(EditAnywhere) float defaultDamage;
+private:
 	float health, healthMax;
 	float armour, armourMax;
 	float energe, energeMax;
@@ -196,11 +215,11 @@ public:
 	float GetArmour();
 	float GetEnerge();
 	float GetDamage();
-	void AdjustHealth(float value);
-	void AdjustArmour(float value);
-	void AdjustEnerge(float value);
-	void AdjustMaxHealth(float value);
-	void AdjustMaxArmour(float value);
-	void AdjustMaxEnerge(float value);
-	void AdjustMaxDamage(float value);
+	float AdjustHealth(float value);
+	float AdjustArmour(float value);
+	float AdjustEnerge(float value);
+	float AdjustMaxHealth(float value);
+	float AdjustMaxArmour(float value);
+	float AdjustMaxEnerge(float value);
+	float AdjustMaxDamage(float value);
 };

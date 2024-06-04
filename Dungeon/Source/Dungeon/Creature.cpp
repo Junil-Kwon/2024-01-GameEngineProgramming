@@ -16,11 +16,11 @@
 
 ACreature::ACreature() {
 	defaultHitboxRadius   =  36.0f;
-	defaultHitboxHeight   =  96.0f;
+	defaultHitboxHeight   = 108.0f;
 	defaultHandLocation   = FVector2D(24.0f, -12.0f);
 	defaultSensorRange    = 480.0f;
 	defaultMagnetRange    = 120.0f;
-	defaultIndicatorWidth =  24.0f;
+	defaultIndicatorWidth =  20.0f;
 	defaultHealth         =   1.0f;
 	defaultArmour         =   0.0f;
 	defaultEnerge         =   0.0f;
@@ -51,6 +51,8 @@ void ACreature::OnStart() {
 }
 
 void ACreature::OnSpawn() {
+	GetGhost()->GetCreatures()->Add(this);
+
 	SetSensorRange(defaultSensorRange);
 	SetMagnetRange(defaultMagnetRange);
 	sensorArray.Empty();
@@ -69,6 +71,8 @@ void ACreature::OnSpawn() {
 
 	Super::OnSpawn();
 
+	SetLifeTime(FMath::RandRange(0.0f, 1.0f));
+
 	SetIndicatorWidth(defaultIndicatorWidth);
 	indicator = static_cast<AIndicator*>(Spawn(Identifier::Indicator));
 	indicator->SetActorLocation(GetActorLocation() + FVector(0.0f, 0.0f, GetHitboxHeight() * 0.5f + 96.0f));
@@ -78,6 +82,9 @@ void ACreature::OnSpawn() {
 void ACreature::OnDespawn() {
 	Super::OnDespawn();
 
+	GetGhost()->GetCreatures()->Remove(this);
+	if (HasTag(Tag::PlayerParty)) GetGhost()->GetPlayerParty()->Remove(this);
+	if (HasTag(Tag::Player     )) GetGhost()->SetPlayer(nullptr);
 	SetWeapon  (nullptr);
 	indicator->Despawn();
 }
@@ -95,6 +102,7 @@ void ACreature::Update(float DeltaTime) {
 	if (0.0f < multiplier) UpdateSprite(DeltaTime * multiplier);
 	if (0.0f < multiplier) UpdateInputs(DeltaTime * multiplier);
 	if (0.0f < multiplier) UpdateAction(DeltaTime * multiplier);
+	if (GetAction() == Action::Defeat && 4.0f < GetLifeTime()) Despawn();
 }
 
 
@@ -114,8 +122,27 @@ void ACreature::OnHitboxChanged() {
 void ACreature::OnCollision(AEntity* entity) {
 	Super::OnCollision(entity);
 
-	if (GetGhost()->GetPlayer() == nullptr || GetGroup() != GetGhost()->GetPlayer()->GetGroup()) return;
-	if (entity->HasTag(Tag::Collectable)) entity->OnInteract(this);
+	if (entity && entity->HasTag(Tag::Collectable)) {
+		if (GetGhost()->GetPlayer() && GetGroup() == GetGhost()->GetPlayer()->GetGroup()) {
+			entity->OnInteract(this);
+		}
+	}
+}
+
+void ACreature::Melee(FVector location, float range, float value) {
+	melee.Empty();
+	TArray<ACreature*>* entity = GetGhost()->GetCreatures();
+	for (int32 i = 0; i < entity->Num(); i++) {
+		if ((*entity)[i] == nullptr || (*entity)[i] == this) continue;
+		if ((*entity)[i]->HasTag(Tag::Invulnerability)) continue;
+		if (GetGroup() != Group::None && (*entity)[i]->GetGroup() == GetGroup()) continue;
+		float distance = FVector::Dist(location, (*entity)[i]->GetActorLocation());
+		distance -= (*entity)[i]->GetHitboxRadius();
+		if (distance < range) {
+			melee.Add(static_cast<ACreature*>((*entity)[i]));
+			(*entity)[i]->Damage(value);
+		}
+	}
 }
 
 // =============================================================================================================
@@ -164,7 +191,7 @@ void ACreature::OnSensorEndOverlap(
 // =============================================================================================================
 
 void ACreature::UpdateMagnet(float DeltaTime) {
-	if (GetGhost()->GetPlayer() == nullptr || GetGroup() != GetGhost()->GetPlayer()->GetGroup()) return;
+	if (!HasTag(Tag::Player) && !HasTag(Tag::PlayerParty)) return;
 	for (int32 i = magnetArray.Num() - 1; -1 < i; i--) {
 		if (magnetArray[i] == nullptr) {
 			magnetArray.RemoveAt(i);
@@ -227,13 +254,15 @@ void ACreature::SetTarget(ACreature* value) {
 	if (value == target || (value != nullptr && value->HasTag(Tag::Invulnerability))) return;
 	target = value;
 }
-void ACreature::SearchTarget() {
+void ACreature::SearchTarget(FTargetPredicateFunction match) {
 	ACreature* creature = nullptr;
 	float nearest = GetSensorRange();
 	for (int32 i = 0; i < sensorArray.Num(); i++) {
-		if (sensorArray[i] == nullptr || sensorArray[i]->HasTag(Tag::Invulnerability)) continue;
-		if (sensorArray[i]->GetGroup() == GetGroup()) continue;
-		float distance = FVector::Distance(GetActorLocation(), sensorArray[i]->GetActorLocation());
+		if (sensorArray[i] == nullptr || sensorArray[i] == this) continue;
+		if (sensorArray[i]->HasTag(Tag::Invulnerability)) continue;
+		if (GetGroup() != Group::None && sensorArray[i]->GetGroup() == GetGroup()) continue;
+		if (match && !match(sensorArray[i])) continue;
+		float distance = FVector::Dist(GetActorLocation(), sensorArray[i]->GetActorLocation());
 		if (distance < nearest) {
 			creature = sensorArray[i];
 			nearest = distance;
@@ -295,17 +324,54 @@ bool  ACreature::VerifyAction(Action value) {
 	return (GetAction() != value) ? true : false;
 }
 bool  ACreature::UpdateInputs(float DeltaTime) {
+	// Player Action Mechanism
 	if (HasTag(Tag::Player)) {
 		SearchTarget();
 		SetMoveDirection(GetGhost()->GetInputDirection());
-		if (action == Action::Idle && !GetMoveDirection().IsZero()) SetAction(Action::Move);
-		if (action == Action::Move &&  GetMoveDirection().IsZero()) SetAction(Action::Idle);
+		if (GetAction() == Action::Idle && !GetMoveDirection().IsZero()) SetAction(Action::Move);
+		if (GetAction() == Action::Move &&  GetMoveDirection().IsZero()) SetAction(Action::Idle);
 		for (uint8 i = 0; i < static_cast<uint8>(Action::Length); i++) {
 			Action index = static_cast<Action>(i);
 			if (GetGhost()->GetInput(index)) SetAction(index);
 		}
 		return false;
 	}
+	// Player Party Action Mechanism
+	else if (HasTag(Tag::PlayerParty)) {
+		if (!GetGhost()->GetPlayer()) return true;
+		if (int32(GetLifeTime()) * 10 != int32((GetLifeTime() - DeltaTime)) * 10) {
+			float distance = GetDistance(GetGhost()->GetPlayer(), this);
+			if (distance < PlayerNearby) SetMoveDirection(FVector::ZeroVector);
+			else {
+				if (GetGhost()->GetPlayer()->GetSensorRange() < distance) AddEffect(Effect::Speed, 0.5f, 0.1f);
+				FVector direction = GetGhost()->GetPlayer()->GetActorLocation() - GetActorLocation();
+				direction.Normalize();
+				SetMoveDirection(direction);
+			}
+		}
+		if (HasWeapon()) {
+			SearchTarget([](ACreature* creature) {
+				float distance = creature->GetDistance(creature, creature->GetGhost()->GetPlayer());
+				return distance < creature->GetGhost()->GetPlayer()->GetSensorRange() + PlayerNearby * 0.5f;
+			});
+			if (HasTarget()) {
+				float distance = FVector::Dist(GetTarget()->GetActorLocation(), GetActorLocation());
+				if (GetWeapon()->GetWeaponRange() < distance) {
+					FVector direction = GetTarget()->GetActorLocation() - GetActorLocation();
+					direction.Normalize();
+					SetMoveDirection(direction);
+				}
+				else {
+					SetMoveDirection(FVector::ZeroVector);
+					SetAction(Action::Attack);
+				}
+			}
+		}
+		if (GetAction() == Action::Idle && !GetMoveDirection().IsZero()) SetAction(Action::Move);
+		if (GetAction() == Action::Move &&  GetMoveDirection().IsZero()) SetAction(Action::Idle);
+		return false;
+	}
+	// Etc
 	return true;
 }
 void  ACreature::UpdateAction(float DeltaTime) {
@@ -355,7 +421,28 @@ void ACreature::SetWeapon(AWeapon* value) {
 
 
 // =============================================================================================================
-// Properties
+// Tag
+// =============================================================================================================
+
+bool ACreature::AddTag(Tag value) {
+	if (!Super::AddTag(value)) return false;
+	switch (value) {
+	case Tag::PlayerParty: GetGhost()->GetPlayerParty()->Add(this); break;
+	case Tag::Player:      GetGhost()->SetPlayer(this); break;
+	}
+	return true;
+}
+bool ACreature::RemoveTag(Tag value) {
+	if (!Super::RemoveTag(value)) return false;
+	switch (value) {
+	case Tag::PlayerParty: GetGhost()->GetPlayerParty()->Remove(this); break;
+	case Tag::Player:      GetGhost()->SetPlayer(nullptr); break;
+	}
+	return true;
+}
+
+// =============================================================================================================
+// Stats
 // =============================================================================================================
 
 void ACreature::Damage(float value) {
@@ -363,10 +450,6 @@ void ACreature::Damage(float value) {
 
 	OnDamaged(value);
 }
-
-// =============================================================================================================
-// Stats
-// =============================================================================================================
 
 void  ACreature::OnDamaged(float value) {
 	if (0.0f < value) {
@@ -391,8 +474,13 @@ void  ACreature::OnArmourBroken() {
 	armourMax = 0.0f;
 }
 void  ACreature::OnDie() {
+	if (GetAction() == Action::Defeat) return;
+	SetCollisionProfileName(TEXT("Particle"));
 	SetAction(Action::Defeat);
 	SetWeapon(nullptr);
+	if (HasTag(Tag::Player)) RemoveTag(Tag::Player);
+
+	SetLifeTime(0.0f);
 	// if (HasEffect(Effect::Burn)) smoke effect, if enough strength, ashed effect
 }
 
@@ -404,33 +492,40 @@ float ACreature::GetArmour() { return armour; }
 float ACreature::GetEnerge() { return energe; }
 float ACreature::GetDamage() { return damage; }
 
-void ACreature::AdjustHealth(float value) {
+float ACreature::AdjustHealth(float value) {
 	health = FMath::Clamp(health + value, 0.0f, healthMax);
 	if (health == 0.0f) OnDie();
+	return health;
 }
-void ACreature::AdjustArmour(float value) {
+float ACreature::AdjustArmour(float value) {
 	armour = FMath::Clamp(armour + value, 0.0f, armourMax);
 	if (armour == 0.0f) OnArmourBroken();
+	return armour;
 }
-void ACreature::AdjustEnerge(float value) {
+float ACreature::AdjustEnerge(float value) {
 	energe = FMath::Clamp(energe + value, 0.0f, energeMax);
+	return energe;
 }
 
-void ACreature::AdjustMaxHealth(float value) {
+float ACreature::AdjustMaxHealth(float value) {
 	healthMax += FMath::Max(healthMax + value, 0.0f);
 	health    += FMath::Max(health    + value, 0.0f);
 	SetIndicatorWidth(GetIndicatorWidth() * (healthMax + value) / healthMax);
 	if (health == 0.0f) OnDie();
+	return healthMax;
 }
-void ACreature::AdjustMaxArmour(float value) {
+float ACreature::AdjustMaxArmour(float value) {
 	armourMax += FMath::Max(armourMax + value, 0.0f);
 	armour    += FMath::Max(armour    + value, 0.0f);
 	if (armour == 0.0f) OnArmourBroken();
+	return armourMax;
 }
-void ACreature::AdjustMaxEnerge(float value) {
+float ACreature::AdjustMaxEnerge(float value) {
 	energeMax += FMath::Max(energeMax + value, 0.0f);
 	energe    += FMath::Max(energe    + value, 0.0f);
+	return energeMax;
 }
-void ACreature::AdjustMaxDamage(float value) {
+float ACreature::AdjustMaxDamage(float value) {
 	damage = FMath::Max(damage + value, 0.0f);
+	return damage;
 }

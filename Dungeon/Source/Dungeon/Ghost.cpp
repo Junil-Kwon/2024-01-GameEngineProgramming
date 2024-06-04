@@ -46,7 +46,7 @@ AGhost::AGhost() {
 	SetRootComponent(hitboxComponent);
 
 	springComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring"));
-	springComponent->SetRelativeLocation(FVector(-4000.0f, 0.0f, 4400.0f));
+	springComponent->SetRelativeLocation(FVector(-4000.0f, 0.0f, 4900.0f));
 	springComponent->SetupAttachment(RootComponent);
 
 	cameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
@@ -116,6 +116,7 @@ void AGhost::Tick(float DeltaTime) {
 	UpdateSensor  (DeltaTime);
 	UpdateMoney   (DeltaTime);
 	UpdateKeyboard(DeltaTime);
+	UpdatePlayer  (DeltaTime);
 }
 
 
@@ -379,30 +380,39 @@ void AGhost::UpdateKeyboard(float DeltaTime) {
 TArray<AEntity*>* AGhost::GetObjectPool(Identifier value) {
 	return &objectPool[static_cast<uint8>(value)];
 }
+TArray<ACreature*>* AGhost::GetCreatures() {
+	return &creatures;
+}
 
-AEntity* AGhost::GetPlayer() {
+// =============================================================================================================
+// Player Party
+// =============================================================================================================
+
+ACreature* AGhost::GetPlayer() {
 	return player;
 }
-void AGhost::SetPlayer(AEntity* value) {
+void AGhost::SetPlayer(ACreature* value) {
 	if (player == value) return;
-	if (player != nullptr) {
-		if (player->HasTag(Tag::Player)) player->RemoveTag(Tag::Player);
+
+	ACreature* creature = player;
+	player = value;
+	if (creature != nullptr) {
+		creature->RemoveTag(Tag::Player);
 		FocusCameraOn(nullptr);
 	}
 	if (value  != nullptr) {
-		if (!value->HasTag(Tag::Player)) value->AddTag(Tag::Player);
+		value->AddTag(Tag::Player);
 		FocusCameraOn(value);
 	}
-	if (player == nullptr && value != nullptr) OnPlayerSpawned  ();
-	if (player != nullptr && value == nullptr) OnPlayerDestroyed();
-	player = value;
+}
+TArray<ACreature*>* AGhost::GetPlayerParty() {
+	return &playerParty;
 }
 
-void AGhost::OnPlayerSpawned() {
-	UE_LOG(LogTemp, Warning, TEXT("Player Spawned.  "));
-}
-void AGhost::OnPlayerDestroyed() {
-	UE_LOG(LogTemp, Warning, TEXT("Player Destroyed."));
+void AGhost::UpdatePlayer(float DeltaTime) {
+	if (GetPlayer() == nullptr) {
+		if (playerParty.Num()) playerParty[0]->OnInteract(nullptr);
+	}
 }
 
 

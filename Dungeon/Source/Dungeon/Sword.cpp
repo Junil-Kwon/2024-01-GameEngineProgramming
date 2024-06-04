@@ -12,7 +12,7 @@
 // =============================================================================================================
 
 ASword::ASword() {
-	defaultWeaponRange = 0.0f;
+	defaultWeaponRange = 120.0f;
 }
 
 // =============================================================================================================
@@ -44,14 +44,13 @@ bool ASword::VerifyAction(Action value) {
 void ASword::UpdateAction(float DeltaTime) {
 	Super::UpdateAction(DeltaTime);
 
-	FRotator rotation;
-	FVector  location;
+	float angle = !parent ? 0.0f : ToAngle(parent->GetLookDirection());
+	FVector location = GetAngleLocation(angle);
 	switch (GetAction()) {
 	case Action::Idle:
 		SetSpriteIndex(nullptr);
 		SetSpriteAngle(nullptr);
 		if (parent == nullptr) {
-
 		}
 		else {
 			if (GetSpriteXFlip() != parent->GetSpriteXFlip()) {
@@ -67,16 +66,14 @@ void ASword::UpdateAction(float DeltaTime) {
 		case 1: SetSpriteIndex(nullptr, FMath::Min(5 + int32(GetActionDelay() * 20), 8)); break;
 		}
 		if (GetActionDelay() - DeltaTime == 0.0f) {
-			rotation = ToRotator(parent->GetLookDirection());
-			location = parent->GetActorLocation();
-			location = location + ToVector(rotation) * (parent->GetHitboxRadius() * 0.5f);
-			location += RotateVector(FVector(FMath::Abs(rotation.Yaw) < 60.0f ? 1.0f : -24.0f, 0.0f, 0.0f));
 			SetActorLocation(location);
 			SetSpriteXFlip(nullptr, false);
-			SetSpriteAngle(nullptr, rotation.Yaw - 45.0f);
+			SetSpriteAngle(nullptr, angle - 45.0f);
+
 			if (parent->SetAction(parent->GetSprite())) parent->SetActionDelay(parent->GetSpriteDelay());
 			parent->SetActionCooldown(Action::Attack, 0.4f);
 			if (!parent->GetCharacterMovement()->IsFalling()) parent->AddEffect(Effect::Speed, 0.5f, 0.1f);
+			parent->Melee(location, 120.0f, 1.0f);
 		}
 		if (0.3f <= GetActionDelay()) {
 			SetActorLocation(parent->GetHandLocation());
@@ -93,10 +90,11 @@ void ASword::UpdateAction(float DeltaTime) {
 			SetSpriteXFlip(nullptr, parent->GetSpriteXFlip());
 			SetSpriteAngle(nullptr, !GetSpriteXFlip() ? -135.0f : 135.0f);
 			Damage();
+
 			if (parent->SetAction(parent->GetSprite())) parent->SetActionDelay(parent->GetSpriteDelay());
 			parent->SetActionCooldown(Action::Defend, 1.0f);
 			parent->AddEffect(Effect::Resistance, 0.8f, 0.5f);
-			parent->AddEffect(Effect::Slowness, 0.5f, 0.5f);
+			parent->AddEffect(Effect::Slowness,   0.5f, 0.5f);
 		}
 		if (0.5f <= GetActionDelay()) {
 			SetAction(Action::Idle);

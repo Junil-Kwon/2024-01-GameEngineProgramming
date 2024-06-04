@@ -30,6 +30,14 @@ protected:
 
 
 
+	// Hitbox
+public:
+	virtual void OnInteract(AEntity* value) override;
+
+
+
+
+
 	// Sprite
 protected:
 	virtual void UpdateSprite(float DeltaTime) override;
@@ -37,6 +45,5 @@ protected:
 	// Action
 protected:
 	virtual bool VerifyAction(Action value) override;
-	virtual bool UpdateInputs(float DeltaTime) override;
 	virtual void UpdateAction(float DeltaTime) override;
 };

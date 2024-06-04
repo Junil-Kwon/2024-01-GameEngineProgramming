@@ -122,5 +122,15 @@ void AWeapon::UpdateAction(float DeltaTime) {
 // =============================================================================================================
 
 float AWeapon::GetWeaponRange() {
-	return weaponRange;
+	return weaponRange + (parent ? (parent->GetHitboxRadius() * 0.5f) : 0.0f);
+}
+
+FVector AWeapon::GetAngleLocation(float angle) {
+	if (!parent) return GetActorLocation();
+	FVector location;
+	location.X = FMath::Abs(angle) < 60.0f ? 1.0f : -24.0f;
+	location.Y = FMath::Sin(FMath::DegreesToRadians(angle)) * parent->GetHitboxRadius() * 0.5f;
+	location.Z = FMath::Cos(FMath::DegreesToRadians(angle)) * parent->GetHitboxRadius() * 0.5f;
+	location = parent->GetActorLocation() + RotateVector(location);
+	return location;
 }

@@ -44,6 +44,8 @@ void AParticle::Update(float DeltaTime) {
 		break;
 
 	case Identifier::Twinkle:
+	case Identifier::HealthUp:
+	case Identifier::EnergeUp:
 		SetSpriteIndex(nullptr, FMath::Min(0 + static_cast<int32>(GetLifeTime() * 10), 4));
 		if (GetLifeTime() - DeltaTime == 0.0) SetSpriteIntensity(nullptr, 0.2f);
 		if (0.5f <= GetLifeTime()) Despawn();

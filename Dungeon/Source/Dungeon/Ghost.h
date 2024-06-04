@@ -156,14 +156,21 @@ protected:
 	// Entity
 private:
 	TArray<class AEntity*> objectPool[static_cast<uint8>(Identifier::Length)];
-	class AEntity* player;
+	TArray<class ACreature*> creatures;
 public:
 	TArray<class AEntity*>* GetObjectPool(Identifier value);
-	AEntity* GetPlayer();
-	void     SetPlayer(AEntity* value);
+	TArray<class ACreature*>* GetCreatures();
 
-	void OnPlayerSpawned();
-	void OnPlayerDestroyed();
+	// Player Party
+private:
+	class ACreature* player;
+	TArray<class ACreature*> playerParty;
+public:
+	ACreature* GetPlayer();
+	void       SetPlayer(ACreature* value);
+	TArray<class ACreature*>* GetPlayerParty();
+protected:
+	void UpdatePlayer(float DeltaTime);
 
 
 

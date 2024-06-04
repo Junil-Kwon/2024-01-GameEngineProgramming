@@ -20,35 +20,27 @@
 
 bool AEntity::operator==(const AEntity& other) const { return this == &other; }
 
-FRotator AEntity::ToRotator(FVector  value) {
-	float degree = 90.0f - FMath::RadiansToDegrees(FMath::Atan2(value.X, value.Y));
-	return FRotator(0.0f, degree, 0.0f);
-}
-FVector  AEntity::ToVector(FRotator value) {
-	float radian = FMath::DegreesToRadians(value.Yaw);
-	return FVector(FMath::Cos(radian), FMath::Sin(radian), 0.0f);
-}
 FVector AEntity::RotateVector(FVector value) {
 	return FRotator(-48.590382f, 0.0f, 0.0f).RotateVector(value);
 }
-float AEntity::ToFloat(FVector value) {
-	/*
-	FRotator cameraRotation(-48.590382f, 0.0f, 0.0f);
-	FQuat cameraQuat = FQuat(cameraRotation);
-	FVector cameraForward = cameraQuat.GetForwardVector();
-
+FVector AEntity::ToVector(FColor value) {
+	return FVector(value.R, value.G, value.B) / 255.0f;
+}
+float AEntity::ToAngle(FVector value) {
+	value.Normalize();
+	FVector cameraForward = FRotationMatrix(FRotator(-48.590382f, 0.0f, 0.0f)).GetColumn(0);
 	FVector planeNormal = FVector::CrossProduct(cameraForward, value);
 	float dot = FVector::DotProduct(planeNormal, FVector::UpVector);
 	float determinant = FVector::DotProduct(cameraForward, value);
 	float angle = FMath::RadiansToDegrees(FMath::Atan2(dot, determinant));
-	*/
-	value.Normalize();
-	FRotator cameraRotation(-48.590382f, 0.0f, 0.0f);
-	FVector cameraForward = FRotationMatrix(cameraRotation).GetColumn(0);
-	FVector planeNormal = FVector::CrossProduct(cameraForward, value);
-	float dot = FVector::DotProduct(planeNormal, FVector::UpVector);
-	float determinant = FVector::DotProduct(cameraForward, value);
-	return FMath::RadiansToDegrees(FMath::Atan2(dot, determinant));
+	return angle;
+}
+
+float AEntity::GetDistance(AEntity* entity, AEntity* target) {
+	float distance = FVector::Dist(entity->GetActorLocation(), target->GetActorLocation());
+	distance -= entity->GetHitboxRadius();
+	distance -= target->GetHitboxRadius();
+	return FMath::Max(distance, 0.0f);
 }
 
 template<typename TEnum> uint8 AEntity::GetIndex(TEnum value) {
@@ -243,7 +235,7 @@ void AEntity::OnStart() {
 void AEntity::OnSpawn() {
 	if (spawn) return;
 	spawn = true;
-
+	
 	speed = defaultSpeed;
 	isFalling = false;
 	fallSpeed = 0.0f;
@@ -252,6 +244,7 @@ void AEntity::OnSpawn() {
 	GetCharacterMovement()->JumpZVelocity   = 800.0f;
 	GetCharacterMovement()->GravityScale    = DefaultGravityScale;
 
+	SetLifeTime(0.0f);
 	SetLookDirection(FVector(0.0f, 1.0f, 0.0f));
 	SetMoveDirection(FVector(0.0f, 0.0f, 0.0f));
 
@@ -280,8 +273,7 @@ void AEntity::OnSpawn() {
 void AEntity::OnDespawn() {
 	if (!spawn) return;
 	spawn = false;
-
-	if (HasTag(Tag::Player)) GetGhost()->SetPlayer(nullptr);
+	
 	for (uint8 i = 0; i < static_cast<uint8>(Tag::Length); i++) {
 		Tag value = static_cast<Tag>(1 << i);
 		if (HasTag(value)) RemoveTag(value);
@@ -304,7 +296,7 @@ void AEntity::Tick(float DeltaTime) {
 	if (!spawn) OnSpawn();
 	Update(DeltaTime);
 }
-
+bool AEntity::IsFalling() { return isFalling; }
 void AEntity::Update(float DeltaTime) {
 	lifeTime += DeltaTime;
 	if (GetCharacterMovement()->IsFalling()) {
@@ -326,6 +318,7 @@ void AEntity::Update(float DeltaTime) {
 	UpdateEffect(DeltaTime);
 }
 float AEntity::GetLifeTime() { return lifeTime; }
+void  AEntity::SetLifeTime(float value) { lifeTime = value; }
 
 FVector AEntity::GetLookDirection() { return lookDirection; }
 FVector AEntity::GetMoveDirection() { return moveDirection; }
@@ -388,14 +381,14 @@ void AEntity::OnHit(
 	UPrimitiveComponent* OtherComponent, FVector NormalImpulse,
 	const FHitResult& Hit) {
 	AEntity* entity = static_cast<AEntity*>(OtherActor);
-	if (Spawned() && OtherActor && OtherActor->IsA(AEntity::StaticClass())) OnCollision(entity);
+	if (Spawned()) OnCollision(OtherActor && OtherActor->IsA(AEntity::StaticClass()) ? entity : nullptr);
 }
 void AEntity::OnHitboxBeginOverlap(
 	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 	bool bFromSweep, const FHitResult& SweepResult) {
 	AEntity* entity = static_cast<AEntity*>(OtherActor);
-	if (Spawned() && OtherActor && OtherActor->IsA(AEntity::StaticClass())) OnCollision(entity);
+	if (Spawned()) OnCollision(OtherActor && OtherActor->IsA(AEntity::StaticClass()) ? entity : nullptr);
 }
 void AEntity::OnCollision(AEntity* entity) {
 }
@@ -497,7 +490,8 @@ bool AEntity::AddTag(Tag value) {
 	case Tag::Invulnerability: break;
 	case Tag::Interactability: break;
 	case Tag::Collectable:     break;
-	case Tag::Player:          GetGhost()->SetPlayer(this); break;
+	case Tag::PlayerParty:     break;
+	case Tag::Player:          break;
 	case Tag::Leader:          break;
 	}
 	return true;
@@ -511,6 +505,7 @@ bool AEntity::RemoveTag(Tag value) {
 	case Tag::Invulnerability: break;
 	case Tag::Interactability: break;
 	case Tag::Collectable:     break;
+	case Tag::PlayerParty:     break;
 	case Tag::Player:          break;
 	case Tag::Leader:          break;
 	}
@@ -530,7 +525,21 @@ void AEntity::UpdateEffect(float DeltaTime) {
 		if (!HasEffect(value)) continue;
 		float duration = AdjustEffectDuration(value, -DeltaTime);
 		switch (value) {
+		case Effect::HealthBoost:
+			break;
+		case Effect::DamageBoost:
+			break;
+		case Effect::Resistance:
+			break;
+		case Effect::Speed:
+			refreshSpeed = true;
+			break;
+		case Effect::Slowness:
+			refreshSpeed = true;
+			break;
 		case Effect::Burn:
+			refreshColor = true;
+			refreshSpeed = true;
 			if (int32(duration * 4) != int32((duration - DeltaTime) * 4)) {
 				FVector location = FVector::ZeroVector;
 				float angle = FMath::RandRange(-0.2f * PI, 1.2f * PI);
@@ -539,6 +548,13 @@ void AEntity::UpdateEffect(float DeltaTime) {
 				location.Z = hitboxHeight * FMath::Sin(angle) * FMath::RandRange(0.3f, 0.4f);
 				Spawn(Identifier::Flame, GetActorLocation() + RotateVector(location))->Attach(this);
 			}
+			break;
+		case Effect::Stun:
+			refreshColor = true;
+			break;
+		case Effect::Freeze:
+			refreshColor = true;
+			refreshSpeed = true;
 			break;
 		}
 		if (duration == 0.0f) {
@@ -565,7 +581,7 @@ void AEntity::UpdateEffect(float DeltaTime) {
 		refreshColor = false;
 		effectHit = FMath::Max(effectHit - DeltaTime, 0.0f);
 		FVector color     = GetSpriteColor    ();
-		float   intensity = GetSpriteIntensity() + effectHit * 7.5f;
+		float   intensity = GetSpriteIntensity() + FMath::Clamp(effectHit * 30.0f, 0.0f, 2.0f);
 
 		if (HasEffect(Effect::Burn)) {
 			color += FVector(1.0f, 0.0f, 0.0f) * GetEffectStrength(Effect::Burn) * 8.0f;
@@ -583,9 +599,10 @@ void AEntity::UpdateEffect(float DeltaTime) {
 	}
 	if (refreshSpeed) {
 		float i = 1.0f;
-		if (HasEffect(Effect::Speed )) i *= 1.0f + GetEffectStrength(Effect::Speed);
-		if (HasEffect(Effect::Burn  )) i *= 1.0f + FMath::Max(GetEffectStrength(Effect::Burn) * 0.3f, 0.3f);
-		if (HasEffect(Effect::Freeze)) i *= 1.0f - GetEffectStrength(Effect::Freeze);
+		if (HasEffect(Effect::Slowness)) i *= 1.0f - GetEffectStrength(Effect::Slowness);
+		if (HasEffect(Effect::Speed   )) i *= 1.0f + GetEffectStrength(Effect::Speed   );
+		if (HasEffect(Effect::Burn    )) i *= 1.0f + FMath::Max(GetEffectStrength(Effect::Burn) * 0.3f, 0.3f);
+		if (HasEffect(Effect::Freeze  )) i *= 1.0f - GetEffectStrength(Effect::Freeze  );
 		GetCharacterMovement()->MaxWalkSpeed    = speed * i;
 		GetCharacterMovement()->MaxAcceleration = speed * i * 100;
 	}
@@ -616,36 +633,16 @@ float AEntity::AdjustEffectStrength(Effect value, float strength) {
 	case Effect::DamageBoost: strength = FMath::Clamp(strength, 0.0f, EffectStrengthMax); break;
 	case Effect::Resistance:  strength = FMath::Clamp(strength, 0.0f, 1.0f);              break;
 	case Effect::Speed:       strength = FMath::Clamp(strength, 0.0f, EffectStrengthMax); break;
-	case Effect::Slowness:    strength = FMath::Clamp(strength, 0.0f, EffectStrengthMax); break;
+	case Effect::Slowness:    strength = FMath::Clamp(strength, 0.0f, 1.0f);              break;
 	case Effect::Burn:        strength = FMath::Clamp(strength, 0.0f, EffectStrengthMax); break;
 	case Effect::Stun:        strength = FMath::Clamp(strength, 1.0f, 1.0f);              break;
 	case Effect::Freeze:      strength = FMath::Clamp(strength, 0.0f, 1.0f);              break;
-	}
-	switch (value) {
-	case Effect::HealthBoost: break;
-	case Effect::DamageBoost: break;
-	case Effect::Resistance:  break;
-	case Effect::Speed:       refreshSpeed = true; break;
-	case Effect::Slowness:    refreshSpeed = true; break;
-	case Effect::Burn:        refreshColor = true; refreshSpeed = true; break;
-	case Effect::Stun:        refreshColor = true; break;
-	case Effect::Freeze:      refreshColor = true; refreshSpeed = true; break;
 	}
 	effectStrength[GetIndex(value)] = strength;
 	return strength;
 }
 float AEntity::AdjustEffectDuration(Effect value, float duration) {
-	duration = effectDuration[GetIndex(value)] + duration;
-	switch (value) {
-	case Effect::HealthBoost: duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
-	case Effect::DamageBoost: duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
-	case Effect::Resistance:  duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
-	case Effect::Speed:       duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
-	case Effect::Slowness:    duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
-	case Effect::Burn:        duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
-	case Effect::Stun:        duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
-	case Effect::Freeze:      duration = FMath::Clamp(duration, 0.0f, EffectDurationMax); break;
-	}
+	duration = FMath::Clamp(effectDuration[GetIndex(value)] + duration, 0.0f, EffectDurationMax);
 	effectDuration[GetIndex(value)] = duration;
 	return duration;
 }

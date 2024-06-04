@@ -32,6 +32,10 @@ UENUM(BlueprintType)
 enum class Identifier : uint8 {
 	Default			= 0,
 	Hero			,
+	Knight			,
+	Necromancer		,
+	StalKnight		,
+
 	Slime			,
 
 	Chest			,
@@ -43,7 +47,6 @@ enum class Identifier : uint8 {
 	Wand			,
 	XBow			,
 
-	Melee			,
 	Arrow			,
 
 	Interactor		,
@@ -52,6 +55,8 @@ enum class Identifier : uint8 {
 	Dust			,
 	Flame			,
 	Twinkle			,
+	HealthUp		,
+	EnergeUp		,
 	Length			UMETA(Hidden),
 };
 
@@ -83,9 +88,10 @@ enum class Tag : uint8 {
 	Invulnerability	= 1 << 2,
 	Interactability	= 1 << 3,
 	Collectable		= 1 << 4,
-	Player			= 1 << 5,
-	Leader			= 1 << 6,
-	Length			= 7 UMETA(Hidden),
+	PlayerParty		= 1 << 5,
+	Player			= 1 << 6,
+	Leader			= 1 << 7,
+	Length			= 8 UMETA(Hidden),
 };
 ENUM_CLASS_FLAGS(Tag);
 
@@ -121,10 +127,10 @@ class DUNGEON_API AEntity : public ACharacter {
 public:
 	bool operator==(const AEntity& other) const;
 
-	FRotator ToRotator   (FVector  value);
-	FVector  ToVector    (FRotator value);
 	FVector  RotateVector(FVector  value);
-	float    ToFloat     (FVector  value);
+	FVector  ToVector    (FColor   value);
+	float    ToAngle     (FVector  value);
+	float    GetDistance (AEntity* entity, AEntity* target);
 
 	template<typename TEnum> uint8   GetIndex(TEnum   value);
 	template<typename TEnum> FString ToString(TEnum   value);
@@ -185,15 +191,21 @@ public:
 protected:
 	UPROPERTY(EditAnywhere) float defaultSpeed;
 private:
-	float lifeTime;
 	float speed;
 	bool  isFalling;
 	float fallSpeed;
 public:
 	virtual void Tick(float DeltaTime) override;
+	bool IsFalling();
 protected:
 	virtual void Update(float DeltaTime);
+
+private:
+	float lifeTime;
+public:
 	float GetLifeTime();
+protected:
+	void  SetLifeTime(float value);
 
 private:
 	FVector lookDirection;
@@ -268,7 +280,7 @@ public:
 	UFUNCTION() void SetSpriteIndex    (UStaticMeshComponent* comp, int32   value = 0);
 	UFUNCTION() void SetSpriteXFlip    (UStaticMeshComponent* comp, bool    value = false);
 	UFUNCTION() void SetSpriteColor    (UStaticMeshComponent* comp, FVector value = FVector::OneVector);
-	UFUNCTION() void SetSpriteIntensity(UStaticMeshComponent* comp, float   value = 0.0f);
+	UFUNCTION() void SetSpriteIntensity(UStaticMeshComponent* comp, float   value = 0.25f);
 	UFUNCTION() void SetSpriteOpacity  (UStaticMeshComponent* comp, float   value = 1.0f);
 	UFUNCTION() void SetSpriteAngle    (UStaticMeshComponent* comp, float   value = 0.0f);
 

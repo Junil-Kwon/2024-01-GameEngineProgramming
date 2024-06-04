@@ -75,10 +75,10 @@ void AIndicator::OnStart() {
 	rEnergeComponent->SetRelativeScale3D(scale);
 	iArmourComponent->SetRelativeScale3D(scale);
 	iLeaderComponent->SetRelativeScale3D(scale);
-	SetSpriteColor(lHBoostComponent, FVector(1.0f, 1.0f, 1.0f));
-	SetSpriteColor(lArmourComponent, FVector(0.2f, 0.2f, 0.2f));
-	SetSpriteColor(iArmourComponent, FVector(0.2f, 0.2f, 0.2f));
-	SetSpriteColor(lEnergeComponent, FVector(0.0f, 0.2f, 1.0f));
+	SetSpriteColor(lHBoostComponent, ToVector(FColor(255, 255, 255)));
+	SetSpriteColor(lArmourComponent, ToVector(FColor( 48,  48,  48)));
+	SetSpriteColor(iArmourComponent, ToVector(FColor( 48,  48,  48)));
+	SetSpriteColor(lEnergeComponent, ToVector(FColor( 14,  67, 160)));
 }
 void AIndicator::OnSpawn() {
 	Super::OnSpawn();
@@ -245,8 +245,8 @@ void AIndicator::SetColor() {
 	group = parent->GetGroup();
 	FVector color = FVector::OneVector;
 	switch (group) {
-	case Group::Friendly: color = FVector(0.031896, 0.332452, 0.152926); break;
-	case Group::Enemy:    color = FVector(0.332452, 0.044270, 0.064128); break;
+	case Group::Friendly: color = ToVector(FColor(  5,  92,  52)); break;
+	case Group::Enemy:    color = ToVector(FColor(119,  10,  19)); break;
 	default: color = FVector::OneVector; break;
 	}
 	SetSpriteColor(lHealthComponent, color);
