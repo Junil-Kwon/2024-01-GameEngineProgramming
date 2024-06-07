@@ -31,9 +31,10 @@ enum class FontType : uint8 {
 UENUM(BlueprintType)
 enum class Identifier : uint8 {
 	Default			= 0,
-	Hero			,
-	Priest			,
+	Adventurer		,
+	Wizard			,
 	Knight			,
+	Priest			,
 	Necromancer		,
 	StalKnight		,
 
@@ -53,6 +54,8 @@ enum class Identifier : uint8 {
 
 	Interactor		,
 	Indicator		,
+	StageTrigger	,
+	Teleporter		,
 
 	Dust			,
 	Flame			,

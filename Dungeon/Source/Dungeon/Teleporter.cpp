@@ -1,6 +1,5 @@
-#include "Hero.h"
+#include "Teleporter.h"
 #include "Ghost.h"
-#include "Weapon.h"
 
 
 
@@ -10,20 +9,26 @@
 // Initialization
 // =============================================================================================================
 
-AHero::AHero() {
+ATeleporter::ATeleporter() {
+	defaultHitboxRadius = 128.0f;
+	defaultHitboxHeight = 256.0f;
+	defaultTag += static_cast<uint8>(Tag::Interactability);
 }
 
 // =============================================================================================================
 // Spawn
 // =============================================================================================================
 
-void AHero::OnStart() {
+void ATeleporter::OnStart() {
 	Super::OnStart();
 }
-void AHero::OnSpawn() {
+void ATeleporter::OnSpawn() {
 	Super::OnSpawn();
+
+	SetSpriteIndex(nullptr, 63);
+	UE_LOG(LogTemp, Warning, TEXT("%s"), *ToString(GetIdentifier()));
 }
-void AHero::OnDespawn() {
+void ATeleporter::OnDespawn() {
 	Super::OnDespawn();
 }
 
@@ -35,11 +40,11 @@ void AHero::OnDespawn() {
 // Hitbox
 // =============================================================================================================
 
-void AHero::OnInteract(AEntity* entity) {
+void ATeleporter::OnCollision(AEntity* entity) {
+	Super::OnCollision(entity);
+}
+void ATeleporter::OnInteract(AEntity* entity) {
 	Super::OnInteract(entity);
 
-	if (entity) entity->AddTag(Tag::Interactability);
-	RemoveTag(Tag::Interactability);
-	AddTag(Tag::PlayerParty);
-	AddTag(Tag::Player);
+	GetGhost()->SetStage();
 }

@@ -140,16 +140,17 @@ bool AIndicator::IsHiding() { return hide; }
 void AIndicator::Hide(bool value) {
 	hide = value;
 	int32 index = (armourMax != 0.0f) + (energeMax != 0.0f);
-	SetSpriteIndex(lBorderComponent, value ? 63 : index);
-	SetSpriteIndex(rBorderComponent, value ? 63 : index);
-	SetSpriteIndex(lHealthComponent, value ? 63 : armourMax ? 4 + 1 : 4);
-	SetSpriteIndex(rHealthComponent, value ? 63 : armourMax ? 8 + 1 : 8);
-	SetSpriteIndex(lArmourComponent, value ? 63 : armourMax ? 4 : 63);
-	SetSpriteIndex(rArmourComponent, value ? 63 : armourMax ? 8 : 63);
-	SetSpriteIndex(lHBoostComponent, value ? 63 : 4);
-	SetSpriteIndex(lEnergeComponent, value ? 63 : energeMax ? 4 + index : 63);
-	SetSpriteIndex(rEnergeComponent, value ? 63 : energeMax ? 8 + index : 63);
-	SetSpriteIndex(iArmourComponent, value ? 63 : armourMax ? 12 : 63);
+	SetSpriteIndex(lBorderComponent, value ? 63 : (index));
+	SetSpriteIndex(rBorderComponent, value ? 63 : (index));
+	SetSpriteIndex(lHealthComponent, value ? 63 : (armourMax ? 4 + 1 : 4));
+	SetSpriteIndex(rHealthComponent, value ? 63 : (armourMax ? 8 + 1 : 8));
+	SetSpriteIndex(lArmourComponent, value ? 63 : (armourMax ? 4 : 63));
+	SetSpriteIndex(rArmourComponent, value ? 63 : (armourMax ? 8 : 63));
+	SetSpriteIndex(lHBoostComponent, value ? 63 : (4));
+	SetSpriteIndex(lEnergeComponent, value ? 63 : (energeMax ? 4 + index : 63));
+	SetSpriteIndex(rEnergeComponent, value ? 63 : (energeMax ? 8 + index : 63));
+	SetSpriteIndex(iArmourComponent, value ? 63 : (armourMax ? 12 : 63));
+	SetSpriteIndex(iLeaderComponent, value ? 63 : (leader ? 12 : 63));
 }
 
 void AIndicator::Update(float DeltaTime) {

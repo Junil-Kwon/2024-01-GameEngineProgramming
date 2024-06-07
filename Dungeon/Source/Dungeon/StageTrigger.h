@@ -1,15 +1,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Creature.h"
-#include "Hero.generated.h"
+#include "Entity.h"
+#include "StageTrigger.generated.h"
 
 
 
 
 
 UCLASS()
-class DUNGEON_API AHero : public ACreature {
+class DUNGEON_API AStageTrigger : public AEntity {
 	GENERATED_BODY()
 	
 
@@ -18,7 +18,7 @@ class DUNGEON_API AHero : public ACreature {
 
 	// Initialization
 public:
-	AHero();
+	AStageTrigger();
 
 	// Spawn
 protected:
@@ -32,5 +32,6 @@ protected:
 
 	// Hitbox
 public:
-	virtual void OnInteract(AEntity* value) override;
+	virtual void OnCollision(AEntity* entity) override;
+	virtual void OnInteract (AEntity* entity) override;
 };

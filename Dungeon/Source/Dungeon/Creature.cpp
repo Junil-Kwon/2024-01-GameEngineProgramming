@@ -51,12 +51,15 @@ void ACreature::OnStart() {
 }
 
 void ACreature::OnSpawn() {
-	GetGhost()->GetCreatures()->Add(this);
-
 	sensorArray.Empty();
 	magnetArray.Empty();
-	SetSensorRange(defaultSensorRange);
-	SetMagnetRange(defaultMagnetRange);
+	sensorRange = defaultSensorRange;
+	magnetRange = defaultMagnetRange;
+
+	Super::OnSpawn();
+
+	GetGhost()->GetCreatureArray()->Add(this);
+	SetLifeTime(FMath::RandRange(0.0f, 1.0f));
 
 	action = Action::Idle;
 	for (uint8 i = 0; i < static_cast<uint8>(Action::Length); i++) actionCooldown[i] = 0.0f;
@@ -69,10 +72,6 @@ void ACreature::OnSpawn() {
 	hurtCooldown = 0.0f;
 	mendCooldown = 0.0f;
 
-	Super::OnSpawn();
-
-	SetLifeTime(FMath::RandRange(0.0f, 1.0f));
-
 	SetIndicatorWidth(defaultIndicatorWidth);
 	indicator = static_cast<AIndicator*>(Spawn(Identifier::Indicator));
 	indicator->SetActorLocation(GetActorLocation() + FVector(0.0f, 0.0f, GetHitboxHeight() * 0.5f + 96.0f));
@@ -82,7 +81,7 @@ void ACreature::OnSpawn() {
 void ACreature::OnDespawn() {
 	Super::OnDespawn();
 
-	GetGhost()->GetCreatures()->Remove(this);
+	GetGhost()->GetCreatureArray()->Remove(this);
 	if (HasTag(Tag::PlayerParty)) GetGhost()->GetPlayerParty()->Remove(this);
 	if (HasTag(Tag::Player     )) GetGhost()->SetPlayer(nullptr);
 	SetWeapon  (nullptr);
@@ -116,8 +115,8 @@ void ACreature::Update(float DeltaTime) {
 void ACreature::OnHitboxChanged() {
 	Super::OnHitboxChanged();
 
-	sensorComponent->SetCapsuleHalfHeight(sensorRange + GetHitboxHeight() * 0.5f - GetHitboxRadius());
-	magnetComponent->SetCapsuleHalfHeight(magnetRange + GetHitboxHeight() * 0.5f - GetHitboxRadius());
+	SetSensorRange(sensorRange);
+	SetMagnetRange(magnetRange);
 }
 void ACreature::OnCollision(AEntity* entity) {
 	Super::OnCollision(entity);
@@ -131,7 +130,7 @@ void ACreature::OnCollision(AEntity* entity) {
 
 void ACreature::Melee(FVector location, float range, float value) {
 	melee.Empty();
-	TArray<ACreature*>* entity = GetGhost()->GetCreatures();
+	TArray<ACreature*>* entity = GetGhost()->GetCreatureArray();
 	for (int32 i = 0; i < entity->Num(); i++) {
 		if ((*entity)[i] == nullptr || (*entity)[i] == this) continue;
 		if ((*entity)[i]->HasTag(Tag::Invulnerability)) continue;
@@ -164,7 +163,7 @@ float ACreature::GetSensorRange() {
 }
 void  ACreature::SetSensorRange(float value) {
 	sensorRange = value;
-	sensorComponent->SetCapsuleRadius(sensorRange);
+	sensorComponent->SetCapsuleSize(GetHitboxRadius() + sensorRange, GetHitboxHeight() * 0.5f + sensorRange);
 }
 void ACreature::OnSensorBeginOverlap(
 	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -209,7 +208,7 @@ float ACreature::GetMagnetRange() {
 }
 void  ACreature::SetMagnetRange(float value) {
 	magnetRange = value;
-	magnetComponent->SetCapsuleRadius(magnetRange);
+	magnetComponent->SetCapsuleSize(GetHitboxRadius() + magnetRange, GetHitboxHeight() * 0.5f + magnetRange);
 }
 void ACreature::OnMagnetBeginOverlap(
 	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,

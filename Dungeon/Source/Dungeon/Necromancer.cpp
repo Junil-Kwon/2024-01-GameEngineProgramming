@@ -12,7 +12,7 @@
 
 ANecromancer::ANecromancer() {
 	defaultGroup  = Group::Friendly;
-	defaultHealth = 20.0f;
+	defaultHealth = 24.0f;
 	defaultTag += static_cast<uint8>(Tag::Interactability);
 }
 
@@ -28,23 +28,6 @@ void ANecromancer::OnSpawn() {
 }
 void ANecromancer::OnDespawn() {
 	Super::OnDespawn();
-}
-
-
-
-
-
-// =============================================================================================================
-// Hitbox
-// =============================================================================================================
-
-void ANecromancer::OnInteract(AEntity* entity) {
-	Super::OnInteract(entity);
-
-	if (entity) entity->AddTag(Tag::Interactability);
-	RemoveTag(Tag::Interactability);
-	AddTag(Tag::Player);
-	AddTag(Tag::PlayerParty);
 }
 
 

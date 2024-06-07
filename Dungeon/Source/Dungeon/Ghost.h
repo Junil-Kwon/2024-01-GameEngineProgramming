@@ -65,33 +65,25 @@ private:
 	bool  shakeVertical;
 	float shakeStrength;
 	float shakeDuration;
-protected:
-	void UpdateCamera(float DeltaTime);
 public:
 	void FocusCameraOn(AEntity* entity  );
 	void FocusCameraOn(FVector  location);
 	void UnfocusCamera();
 	void ShakeCamera(float strength = 4.0f, float duration = 0.25f, bool vertical = true);
+protected:
+	void UpdateCamera(float DeltaTime);
 
 	// Sensor
 protected:
 	UPROPERTY(EditAnywhere) float defaultSensorRange;
 private:
-	class UCapsuleComponent* sensorComponent;
-	float sensorRange;
-protected:
-	TArray<AEntity*> sensorArray;
-	virtual bool UpdateSensor(float DeltaTime);
+	float   sensorRange;
+	FVector sensorDirection;
 public:
 	float GetSensorRange();
-	void  SetSensorRange(AEntity* entity = nullptr);
-	UFUNCTION() void OnSensorBeginOverlap(
-		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
-		bool bFromSweep, const FHitResult& SweepResult);
-	UFUNCTION() void OnSensorEndOverlap(
-		UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	void  SetSensorRange(float value);
+protected:
+	virtual void UpdateSensor(float DeltaTime);
 
 	// Select
 private:
@@ -107,13 +99,6 @@ protected:
 
 
 
-	// Money
-private:
-	int32 money;
-public:
-	int32 GetMoney();
-	void  AdjustMoney(int32 value);
-
 	// =========================================================================================================
 	// UI
 	// =========================================================================================================
@@ -121,7 +106,32 @@ public:
 private:
 	class UIngameUI* ingameUI;
 
+	// Black
+private:
+	float blackOpacity;
+	float blackDuration;
+public:
+	void SetBlack(float duration = 1.0f);
+protected:
+	void UpdateBlack(float DeltaTime);
+
+	// Stage
+private:
+	float stageOpacity;
+	float stageDuration;
+public:
+	void SetStage();
+protected:
+	void UpdateStage(float DeltaTime);
+
+	// Back
+
 	// Money
+private:
+	int32 money;
+public:
+	int32 GetMoney();
+	void  AdjustMoney(int32 value);
 private:
 	float moneyTemp;
 	int32 moneyIcon;
@@ -155,11 +165,13 @@ protected:
 
 	// Entity
 private:
-	TArray<class AEntity*> objectPool[static_cast<uint8>(Identifier::Length)];
-	TArray<class ACreature*> creatures;
+	TArray<class AEntity*>   objectPool[static_cast<uint8>(Identifier::Length)];
+	TArray<class AEntity*>   entityArray;
+	TArray<class ACreature*> creatureArray;
 public:
-	TArray<class AEntity*>* GetObjectPool(Identifier value);
-	TArray<class ACreature*>* GetCreatures();
+	TArray<class AEntity*>*   GetObjectPool(Identifier value);
+	TArray<class AEntity*>*   GetEntityArray  ();
+	TArray<class ACreature*>* GetCreatureArray();
 
 	// Player Party
 private:

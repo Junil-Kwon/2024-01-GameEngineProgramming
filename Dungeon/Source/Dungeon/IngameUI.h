@@ -17,19 +17,24 @@ class DUNGEON_API UIngameUI : public UUserWidget {
 
 
 public:
+	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage*     black;
+	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UTextBlock* stageTitle;
+	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage*     back;
+
+public:
 	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UTextBlock* moneyText;
 	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage*     moneyIcon;
 	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage*     moneyBackground;
 
 public:
-	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage* keyboardShift;
-	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage* keyboardZ;
-	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage* keyboardX;
-	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage* keyboardC;
-	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage* keyboardSpace;
-	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage* keyboardUp;
-	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage* keyboardDown;
-	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage* keyboardLeft;
-	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage* keyboardRight;
-	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage* keyboardBackground;
+	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage*     keyboardShift;
+	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage*     keyboardZ;
+	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage*     keyboardX;
+	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage*     keyboardC;
+	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage*     keyboardSpace;
+	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage*     keyboardUp;
+	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage*     keyboardDown;
+	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage*     keyboardLeft;
+	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage*     keyboardRight;
+	UPROPERTY(EditAnywhere, meta = (BindWidget)) class UImage*     keyboardBackground;
 };

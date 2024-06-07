@@ -13,6 +13,7 @@
 APriest::APriest() {
 	defaultGroup  = Group::Friendly;
 	defaultHealth = 20.0f;
+	defaultEnerge = 20.0f;
 	defaultTag += static_cast<uint8>(Tag::Interactability);
 }
 
@@ -28,23 +29,6 @@ void APriest::OnSpawn() {
 }
 void APriest::OnDespawn() {
 	Super::OnDespawn();
-}
-
-
-
-
-
-// =============================================================================================================
-// Hitbox
-// =============================================================================================================
-
-void APriest::OnInteract(AEntity* entity) {
-	Super::OnInteract(entity);
-
-	if (entity) entity->AddTag(Tag::Interactability);
-	RemoveTag(Tag::Interactability);
-	AddTag(Tag::Player);
-	AddTag(Tag::PlayerParty);
 }
 
 

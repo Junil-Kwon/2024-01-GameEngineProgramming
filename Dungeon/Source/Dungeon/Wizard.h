@@ -2,14 +2,14 @@
 
 #include "CoreMinimal.h"
 #include "Hero.h"
-#include "Priest.generated.h"
+#include "Wizard.generated.h"
 
 
 
 
 
 UCLASS()
-class DUNGEON_API APriest : public AHero {
+class DUNGEON_API AWizard : public AHero {
 	GENERATED_BODY()
 
 
@@ -18,7 +18,7 @@ class DUNGEON_API APriest : public AHero {
 
 	// Initialization
 public:
-	APriest();
+	AWizard();
 
 	// Spawn
 protected:

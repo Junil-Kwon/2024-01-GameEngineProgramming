@@ -1,6 +1,6 @@
-#include "Hero.h"
+#include "StageTrigger.h"
 #include "Ghost.h"
-#include "Weapon.h"
+#include "Creature.h"
 
 
 
@@ -10,20 +10,24 @@
 // Initialization
 // =============================================================================================================
 
-AHero::AHero() {
+AStageTrigger::AStageTrigger() {
+	defaultHitboxRadius = 320.0f;
+	defaultHitboxHeight = 640.0f;
 }
 
 // =============================================================================================================
 // Spawn
 // =============================================================================================================
 
-void AHero::OnStart() {
+void AStageTrigger::OnStart() {
 	Super::OnStart();
 }
-void AHero::OnSpawn() {
+void AStageTrigger::OnSpawn() {
 	Super::OnSpawn();
+
+	SetSpriteIndex(nullptr, 63);
 }
-void AHero::OnDespawn() {
+void AStageTrigger::OnDespawn() {
 	Super::OnDespawn();
 }
 
@@ -35,11 +39,14 @@ void AHero::OnDespawn() {
 // Hitbox
 // =============================================================================================================
 
-void AHero::OnInteract(AEntity* entity) {
-	Super::OnInteract(entity);
+void AStageTrigger::OnCollision(AEntity* entity) {
+	Super::OnCollision(entity);
 
-	if (entity) entity->AddTag(Tag::Interactability);
-	RemoveTag(Tag::Interactability);
-	AddTag(Tag::PlayerParty);
-	AddTag(Tag::Player);
+	if (entity && static_cast<AEntity*>(entity) == GetGhost()->GetPlayer()) {
+		UE_LOG(LogTemp, Log, TEXT("stage trigger"));
+		Despawn();
+	}
+}
+void AStageTrigger::OnInteract(AEntity* entity) {
+	Super::OnInteract(entity);
 }

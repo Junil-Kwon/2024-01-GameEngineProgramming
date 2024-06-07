@@ -236,6 +236,8 @@ void AEntity::OnSpawn() {
 	if (spawn) return;
 	spawn = true;
 	
+	GetGhost()->GetEntityArray()->Add(this);
+
 	speed = defaultSpeed;
 	isFalling = false;
 	fallSpeed = 0.0f;
@@ -274,6 +276,8 @@ void AEntity::OnDespawn() {
 	if (!spawn) return;
 	spawn = false;
 	
+	GetGhost()->GetEntityArray()->Remove(this);
+
 	for (uint8 i = 0; i < static_cast<uint8>(Tag::Length); i++) {
 		Tag value = static_cast<Tag>(1 << i);
 		if (HasTag(value)) RemoveTag(value);
@@ -357,12 +361,12 @@ void  AEntity::SetHitboxRadius(float value) {
 	OnHitboxChanged();
 }
 void  AEntity::SetHitboxHeight(float value) {
-	hitboxHeight = value;
+	hitboxHeight = FMath::Max(value, hitboxRadius * 2.0f);
 	OnHitboxChanged();
 }
 void  AEntity::SetHitbox(float radius, float height) {
 	hitboxRadius = radius;
-	hitboxHeight = height;
+	hitboxHeight = FMath::Max(height, hitboxRadius * 2.0f);
 	OnHitboxChanged();
 }
 void  AEntity::SetCollisionProfileName(FName value) {

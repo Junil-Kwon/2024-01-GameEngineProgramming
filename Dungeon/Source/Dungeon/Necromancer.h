@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Creature.h"
+#include "Hero.h"
 #include "Necromancer.generated.h"
 
 
@@ -9,7 +9,7 @@
 
 
 UCLASS()
-class DUNGEON_API ANecromancer : public ACreature {
+class DUNGEON_API ANecromancer : public AHero {
 	GENERATED_BODY()
 
 
@@ -25,14 +25,6 @@ protected:
 	virtual void OnStart  () override;
 	virtual void OnSpawn  () override;
 	virtual void OnDespawn() override;
-
-
-
-
-
-	// Hitbox
-public:
-	virtual void OnInteract(AEntity* value) override;
 
 
 

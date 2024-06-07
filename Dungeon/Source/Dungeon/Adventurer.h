@@ -2,23 +2,23 @@
 
 #include "CoreMinimal.h"
 #include "Hero.h"
-#include "Priest.generated.h"
+#include "Adventurer.generated.h"
 
 
 
 
 
 UCLASS()
-class DUNGEON_API APriest : public AHero {
+class DUNGEON_API AAdventurer : public AHero {
 	GENERATED_BODY()
-
+	
 
 
 
 
 	// Initialization
 public:
-	APriest();
+	AAdventurer();
 
 	// Spawn
 protected:

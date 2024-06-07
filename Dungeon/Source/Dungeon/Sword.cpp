@@ -77,7 +77,7 @@ void ASword::UpdateAction(float DeltaTime) {
 			if (!parent->GetCharacterMovement()->IsFalling()) parent->AddEffect(Effect::Speed, 0.5f, 0.1f);
 			location = parent->GetActorLocation();
 			location += parent->GetLookDirection() * (parent->GetHitboxRadius() * 0.5f + 60.0f);
-			parent->Melee(location, 60.0f, 0.1f);
+			parent->Melee(location, 60.0f, GetAttackDamage());
 		}
 		if (0.3f <= GetActionDelay()) {
 			SetActorLocation(parent->GetHandLocation());

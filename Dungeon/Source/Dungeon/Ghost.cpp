@@ -54,47 +54,46 @@ AGhost::AGhost() {
 	cameraComponent->PostProcessSettings.BloomIntensity = 0.0f;
 	cameraComponent->FieldOfView = 15.0f;
 	cameraComponent->SetupAttachment(springComponent);
-
-	sensorComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Sensor"));
-	sensorComponent->InitCapsuleSize(0.5f, 0.5f);
-	sensorComponent->SetCollisionProfileName(TEXT("Sensor"));
-	sensorComponent->SetupAttachment(RootComponent);
 }
 void AGhost::BeginPlay() {
 	Super::BeginPlay();
 
-	SetSensorRange(nullptr);
-	sensorComponent->OnComponentBeginOverlap.AddDynamic(this, &AGhost::OnSensorBeginOverlap);
-	sensorComponent->OnComponentEndOverlap  .AddDynamic(this, &AGhost::OnSensorEndOverlap  );
-
-	money = 0;
+	SetSensorRange(defaultSensorRange);
+	sensorDirection = FVector(0.0f, 1.0f, 0.0f);
 
 	ingameUI = static_cast<UIngameUI*>(CreateWidget<UUserWidget>(GetWorld(), GetWidget("IngameUI")));
 	ingameUI->AddToViewport();
 
-	focusing      = false;
-	focusLocation = FVector::ZeroVector;
-	focusEntity   = nullptr;
-	shakeVertical = true;
-	shakeStrength = 0.0f;
-	shakeDuration = 0.0f;
+	focusing         = false;
+	focusLocation    = FVector::ZeroVector;
+	focusEntity      = nullptr;
+	shakeVertical    = true;
+	shakeStrength    = 0.0f;
+	shakeDuration    = 0.0f;
 
-	moneyTemp = 0;
-	moneyIcon = 0;
-	moneySize = 0;
-	moneyXPos = ingameUI->moneyBackground->RenderTransform.Translation.X;
-	moneyOpacity  = 1.0f;
-	moneyDuration = 0.0f;
+	blackOpacity     = 1.0f;
+	blackDuration    = 0.0f;
 
-	keyboardUp    = false;
-	keyboardDown  = false;
-	keyboardLeft  = false;
-	keyboardRight = false;
-	keyboardSpace = false;
-	keyboardShift = false;
-	keyboardZ     = false;
-	keyboardX     = false;
-	keyboardC     = false;
+	stageOpacity     = 1.0f;
+	stageDuration    = 0.0f;
+
+	money            = 0;
+	moneyTemp        = 0;
+	moneyIcon        = 0;
+	moneySize        = 0;
+	moneyXPos        = ingameUI->moneyBackground->RenderTransform.Translation.X;
+	moneyOpacity     = 1.0f;
+	moneyDuration    = 0.0f;
+
+	keyboardUp       = false;
+	keyboardDown     = false;
+	keyboardLeft     = false;
+	keyboardRight    = false;
+	keyboardSpace    = false;
+	keyboardShift    = false;
+	keyboardZ        = false;
+	keyboardX        = false;
+	keyboardC        = false;
 	keyboardOpacity  = 1.0f;
 	keyboardDuration = 0.0f;
 	//keyboardDuration = KeyboardShowDuration;
@@ -114,6 +113,9 @@ void AGhost::Tick(float DeltaTime) {
 
 	UpdateCamera  (DeltaTime);
 	UpdateSensor  (DeltaTime);
+
+	UpdateBlack   (DeltaTime);
+	UpdateStage   (DeltaTime);
 	UpdateMoney   (DeltaTime);
 	UpdateKeyboard(DeltaTime);
 	UpdatePlayer  (DeltaTime);
@@ -152,19 +154,16 @@ void AGhost::FocusCameraOn(AEntity* entity) {
 	focusing      = false;
 	focusEntity   = entity;
 	if (entity   != nullptr) focusLocation = FVector::ZeroVector;
-	SetSensorRange(entity);
 }
 void AGhost::FocusCameraOn(FVector location) {
 	focusing      = false;
 	focusEntity   = nullptr;
 	focusLocation = location;
-	SetSensorRange(nullptr);
 }
 void AGhost::UnfocusCamera() {
 	focusing      = false;
 	focusEntity   = nullptr;
 	focusLocation = FVector::ZeroVector;
-	SetSensorRange(nullptr);
 }
 void AGhost::ShakeCamera(float strength, float duration, bool vertical) {
 	shakeStrength = FMath::Max(strength, 0.0f);
@@ -176,60 +175,33 @@ void AGhost::ShakeCamera(float strength, float duration, bool vertical) {
 // Sensor
 // =============================================================================================================
 
-bool AGhost::UpdateSensor(float DeltaTime) {
-	if (sensorArray.Num() == 0) return false;
+void AGhost::UpdateSensor(float DeltaTime) {
+	if (!focusing || !focusEntity) return;
+	if (!GetInputDirection().IsNearlyZero()) sensorDirection = GetInputDirection() * GetSensorRange();
 
-	for (int32 i = sensorArray.Num() - 1; -1 < i; i--) {
-		if (sensorArray[i] == nullptr) {
-			sensorArray.RemoveAt(i);
-			continue;
-		}
-	}
 	AEntity* entity = nullptr;
-	float nearest = sensorRange;
-	if (focusing && focusEntity) for (int32 i = 0; i < sensorArray.Num(); i++) {
-		float distance = FVector::Distance(sensorArray[i]->GetActorLocation(), GetActorLocation());
-		if (sensorArray[i]->HasTag(Tag::Interactability) && distance < nearest) {
-			entity = sensorArray[i];
+	if (GetSelected()) {
+		float distance = FVector::Dist(GetSelected()->GetActorLocation(), GetActorLocation());
+		distance -= GetSelected()->GetHitboxRadius();
+		if (distance < GetSensorRange()) entity = GetSelected();
+	}
+	float nearest = GetSensorRange() * 0.5f;
+	for (int32 i = 0; i < GetEntityArray()->Num(); i++) {
+		float distance = FVector::Dist((*GetEntityArray())[i]->GetActorLocation(), GetActorLocation() + sensorDirection);
+		distance -= (*GetEntityArray())[i]->GetHitboxRadius();
+		if ((*GetEntityArray())[i]->HasTag(Tag::Interactability) && distance < nearest) {
+			entity = (*GetEntityArray())[i];
 			nearest = distance;
 		}
 	}
 	SetSelected(entity);
-	return true;
 }
 
 float AGhost::GetSensorRange() {
 	return sensorRange;
 }
-void  AGhost::SetSensorRange(AEntity* entity) {
-	if (entity && entity->IsA(ACreature::StaticClass())) {
-		ACreature* creature = static_cast<ACreature*>(entity);
-		sensorRange = creature->GetMagnetRange();
-		float hitboxRadius = creature->GetHitboxRadius();
-		float hitboxHeight = creature->GetHitboxHeight();
-		sensorComponent->SetCapsuleRadius    (sensorRange);
-		sensorComponent->SetCapsuleHalfHeight(sensorRange + hitboxHeight * 0.5f - hitboxRadius);
-	}
-	else {
-		sensorRange = defaultSensorRange;
-		sensorComponent->SetCapsuleSize(defaultSensorRange, defaultSensorRange);
-	}
-}
-void AGhost::OnSensorBeginOverlap(
-	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
-	bool bFromSweep, const FHitResult& SweepResult) {
-	AEntity* entity = static_cast<AEntity*>(OtherActor);
-	if (OtherActor->IsA(AEntity::StaticClass()) && !sensorArray.Contains(entity)) sensorArray.Add(entity);
-}
-void AGhost::OnSensorEndOverlap(
-	UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
-	AEntity* entity = static_cast<AEntity*>(OtherActor);
-	if (OtherActor->IsA(AEntity::StaticClass()) && sensorArray.Contains(entity)) {
-		sensorArray.Remove(entity);
-		if (GetSelected() == entity) SetSelected(nullptr);
-	}
+void  AGhost::SetSensorRange(float value) {
+	sensorRange = value;
 }
 
 // =============================================================================================================
@@ -239,6 +211,7 @@ void AGhost::OnSensorEndOverlap(
 bool     AGhost::HasSelected() { return selected != nullptr; };
 AEntity* AGhost::GetSelected() { return selected; }
 void AGhost::SetSelected(AEntity* entity) {
+	if (entity && !entity->HasTag(Tag::Interactability)) entity = nullptr;
 	if (selected == entity) return;
 	if (selected != nullptr) {
 		if (interactor) interactor->Despawn();
@@ -252,6 +225,70 @@ void AGhost::SetSelected(AEntity* entity) {
 		}
 	}
 	selected = entity;
+}
+
+
+
+
+
+// =============================================================================================================
+// Black
+// =============================================================================================================
+
+void AGhost::SetBlack(float duration) {
+	blackDuration = FMath::Max(duration, 0.05f);
+}
+void AGhost::UpdateBlack(float DeltaTime) {
+	if (blackDuration) {
+		if (blackOpacity != 1.0f) {
+			blackOpacity = FMath::Clamp(blackOpacity + DeltaTime * 2.0f, 0.0f, 1.0f);
+			ingameUI->black->SetOpacity(blackOpacity);
+		}
+		else blackDuration = FMath::Max(blackDuration - DeltaTime, 0.0f);
+	}
+	else {
+		if (blackOpacity != 0.0f) {
+			blackOpacity = FMath::Clamp(blackOpacity - DeltaTime * 2.0f, 0.0f, 1.0f);
+			ingameUI->black->SetOpacity(blackOpacity);
+		}
+	}
+}
+
+// =============================================================================================================
+// Stage
+// =============================================================================================================
+
+void AGhost::SetStage() {
+	if (stageDuration) return;
+	SetBlack(1.0f);
+	stageDuration = 5.5f;
+}
+void AGhost::UpdateStage(float DeltaTime) {
+	if (stageDuration) {
+		stageDuration = FMath::Max(stageDuration - DeltaTime, 0.0f);
+		if (stageDuration <= 5.0f && stageOpacity != 1.0f) {
+			stageOpacity = FMath::Clamp(stageOpacity + DeltaTime * 4.0f, 0.0f, 1.0f);
+			ingameUI->stageTitle->SetOpacity(stageOpacity);
+		}
+		if (5.0f <= stageDuration && stageDuration - DeltaTime < 5.0f) {
+			FVector location = FVector::ZeroVector;
+			FVector random   = FVector::ZeroVector;
+			for (int32 i = 0; i < playerParty.Num(); i++) {
+				random.X = FMath::RandRange(-100.0f, 100.0f);
+				random.Y = FMath::RandRange(-100.0f, 100.0f);
+				random.Z = playerParty[i]->GetHitboxHeight();
+				playerParty[i]->SetActorLocation(location + random);
+				playerParty[i]->AddEffect(Effect::Slowness, 1.0f, 1.0f);
+			}
+		}
+	}
+	else {
+		if (stageOpacity != 0.0f) {
+			stageOpacity = FMath::Clamp(stageOpacity - DeltaTime * 1.0f, 0.0f, 1.0f);
+			ingameUI->stageTitle->SetOpacity(stageOpacity);
+		
+		}
+	}
 }
 
 // =============================================================================================================
@@ -380,8 +417,11 @@ void AGhost::UpdateKeyboard(float DeltaTime) {
 TArray<AEntity*>* AGhost::GetObjectPool(Identifier value) {
 	return &objectPool[static_cast<uint8>(value)];
 }
-TArray<ACreature*>* AGhost::GetCreatures() {
-	return &creatures;
+TArray<AEntity*>* AGhost::GetEntityArray() {
+	return &entityArray;
+}
+TArray<ACreature*>* AGhost::GetCreatureArray() {
+	return &creatureArray;
 }
 
 // =============================================================================================================
@@ -394,6 +434,7 @@ ACreature* AGhost::GetPlayer() {
 void AGhost::SetPlayer(ACreature* value) {
 	if (player == value) return;
 
+	SetSelected(nullptr);
 	ACreature* creature = player;
 	player = value;
 	if (creature != nullptr) {

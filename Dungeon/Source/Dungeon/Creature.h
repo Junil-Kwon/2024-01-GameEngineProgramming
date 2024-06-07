@@ -146,7 +146,7 @@ protected:
 	virtual void UpdateSprite(float DeltaTime);
 
 	// Action
-#define PlayerNearby 160.0f
+#define PlayerNearby 200.0f
 private:
 	Action action;
 	float  actionDelay;
