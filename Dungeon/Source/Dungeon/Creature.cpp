@@ -21,10 +21,15 @@ ACreature::ACreature() {
 	defaultSensorRange    = 480.0f;
 	defaultMagnetRange    = 120.0f;
 	defaultIndicatorWidth =  20.0f;
+
+	defaultWeapon         = Identifier::Default;
+
 	defaultHealth         =   1.0f;
 	defaultArmour         =   0.0f;
 	defaultEnerge         =   0.0f;
 	defaultDamage         =   0.0f;
+	defaultAttackRange    =  10.0f;
+	defaultAttackDelay    =   1.0f;
 	
 	sensorComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Sensor"));
 	sensorComponent->InitCapsuleSize(0.5f, 0.5f);
@@ -67,8 +72,10 @@ void ACreature::OnSpawn() {
 
 	health = defaultHealth, healthMax = defaultHealth;
 	armour = defaultArmour, armourMax = defaultArmour;
-	energe = defaultEnerge, energeMax = defaultEnerge;
+	energy = defaultEnerge, energyMax = defaultEnerge;
 	damage = defaultDamage;
+	attackRange = defaultAttackRange;
+	attackDelay = defaultAttackDelay;
 	hurtCooldown = 0.0f;
 	mendCooldown = 0.0f;
 
@@ -77,6 +84,15 @@ void ACreature::OnSpawn() {
 	indicator->SetActorLocation(GetActorLocation() + FVector(0.0f, 0.0f, GetHitboxHeight() * 0.5f + 96.0f));
 	indicator->OnInteract(this);
 	indicator->Attach(this);
+
+	SetAction(Action::Idle);
+
+	AWeapon* w = nullptr;
+	if (defaultWeapon != Identifier::Default) w = static_cast<AWeapon*>(Spawn(defaultWeapon));
+	if (w) {
+		if (w->IsA(AWeapon::StaticClass())) SetWeapon(w);
+		else w->Despawn();
+	}
 }
 void ACreature::OnDespawn() {
 	Super::OnDespawn();
@@ -450,9 +466,9 @@ bool ACreature::RemoveTag(Tag value) {
 void ACreature::Damage(AEntity* entity, float value) {
 	Super::Damage(entity, value);
 
+	ACreature* creature = static_cast<ACreature*>(entity);
 	if (entity && entity->IsA(ACreature::StaticClass())) {
-		if (HasEffect(Effect::DamageBoost)) value += GetEffectStrength(Effect::DamageBoost);
-		static_cast<ACreature*>(entity)->OnDamaged(value);
+		creature->OnDamaged(value + GetEffectStrength(Effect::DamageBoost));
 	}
 }
 
@@ -490,11 +506,13 @@ void  ACreature::OnDie() {
 
 float ACreature::GetHealthMax() { return healthMax; }
 float ACreature::GetArmourMax() { return armourMax; }
-float ACreature::GetEnergeMax() { return energeMax; }
+float ACreature::GetEnergyMax() { return energyMax; }
 float ACreature::GetHealth() { return health; }
 float ACreature::GetArmour() { return armour; }
-float ACreature::GetEnerge() { return energe; }
+float ACreature::GetEnergy() { return energy; }
 float ACreature::GetDamage() { return damage; }
+float ACreature::GetAttackRange() { return attackRange; }
+float ACreature::GetAttackDelay() { return attackDelay; }
 
 float ACreature::AdjustHealth(float value) {
 	health = FMath::Clamp(health + value, 0.0f, healthMax);
@@ -506,9 +524,9 @@ float ACreature::AdjustArmour(float value) {
 	if (armour == 0.0f) OnArmourBroken();
 	return armour;
 }
-float ACreature::AdjustEnerge(float value) {
-	energe = FMath::Clamp(energe + value, 0.0f, energeMax);
-	return energe;
+float ACreature::AdjustEnergy(float value) {
+	energy = FMath::Clamp(energy + value, 0.0f, energyMax);
+	return energy;
 }
 
 float ACreature::AdjustMaxHealth(float value) {
@@ -524,10 +542,10 @@ float ACreature::AdjustMaxArmour(float value) {
 	if (armour == 0.0f) OnArmourBroken();
 	return armourMax;
 }
-float ACreature::AdjustMaxEnerge(float value) {
-	energeMax += FMath::Max(energeMax + value, 0.0f);
-	energe    += FMath::Max(energe    + value, 0.0f);
-	return energeMax;
+float ACreature::AdjustMaxEnergy(float value) {
+	energyMax += FMath::Max(energyMax + value, 0.0f);
+	energy    += FMath::Max(energy    + value, 0.0f);
+	return energyMax;
 }
 float ACreature::AdjustMaxDamage(float value) {
 	damage = FMath::Max(damage + value, 0.0f);

@@ -26,8 +26,9 @@ void AChest::OnSpawn() {
 
 	action = Action::Idle;
 	actionDelay = 0.0f;
-	for (int32 i = 0; i < 20; i++) lootArray.Add(Identifier::Money);
 	loot = 0;
+	int32 num = FMath::RandRange(12, 24);
+	for (int i = 0; i < num; i++) lootArray.Insert(Identifier::Money, 0);
 }
 void AChest::OnDespawn() {
 	Super::OnDespawn();

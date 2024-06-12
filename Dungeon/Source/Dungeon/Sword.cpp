@@ -1,8 +1,6 @@
 #include "Sword.h"
 #include "Creature.h"
 
-#include "GameFramework/CharacterMovementComponent.h"
-
 
 
 
@@ -74,10 +72,10 @@ void ASword::UpdateAction(float DeltaTime) {
 
 			if (parent->SetAction(parent->GetSprite())) parent->SetActionDelay(parent->GetSpriteDelay());
 			parent->SetActionCooldown(Action::Attack, 0.4f);
-			if (!parent->GetCharacterMovement()->IsFalling()) parent->AddEffect(Effect::Speed, 0.5f, 0.1f);
+			if (!parent->IsFalling()) parent->AddEffect(Effect::Speed, 0.5f, 0.1f);
 			location = parent->GetActorLocation();
-			location += parent->GetLookDirection() * (parent->GetHitboxRadius() * 0.5f + 60.0f);
-			parent->Melee(location, 60.0f, GetAttackDamage());
+			location += parent->GetLookDirection() * (parent->GetHitboxRadius() * 0.5f + GetWeaponRange() / 2);
+			parent->Melee(location, GetWeaponRange() / 2, GetAttackDamage());
 		}
 		if (0.3f <= GetActionDelay()) {
 			SetActorLocation(parent->GetHandLocation());

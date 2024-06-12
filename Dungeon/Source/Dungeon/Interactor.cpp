@@ -24,10 +24,21 @@ AInteractor::AInteractor() {
 
 	nameComponent->SetFont(GetFont(FontType::Galmuri7));
 	nameComponent->SetMaterial(0, GetFontMaterial(FontType::Galmuri7));
-	nameComponent->SetTextRenderColor(FColor(0, 0, 0, 255));
+	nameComponent->SetTextRenderColor(FColor(255, 255, 255, 255));
 	nameComponent->SetWorldSize(32.0f);
 	nameComponent->SetHorizontalAlignment(EHTA_Center);
 	nameComponent->SetVerticalAlignment(EVRTA_TextBottom);
+
+	logComponent = CreateDefaultSubobject<UTextRenderComponent>(TEXT("Log"));
+	logComponent->SetRelativeRotation(FRotator(90.0f, 90.0f, 0.0f));
+	logComponent->SetupAttachment(GetAnchorComponent());
+
+	logComponent->SetFont(GetFont(FontType::Galmuri7));
+	logComponent->SetMaterial(0, GetFontMaterial(FontType::Galmuri7));
+	logComponent->SetTextRenderColor(FColor(  0, 255,   0, 255));
+	logComponent->SetWorldSize(32.0f);
+	logComponent->SetHorizontalAlignment(EHTA_Center);
+	logComponent->SetVerticalAlignment(EVRTA_TextBottom);
 }
 
 // =============================================================================================================
@@ -54,8 +65,14 @@ bool AInteractor::IsHiding() { return hide; }
 void AInteractor::Hide(bool value) {
 	hide = value;
 	SetSpriteIndex(nullptr, hide ? 63 : 0);
-	if (hide) nameComponent->SetText(FText::FromString(TEXT("")));
-	else nameComponent->SetText(FText::FromString(ToString(parent->GetIdentifier())));
+	if (hide) {
+		nameComponent->SetText(FText::FromString(TEXT("")));
+		logComponent ->SetText(FText::FromString(TEXT("")));
+	}
+	else {
+		nameComponent->SetText(FText::FromString(ToString(parent->GetIdentifier())));
+		logComponent ->SetText(FText::FromString(parent->GetLog()));
+	}
 	if (parent) RefreshLocation();
 }
 
@@ -97,4 +114,5 @@ void AInteractor::RefreshLocation() {
 		if (indicator && !indicator->IsHiding()) height += parent->HasTag(Tag::Leader) ? 152.0f : 96.0f;
 	}
 	SetActorLocation(parent->GetActorLocation() + FVector(0.0f, 0.0f, height));
+	logComponent->SetWorldLocation(GetActorLocation() + FVector(0.0f, 0.0f, 64.0f));
 }

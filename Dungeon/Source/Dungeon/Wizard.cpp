@@ -23,6 +23,8 @@ AWizard::AWizard() {
 
 void AWizard::OnStart() {
 	Super::OnStart();
+
+	defaultLog += "Ability : Clone";
 }
 void AWizard::OnSpawn() {
 	Super::OnSpawn();
@@ -98,6 +100,8 @@ bool AWizard::VerifyAction(Action value) {
 void AWizard::UpdateAction(float DeltaTime) {
 	Super::UpdateAction(DeltaTime);
 
+	float angle;
+	FVector location;
 	switch (GetAction()) {
 	case Action::Idle:
 		SetSprite(Action::Idle);
@@ -122,22 +126,39 @@ void AWizard::UpdateAction(float DeltaTime) {
 	case Action::Dash:
 		SetSprite(Action::Dash);
 		if (GetActionDelay() - DeltaTime == 0.0f) {
-			if (HasWeapon()) GetWeapon()->SetAction(Action::Idle);
-		}
-		if (0.6f <= GetActionDelay() && GetActionDelay() - DeltaTime < 0.6f) {
-			for (int32 i = 0; i < sensorArray.Num(); i++) {
-				if (sensorArray[i] == nullptr || sensorArray[i] == this) continue;
-				if (sensorArray[i]->HasTag(Tag::Invulnerability)) continue;
-				if (sensorArray[i]->GetAction() == Action::Defeat) continue;
-				if (GetGroup() == Group::None || sensorArray[i]->GetGroup() != GetGroup()) continue;
-				sensorArray[i]->AddEffect(Effect::HealthBoost, 10.0f, 5.0f);
-				sensorArray[i]->AddEffect(Effect::DamageBoost, 10.0f, 5.0f);
-				sensorArray[i]->AdjustHealth(10.0f);
+			if (clone) {
+				for (uint8 i = 0; i < 5; i++) {
+					location = FVector::ZeroVector;
+					angle = FMath::RandRange(0.0f * PI, 2.0f * PI);
+					location.X = -4.0f;
+					location.Y = clone->GetHitboxRadius();
+					location.Z = clone->GetHitboxHeight();
+					location.Y *= FMath::Cos(angle) * FMath::RandRange(0.0f, 0.8f);
+					location.Z *= FMath::Sin(angle) * FMath::RandRange(0.0f, 0.4f);
+					location = clone->GetActorLocation() + RotateVector(location);
+					Spawn(Identifier::Dust, location)->Attach(clone);
+				}
+				if (clone->HasWeapon()) clone->GetWeapon()->Despawn();
+				clone->Despawn();
 			}
-		}
-		if (1.2f <= GetActionDelay()) {
+			clone = static_cast<AWizard*>(Spawn(Identifier::Wizard, GetActorLocation()));
+			clone->SetSpriteColor(nullptr, FVector(0.2f, 0.2f, 1.0f));
+			clone->SetSpriteOpacity(nullptr, 0.8f);
+			clone->SetSpriteIntensity(nullptr, 1.0f);
+			clone->RemoveTag(Tag::Interactability);
+			clone->AddTag(Tag::PlayerParty);
+			clone->AdjustHealth(GetHealth() - GetHealthMax());
+			clone->AdjustArmour(GetArmour() - GetArmourMax());
+			clone->AdjustEnergy(GetEnergy() - GetEnergyMax());
+			if (HasWeapon()) {
+				AWeapon* entity = static_cast<AWeapon*>(Spawn(GetWeapon()->GetIdentifier()));
+				entity->SetSpriteColor(nullptr, FVector(0.2f, 0.2f, 1.0f));
+				entity->SetSpriteOpacity(nullptr, 0.8f);
+				entity->SetSpriteIntensity(nullptr, 1.0f);
+				clone->SetWeapon(entity);
+			}
 			SetAction(Action::Idle);
-			SetActionCooldown(Action::Dash,   9.4f);
+			SetActionCooldown(Action::Dash,   5.0f);
 			SetActionCooldown(Action::Attack, 0.1f);
 			SetActionCooldown(Action::Defend, 0.1f);
 		}

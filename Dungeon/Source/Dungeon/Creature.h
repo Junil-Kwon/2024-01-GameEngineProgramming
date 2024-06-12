@@ -46,8 +46,8 @@ protected:
 protected:
 	virtual void OnHitboxChanged() override;
 	virtual void OnCollision(AEntity* entity) override;
-	TArray<ACreature*> melee;
 public:
+	TArray<ACreature*> melee;
 	void Melee(FVector location, float range, float damage = 0.0f);
 	
 	// Sensor
@@ -146,7 +146,7 @@ protected:
 	virtual void UpdateSprite(float DeltaTime);
 
 	// Action
-#define PlayerNearby 200.0f
+#define PlayerNearby 160.0f
 private:
 	Action action;
 	float  actionDelay;
@@ -164,9 +164,11 @@ protected:
 	virtual void UpdateAction(float DeltaTime);
 
 	// Weapon
+protected:
+	UPROPERTY(EditAnywhere) Identifier defaultWeapon;
 private:
 	class AWeapon* weapon;
-protected:
+public:
 	bool     HasWeapon();
 	AWeapon* GetWeapon();
 	virtual void SetWeapon(AWeapon* value);
@@ -195,11 +197,15 @@ protected:
 	UPROPERTY(EditAnywhere) float defaultArmour;
 	UPROPERTY(EditAnywhere) float defaultEnerge;
 	UPROPERTY(EditAnywhere) float defaultDamage;
+	UPROPERTY(EditAnywhere) float defaultAttackRange;
+	UPROPERTY(EditAnywhere) float defaultAttackDelay;
 private:
 	float health, healthMax;
 	float armour, armourMax;
-	float energe, energeMax;
+	float energy, energyMax;
 	float damage;
+	float attackRange;
+	float attackDelay;
 	float hurtCooldown;
 	float mendCooldown;
 	
@@ -210,16 +216,18 @@ protected:
 public:
 	float GetHealthMax();
 	float GetArmourMax();
-	float GetEnergeMax();
+	float GetEnergyMax();
 	float GetHealth();
 	float GetArmour();
-	float GetEnerge();
+	float GetEnergy();
 	float GetDamage();
+	float GetAttackRange();
+	float GetAttackDelay();
 	float AdjustHealth(float value);
 	float AdjustArmour(float value);
-	float AdjustEnerge(float value);
+	float AdjustEnergy(float value);
 	float AdjustMaxHealth(float value);
 	float AdjustMaxArmour(float value);
-	float AdjustMaxEnerge(float value);
+	float AdjustMaxEnergy(float value);
 	float AdjustMaxDamage(float value);
 };

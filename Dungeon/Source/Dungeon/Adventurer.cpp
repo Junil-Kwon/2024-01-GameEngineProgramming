@@ -24,6 +24,8 @@ AAdventurer::AAdventurer() {
 
 void AAdventurer::OnStart() {
 	Super::OnStart();
+
+	defaultLog += "Ability : Dodge";
 }
 void AAdventurer::OnSpawn() {
 	Super::OnSpawn();
@@ -138,8 +140,6 @@ void AAdventurer::UpdateAction(float DeltaTime) {
 			SetActionCooldown(Action::Dash,   0.5f);
 			SetActionCooldown(Action::Attack, 0.1f);
 			SetActionCooldown(Action::Defend, 0.1f);
-			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() *  0.75f, 0.0f));
-			Spawn(Identifier::Dust, GetFootLocation() + FVector(0.0f, -GetHitboxRadius() * -0.75f, 0.0f));
 		}
 		if (int32(GetActionDelay() * 10) != int32((GetActionDelay() - DeltaTime) * 10)) {
 			if (!IsFalling() && GetActionDelay() < 0.5f) Spawn(Identifier::Dust, GetFootLocation());

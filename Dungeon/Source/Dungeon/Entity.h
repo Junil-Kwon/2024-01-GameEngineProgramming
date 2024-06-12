@@ -31,37 +31,59 @@ enum class FontType : uint8 {
 UENUM(BlueprintType)
 enum class Identifier : uint8 {
 	Default			= 0,
+
+	// Heros
 	Adventurer		,
 	Wizard			,
 	Knight			,
 	Priest			,
 	Necromancer		,
+	// Summoned
 	StalKnight		,
 
+	// Monsters
 	Slime			,
+	Skeleton		,
 
+	// Items
 	Chest			,
 	Money			,
 	HealthPotion	,
-	EnergePotion	,
-	Armour			,
+	EnergyPotion	,
+	Armour			, // Unused
+
+	// Weapons
 	Sword			,
 	Wand			,
 	XBow			,
 	Spear			,
+	GreatSword		,
+	Tomahawk		,
+	FireWand		,
+	FreezeWand		,
 
+	// Projectiles
 	Arrow			,
+	TomahawkThrown	,
+	Debuff			, // Unused
+	Fireball		,
+	Icicle			,
 
+	// UI
 	Interactor		,
 	Indicator		,
-	StageTrigger	,
-	Teleporter		,
+	Portal			,
 
+	// Particles
 	Dust			,
 	Flame			,
 	Twinkle			,
 	HealthUp		,
-	EnergeUp		,
+	EnergyUp		,
+	Lightning		,
+	DebuffDust		, // Unused
+	FireballDust	,
+	IcicleDust		,
 	Length			UMETA(Hidden),
 };
 
@@ -74,6 +96,7 @@ enum class Action : uint8 {
 	Attack			,
 	Defend			,
 	Defeat			,
+	Revive			,
 	Length			UMETA(Hidden),
 };
 
@@ -306,6 +329,14 @@ private:
 	Identifier identifier;
 public:
 	Identifier GetIdentifier();
+
+	// Log
+protected:
+	UPROPERTY(EditAnywhere) FString defaultLog;
+private:
+	FString log;
+public:
+	FString GetLog();
 
 	// Group
 protected:

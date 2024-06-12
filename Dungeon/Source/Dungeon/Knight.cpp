@@ -24,6 +24,8 @@ AKnight::AKnight() {
 
 void AKnight::OnStart() {
 	Super::OnStart();
+
+	defaultLog += "Ability : Tank";
 }
 void AKnight::OnSpawn() {
 	Super::OnSpawn();

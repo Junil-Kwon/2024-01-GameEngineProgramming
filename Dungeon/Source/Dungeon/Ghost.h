@@ -9,6 +9,21 @@
 
 
 
+UENUM(BlueprintType)
+enum class Stage : uint8 {
+	Stage0		= 0,
+	Stage1		,
+	Stage2		,
+	Stage3		,
+	Stage4		,
+	Stage5		,
+	Length		UMETA(Hidden),
+};
+
+
+
+
+
 UCLASS(HideCategories = ("Actor Tick", Camera, Replication, Rendering, Collision, Pawn, Input, LOD, Cooking))
 class DUNGEON_API AGhost : public APawn {
 	GENERATED_BODY()
@@ -54,7 +69,7 @@ public:
 	// =========================================================================================================
 
 	// Camera
-	#define CameraSpeed 600.0f
+	#define CameraSpeed 800.0f
 private:
 	class UCapsuleComponent*   hitboxComponent;
 	class USpringArmComponent* springComponent;
@@ -116,11 +131,19 @@ protected:
 	void UpdateBlack(float DeltaTime);
 
 	// Stage
+protected:
+	UPROPERTY(EditAnywhere) FVector defaultStage0Location;
+	UPROPERTY(EditAnywhere) FVector defaultStage1Location;
+	UPROPERTY(EditAnywhere) FVector defaultStage2Location;
+	UPROPERTY(EditAnywhere) FVector defaultStage3Location;
+	UPROPERTY(EditAnywhere) FVector defaultStage4Location;
+	UPROPERTY(EditAnywhere) FVector defaultStage5Location;
 private:
+	Stage stage;
 	float stageOpacity;
 	float stageDuration;
 public:
-	void SetStage();
+	void SetStage(Stage value);
 protected:
 	void UpdateStage(float DeltaTime);
 
@@ -143,7 +166,6 @@ protected:
 	void UpdateMoney(float DeltaTime);
 
 	// Keyboard
-	#define KeyboardShowDuration 30.0f
 private:
 	bool  keyboardUp;
 	bool  keyboardDown;

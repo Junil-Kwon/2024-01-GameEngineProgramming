@@ -22,6 +22,8 @@ ANecromancer::ANecromancer() {
 
 void ANecromancer::OnStart() {
 	Super::OnStart();
+
+	defaultLog += "Ability : Summon Guards";
 }
 void ANecromancer::OnSpawn() {
 	Super::OnSpawn();

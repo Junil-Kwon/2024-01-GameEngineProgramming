@@ -30,7 +30,7 @@ protected:
 
 
 
-	// Update
+	// Action
 public:
 	virtual bool VerifyAction(Action value) override;
 protected:

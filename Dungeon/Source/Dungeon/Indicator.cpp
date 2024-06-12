@@ -160,7 +160,7 @@ void AIndicator::Update(float DeltaTime) {
 	if (width  != parent->GetIndicatorWidth()) SetWidth();
 	else if (health != parent->GetHealth() || armourMax != parent->GetArmourMax()) SetWidth();
 	else if (armour != parent->GetArmour() || armourMax != parent->GetArmourMax()) SetWidth();
-	else if (energe != parent->GetEnerge() || energeMax != parent->GetEnergeMax()) SetWidth();
+	else if (energe != parent->GetEnergy() || energeMax != parent->GetEnergyMax()) SetWidth();
 	else if (hboost != parent->GetEffectStrength(Effect::HealthBoost)) SetWidth();
 	if (group  != parent->GetGroup()) SetColor();
 	if (leader != parent->HasTag(Tag::Leader)) SetLeader();
@@ -179,10 +179,10 @@ void AIndicator::SetWidth() {
 	width  = parent->GetIndicatorWidth();
 	health = parent->GetHealth();
 	armour = parent->GetArmour();
-	energe = parent->GetEnerge();
+	energe = parent->GetEnergy();
 	healthMax = parent->GetHealthMax();
 	armourMax = parent->GetArmourMax();
-	energeMax = parent->GetEnergeMax();
+	energeMax = parent->GetEnergyMax();
 	hboost = parent->GetEffectStrength(Effect::HealthBoost);
 
 	int32 index = (armourMax != 0.0f) + (energeMax != 0.0f);
@@ -227,6 +227,7 @@ void AIndicator::SetWidth() {
 
 	float lHBoostLocation = 1 - health / healthMax - health / HealthMax;
 	float lHBoostScale3D  = hboost / HealthMax;
+	if (armourMax) lHBoostLocation = 1 - armour / armourMax - armour / ArmourMax;
 	lHBoostComponent->SetRelativeLocation(FVector(i - lHBoostLocation * Width * 2.0f, 0.0f, 0.0f));
 	lHBoostComponent->SetRelativeScale3D (FVector(lHBoostScale3D * Width * 0.04f, 1.28f, 1.28f));
 

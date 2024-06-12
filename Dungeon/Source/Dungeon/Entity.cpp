@@ -178,6 +178,7 @@ AEntity::AEntity() {
 	defaultHitboxRadius   = 0.0f;
 	defaultHitboxHeight   = 0.0f;
 	defaultHandLocation   = FVector2D::ZeroVector;
+	defaultLog            = "";
 	defaultGroup          = Group::None;
 	defaultEffect         = 0;
 	defaultEffectImmunity = 0;
@@ -259,6 +260,8 @@ void AEntity::OnSpawn() {
 	SetSpriteIntensity(nullptr);
 	SetSpriteOpacity  (nullptr);
 	SetSpriteAngle    (nullptr);
+
+	log = defaultLog;
 
 	SetGroup(defaultGroup);
 
@@ -470,6 +473,14 @@ void AEntity::SetSpriteAngle(UStaticMeshComponent* component, float value) {
 // =============================================================================================================
 
 Identifier AEntity::GetIdentifier() { return identifier; }
+
+// =============================================================================================================
+// Group
+// =============================================================================================================
+
+FString AEntity::GetLog() {
+	return log; 
+}
 
 // =============================================================================================================
 // Group

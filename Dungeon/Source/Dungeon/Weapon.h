@@ -75,6 +75,7 @@ protected:
 	UPROPERTY(EditAnywhere) float defaultAttackDamage;
 	UPROPERTY(EditAnywhere) float defaultDefendDamage;
 	UPROPERTY(EditAnywhere) float defaultWeaponRange;
+	UPROPERTY(EditAnywhere) float defaultEnergeCost;
 	UPROPERTY(EditAnywhere) bool  defaultDroppable;
 private:
 	float  attackDamage;
@@ -85,6 +86,7 @@ public:
 	float  GetAttackDamage();
 	float  GetDefendDamage();
 	float  GetWeaponRange ();
+	float  GetEnergeCost  ();
 protected:
 	FVector GetAngleLocation(float angle, float distance = 0.0f);
 };

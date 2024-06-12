@@ -50,6 +50,7 @@ public:
 	// Interactor
 private:
 	class UTextRenderComponent* nameComponent;
+	class UTextRenderComponent* logComponent;
 	AEntity* parent;
 private:
 	void RefreshLocation();

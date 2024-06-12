@@ -23,6 +23,8 @@ APriest::APriest() {
 
 void APriest::OnStart() {
 	Super::OnStart();
+
+	defaultLog += "Ability : Buff";
 }
 void APriest::OnSpawn() {
 	Super::OnSpawn();
@@ -98,6 +100,8 @@ bool APriest::VerifyAction(Action value) {
 void APriest::UpdateAction(float DeltaTime) {
 	Super::UpdateAction(DeltaTime);
 
+	float angle;
+	FVector location;
 	switch (GetAction()) {
 	case Action::Idle:
 		SetSprite(Action::Idle);
@@ -130,9 +134,19 @@ void APriest::UpdateAction(float DeltaTime) {
 				if (sensorArray[i]->HasTag(Tag::Invulnerability)) continue;
 				if (sensorArray[i]->GetAction() == Action::Defeat) continue;
 				if (GetGroup() == Group::None || sensorArray[i]->GetGroup() != GetGroup()) continue;
-				sensorArray[i]->AddEffect(Effect::HealthBoost, 10.0f, 5.0f);
-				sensorArray[i]->AddEffect(Effect::DamageBoost, 10.0f, 5.0f);
-				sensorArray[i]->AdjustHealth(10.0f);
+				sensorArray[i]->AddEffect(Effect::HealthBoost, sensorArray[i]->GetHealthMax() * 0.4f, 1.0f);
+				sensorArray[i]->AdjustHealth(sensorArray[i]->GetHealthMax() * 0.2f);
+				for (uint8 j = 0; j < 5; j++) {
+					location = FVector::ZeroVector;
+					angle = FMath::RandRange(0.0f * PI, 2.0f * PI);
+					location.X = -4.0f;
+					location.Y = sensorArray[i]->GetHitboxRadius();
+					location.Z = sensorArray[i]->GetHitboxHeight();
+					location.Y *= FMath::Cos(angle) * FMath::RandRange(0.0f, 0.8f);
+					location.Z *= FMath::Sin(angle) * FMath::RandRange(0.0f, 0.4f);
+					location = sensorArray[i]->GetActorLocation() + RotateVector(location);
+					Spawn(Identifier::Twinkle, location)->Attach(sensorArray[i]);
+				}
 			}
 		}
 		if (1.2f <= GetActionDelay()) {

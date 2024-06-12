@@ -16,6 +16,7 @@ AWeapon::AWeapon() {
 	defaultAttackDamage = 0.0f;
 	defaultDefendDamage = 0.0f;
 	defaultWeaponRange  = 0.0f;
+	defaultEnergeCost   = 0.0f;
 	defaultDroppable    = true;
 	SetCollisionProfileName(TEXT("Particle"));
 }
@@ -26,6 +27,9 @@ AWeapon::AWeapon() {
 
 void AWeapon::OnStart() {
 	Super::OnStart();
+
+	defaultLog += "Damage : " + FString::SanitizeFloat(defaultAttackDamage) + "\n";
+	defaultLog += "Range  : " + FString::SanitizeFloat(defaultWeaponRange * 0.01f);
 }
 void AWeapon::OnSpawn() {
 	Super::OnSpawn();
@@ -141,6 +145,9 @@ float AWeapon::GetDefendDamage() {
 }
 float AWeapon::GetWeaponRange() {
 	return weaponRange + (parent ? (parent->GetHitboxRadius() * 0.5f) : 0.0f);
+}
+float AWeapon::GetEnergeCost() {
+	return defaultEnergeCost;
 }
 
 FVector AWeapon::GetAngleLocation(float angle, float distance) {

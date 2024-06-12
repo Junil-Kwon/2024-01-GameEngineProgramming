@@ -38,6 +38,12 @@ UClass* AGhost::GetWidget(FString name) {
 
 AGhost::AGhost() {
 	defaultSensorRange = 120.0f;
+	defaultStage0Location = FVector(0.0f, 0.0f, 0.0f);
+	defaultStage1Location = FVector(0.0f, 0.0f, 0.0f);
+	defaultStage2Location = FVector(0.0f, 0.0f, 0.0f);
+	defaultStage3Location = FVector(0.0f, 0.0f, 0.0f);
+	defaultStage4Location = FVector(0.0f, 0.0f, 0.0f);
+	defaultStage5Location = FVector(0.0f, 0.0f, 0.0f);
 
  	PrimaryActorTick.bCanEverTick = true;
 
@@ -71,10 +77,10 @@ void AGhost::BeginPlay() {
 	shakeStrength    = 0.0f;
 	shakeDuration    = 0.0f;
 
-	blackOpacity     = 1.0f;
+	blackOpacity     = 0.0f;
 	blackDuration    = 0.0f;
 
-	stageOpacity     = 1.0f;
+	stageOpacity     = 0.0f;
 	stageDuration    = 0.0f;
 
 	money            = 0;
@@ -95,8 +101,10 @@ void AGhost::BeginPlay() {
 	keyboardX        = false;
 	keyboardC        = false;
 	keyboardOpacity  = 1.0f;
-	keyboardDuration = 0.0f;
-	//keyboardDuration = KeyboardShowDuration;
+	keyboardDuration = 60.0f;
+
+	ingameUI->black     ->SetOpacity(0);
+	ingameUI->stageTitle->SetOpacity(0);
 
 	if (GetPlayer()) {
 		SetActorLocation(GetPlayer()->GetActorLocation());
@@ -135,7 +143,7 @@ void AGhost::UpdateCamera(float DeltaTime) {
 		FVector target = focusEntity ? focusEntity->GetActorLocation() : focusLocation;
 		if (focusing) location = target;
 		else {
-			float distance = FVector::Distance(GetActorLocation(), target);
+			float distance = FVector::Dist(GetActorLocation(), target);
 			FVector locationDelta = (target - GetActorLocation()) / distance * CameraSpeed;
 			location = GetActorLocation() + locationDelta * DeltaTime;
 			if (FVector::Distance(location, target) < CameraSpeed * DeltaTime) focusing = true;
@@ -258,20 +266,32 @@ void AGhost::UpdateBlack(float DeltaTime) {
 // Stage
 // =============================================================================================================
 
-void AGhost::SetStage() {
+void AGhost::SetStage(Stage value) {
 	if (stageDuration) return;
 	SetBlack(1.0f);
-	stageDuration = 5.5f;
+	stage = value;
+	stageDuration = 3.5f;
+	if (1.0f < keyboardDuration) keyboardDuration = 1.0f;
+	ingameUI->stageTitle->SetText(FText::FromString(FString::Printf(TEXT("Stage %d"), uint8(stage))));
 }
 void AGhost::UpdateStage(float DeltaTime) {
 	if (stageDuration) {
 		stageDuration = FMath::Max(stageDuration - DeltaTime, 0.0f);
-		if (stageDuration <= 5.0f && stageOpacity != 1.0f) {
+		if (stageDuration <= 3.0f && stageOpacity != 1.0f) {
 			stageOpacity = FMath::Clamp(stageOpacity + DeltaTime * 4.0f, 0.0f, 1.0f);
 			ingameUI->stageTitle->SetOpacity(stageOpacity);
 		}
-		if (5.0f <= stageDuration && stageDuration - DeltaTime < 5.0f) {
+		if (3.0f <= stageDuration && stageDuration - DeltaTime < 3.0f) {
 			FVector location = FVector::ZeroVector;
+			switch (stage) {
+				case Stage::Stage0: location = defaultStage0Location; break;
+				case Stage::Stage1: location = defaultStage1Location; break;
+				case Stage::Stage2: location = defaultStage2Location; break;
+				case Stage::Stage3: location = defaultStage3Location; break;
+				case Stage::Stage4: location = defaultStage4Location; break;
+				case Stage::Stage5: location = defaultStage5Location; break;
+				default:            location = FVector::ZeroVector;   break;
+			}
 			FVector random   = FVector::ZeroVector;
 			for (int32 i = 0; i < playerParty.Num(); i++) {
 				random.X = FMath::RandRange(-100.0f, 100.0f);
@@ -279,6 +299,11 @@ void AGhost::UpdateStage(float DeltaTime) {
 				random.Z = playerParty[i]->GetHitboxHeight();
 				playerParty[i]->SetActorLocation(location + random);
 				playerParty[i]->AddEffect(Effect::Slowness, 1.0f, 1.0f);
+
+				playerParty[i]->AdjustHealth(playerParty[i]->GetHealthMax());
+				playerParty[i]->AdjustArmour(playerParty[i]->GetArmourMax());
+				playerParty[i]->AdjustEnergy(playerParty[i]->GetEnergyMax());
+				playerParty[i]->SetAction(Action::Idle);
 			}
 		}
 	}
@@ -439,7 +464,7 @@ void AGhost::SetPlayer(ACreature* value) {
 	player = value;
 	if (creature != nullptr) {
 		creature->RemoveTag(Tag::Player);
-		FocusCameraOn(nullptr);
+		FocusCameraOn(creature->GetActorLocation());
 	}
 	if (value  != nullptr) {
 		value->AddTag(Tag::Player);

@@ -65,17 +65,17 @@ void AItem::OnInteract(AEntity* entity) {
 		creature->AdjustHealth(10.0f);
 		Despawn();
 		break;
-	case Identifier::EnergePotion:
-		if (!creature->GetEnergeMax()) break;
+	case Identifier::EnergyPotion:
+		if (!creature->GetEnergyMax()) break;
 		if (entity != nullptr) for (uint8 i = 0; i < 5; i++) {
 			location = FVector::ZeroVector;
 			angle = FMath::RandRange(0.0f * PI, 2.0f * PI);
 			location.X = -4.0f;
 			location.Y = entity->GetHitboxRadius() * FMath::Cos(angle) * FMath::RandRange(0.0f, 0.8f);
 			location.Z = entity->GetHitboxHeight() * FMath::Sin(angle) * FMath::RandRange(0.0f, 0.4f);
-			Spawn(Identifier::EnergeUp, entity->GetActorLocation() + RotateVector(location))->Attach(entity);
+			Spawn(Identifier::EnergyUp, entity->GetActorLocation() + RotateVector(location))->Attach(entity);
 		}
-		creature->AdjustEnerge(10.0f);
+		creature->AdjustEnergy(10.0f);
 		Despawn();
 		break;
 	case Identifier::Armour:

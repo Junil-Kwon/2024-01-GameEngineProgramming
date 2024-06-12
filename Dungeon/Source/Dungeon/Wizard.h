@@ -35,6 +35,8 @@ protected:
 	virtual void UpdateSprite(float DeltaTime) override;
 
 	// Action
+private:
+	AWizard* clone;
 protected:
 	virtual bool VerifyAction(Action value) override;
 	virtual void UpdateAction(float DeltaTime) override;

@@ -38,6 +38,9 @@ void AParticle::Update(float DeltaTime) {
 	switch (GetIdentifier()) {
 	case Identifier::Dust:
 	case Identifier::Flame:
+	case Identifier::DebuffDust:
+	case Identifier::FireballDust:
+	case Identifier::IcicleDust:
 		if (GetLifeTime() - DeltaTime == 0.0f) SetSpriteXFlip(nullptr, FMath::RandBool());
 		SetSpriteIndex(nullptr, FMath::Min(0 + static_cast<int32>(GetLifeTime() * 10), 4));
 		if (0.5f <= GetLifeTime()) Despawn();
@@ -45,10 +48,19 @@ void AParticle::Update(float DeltaTime) {
 
 	case Identifier::Twinkle:
 	case Identifier::HealthUp:
-	case Identifier::EnergeUp:
+	case Identifier::EnergyUp:
 		SetSpriteIndex(nullptr, FMath::Min(0 + static_cast<int32>(GetLifeTime() * 10), 4));
 		if (GetLifeTime() - DeltaTime == 0.0) SetSpriteIntensity(nullptr, 0.2f);
 		if (0.5f <= GetLifeTime()) Despawn();
+		break;
+
+	case Identifier::Lightning:
+		if (GetLifeTime() - DeltaTime == 0.0f) {
+			SetSpriteXFlip(nullptr, FMath::RandBool());
+			SetSpriteIntensity(nullptr, 1.0f);
+		}
+		SetSpriteIndex(nullptr, FMath::Min(0 + static_cast<int32>(GetLifeTime() * 10), 8));
+		if (1.0f <= GetLifeTime()) Despawn();
 		break;
 	}
 }
